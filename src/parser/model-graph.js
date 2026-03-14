@@ -1036,11 +1036,37 @@ export class ModelGraph {
     switch (linkFn) {
       case 'log':    return Math.log(x);
       case 'logit':  return Math.log(x / (1 - x));
-      case 'probit': return /* quantile of std normal — approximation */ _probitApprox(x);
+      case 'probit': return _probitApprox(x);
       case 'sqrt':   return Math.sqrt(x);
       case 'cloglog': return Math.log(-Math.log(1 - x));
       default:
         throw new ModelGraphError(`_applyLink: unknown link function '${linkFn}'`);
+    }
+  }
+
+  /**
+   * Apply the inverse of a link function to convert link-scale → natural scale.
+   * Used when a deterministic node has a link on its LHS:
+   *   log(mu[i]) <- eta   =>   mu[i] = exp(eta)
+   *
+   * @param {string} linkFn
+   * @param {number} eta - Value on the link scale
+   * @returns {number} Value on the natural scale
+   */
+  _applyInverseLink(linkFn, eta) {
+    switch (linkFn) {
+      case 'log':    return Math.exp(eta);
+      case 'logit':  return eta >= 0
+        ? 1 / (1 + Math.exp(-eta))
+        : Math.exp(eta) / (1 + Math.exp(eta));
+      case 'probit': {
+        // Φ(eta): standard normal CDF
+        return 0.5 * (1 + erf(eta / Math.SQRT2));
+      }
+      case 'sqrt':   return eta * eta;
+      case 'cloglog': return 1 - Math.exp(-Math.exp(eta));
+      default:
+        throw new ModelGraphError(`_applyInverseLink: unknown link function '${linkFn}'`);
     }
   }
 
@@ -1085,8 +1111,13 @@ export class ModelGraph {
       for (const node of detNodes) {
         if (node.name in allValues) continue; // already evaluated
         try {
-          const val = evaluateExpr(node.deterministicExpr, allValues, this._dataColumns);
-          allValues[node.name] = val;
+          const linkScaleVal = evaluateExpr(node.deterministicExpr, allValues, this._dataColumns);
+          // If the deterministic node has a link function on its LHS (e.g. log(mu[i]) <- ...),
+          // the expression gives the link-scale value. The node name (mu[i], p[i], etc.)
+          // represents the natural-scale value, so we apply the inverse link here.
+          allValues[node.name] = node.linkFn
+            ? this._applyInverseLink(node.linkFn, linkScaleVal)
+            : linkScaleVal;
           resolved++;
         } catch (_) {
           // Dependencies not yet available — will retry in a later pass
