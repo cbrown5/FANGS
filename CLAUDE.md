@@ -158,6 +158,7 @@ Rscript tests/r-reference/linear-model.R
 The dashboard has:
 1. **Left panel**: Data upload area (drag-and-drop), model text editor, sampler settings (chains, samples, thinning, burn-in), Run/Stop buttons
 2. **Right panel (tabbed)**:
+   - **Data**: Table view of data to check its loaded correctly
    - **Trace**: Live-updating chain trace plots during sampling
    - **Posteriors**: Density plots for each parameter
    - **Summary**: Table with mean, SD, quantiles (2.5%, 50%, 97.5%), Rhat, ESS

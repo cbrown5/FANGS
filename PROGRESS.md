@@ -87,9 +87,9 @@ but not yet created).
 the sampler worker with data likelihood disabled (needs a flag in the worker
 protocol).
 
-### 7. UI polish / educational pop-up system
+### 7. UI polish / educational pop-up system / data viewer
 `ui/popups.js` is listed in the architecture but not yet created. Add tooltip/modal
-pop-ups for teaching use.
+pop-ups for teaching use. Add a tab that shows teh loaded data as a table, for checking
 
 ### 8. `index.html` audit
 Verify all DOM element IDs referenced in `app.js` (`model-editor`, `editor-error`,
