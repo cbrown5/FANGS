@@ -16,6 +16,8 @@ import { SummaryTable }   from './ui/summary-table.js';
 import { PPCPlot }        from './ui/ppc-plot.js';
 import { SamplerSettings} from './ui/settings.js';
 import { defaultCSV, defaultModel1, defaultModel2 } from './data/default-data.js';
+import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
+import { renderDataTable } from './ui/data-table.js';
 
 // ------------------------------------------------------------------ //
 // Bootstrap                                                            //
@@ -60,14 +62,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let loadedData = null;
 
+  const dataTableContainer = document.getElementById('data-table-container');
+
   function loadCSVText(text, filename) {
     try {
-      // Basic validation: check we have at least a header + one row
-      const rows = text.trim().split('\n');
-      if (rows.length < 2) throw new Error('CSV appears to have no data rows');
+      const rows = parseCSV(text);
+      if (rows.length === 0) throw new Error('CSV appears to have no data rows');
       loadedData = text;
-      dataStatus.textContent = `Loaded: ${filename} (${rows.length - 1} rows)`;
+      dataStatus.textContent = `Loaded: ${filename} (${rows.length} rows)`;
       dataStatus.className   = 'ok';
+      // Render data table
+      if (dataTableContainer) {
+        renderDataTable(dataTableContainer, rows);
+      }
     } catch (e) {
       dataStatus.textContent = `Error: ${e.message}`;
       dataStatus.className   = 'err';
@@ -194,18 +201,112 @@ document.addEventListener('DOMContentLoaded', () => {
     if (traceBtn)  { traceBtn.classList.add('active');  traceBtn.setAttribute('aria-selected', 'true'); }
     if (tracePane) tracePane.classList.add('active');
 
-    // TODO: replace this stub with a real Web Worker once the sampler module exists.
-    // For now, show a "not yet implemented" status.
-    setStatus('Sampler not yet implemented — UI scaffolding complete.', '');
-    settings.setEnabled(true);
-    btnRun.disabled  = false;
-    btnStop.disabled = true;
+    // Parse the CSV data
+    let dataColumns, dataN, dataJ;
+    try {
+      const parsedRows = parseCSV(loadedData);
+      if (parsedRows.length === 0) throw new Error('Dataset is empty');
+      const { columns } = prepareDataColumns(parsedRows);
+      dataN = parsedRows.length;
+      dataColumns = columns;
+      // Count unique group levels if a 'group' column is present
+      dataJ = columns.group
+        ? new Set(Array.from(columns.group)).size
+        : 0;
+    } catch (e) {
+      setStatus(`Data error: ${e.message}`, 'error');
+      settings.setEnabled(true);
+      btnRun.disabled  = false;
+      btnStop.disabled = true;
+      return;
+    }
+
+    // Create Web Worker
+    samplerWorker = new Worker(
+      new URL('./samplers/sampler-worker.js', import.meta.url),
+      { type: 'module' }
+    );
+
+    samplerWorker.onmessage = (event) => {
+      const msg = event.data;
+
+      if (msg.type === 'PROGRESS') {
+        // Only use chain 0 progress for the overall bar to avoid jumps
+        if (msg.chainIdx === 0) {
+          setProgress(msg.iter / msg.total);
+        }
+        // Feed each param value into the live trace plot
+        for (const [name, value] of Object.entries(msg.paramValues)) {
+          trace.addSample(name, msg.chainIdx, value);
+        }
+
+      } else if (msg.type === 'SAMPLES') {
+        // Accumulate all-chain samples for download and density plots
+        if (!posteriorSamples[msg.paramName]) {
+          posteriorSamples[msg.paramName] = [];
+        }
+        for (const v of msg.values) {
+          posteriorSamples[msg.paramName].push(v);
+        }
+        density.setSamples(msg.paramName, posteriorSamples[msg.paramName]);
+
+      } else if (msg.type === 'DONE') {
+        setProgress(1);
+        setStatus('Sampling complete.', 'done');
+        density.render();
+        summary.update(msg.summary);
+
+        // Basic PPC: use observed y and show without predictions for now
+        const yObs = dataColumns.y ? Array.from(dataColumns.y) : [];
+        if (yObs.length > 0) {
+          ppc.update(yObs, []);
+        }
+
+        btnDownload.disabled = false;
+        settings.setEnabled(true);
+        btnRun.disabled  = false;
+        btnStop.disabled = true;
+        samplerWorker = null;
+
+      } else if (msg.type === 'ERROR') {
+        setStatus(`Error: ${msg.message}`, 'error');
+        editor.showError(1, msg.message);
+        settings.setEnabled(true);
+        btnRun.disabled  = false;
+        btnStop.disabled = true;
+        samplerWorker = null;
+      }
+    };
+
+    samplerWorker.onerror = (err) => {
+      setStatus(`Worker error: ${err.message}`, 'error');
+      settings.setEnabled(true);
+      btnRun.disabled  = false;
+      btnStop.disabled = true;
+      samplerWorker = null;
+    };
+
+    // Start sampling
+    samplerWorker.postMessage({
+      type: 'START',
+      modelSource: modelCode,
+      dataColumns,
+      dataN,
+      dataJ,
+      settings: cfg,
+    });
   });
 
   btnStop.addEventListener('click', () => {
     if (samplerWorker) {
-      samplerWorker.terminate();
-      samplerWorker = null;
+      samplerWorker.postMessage({ type: 'STOP' });
+      // Give the worker a moment to flush then terminate
+      setTimeout(() => {
+        if (samplerWorker) {
+          samplerWorker.terminate();
+          samplerWorker = null;
+        }
+      }, 500);
     }
     setStatus('Stopped by user.', '');
     setProgress(0);
@@ -236,10 +337,85 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // -- Prior check button --
+  const priorDensity  = new DensityPlot(document.getElementById('prior-density-container') || document.createElement('div'));
+  const priorSummary  = new SummaryTable(document.getElementById('prior-summary-container') || document.createElement('div'));
+
   const btnPriorCheck = document.getElementById('btn-prior-check');
   if (btnPriorCheck) {
     btnPriorCheck.addEventListener('click', () => {
-      setStatus('Prior predictive check not yet implemented.', '');
+      if (!loadedData) {
+        setStatus('Please load data before running prior check.', 'error');
+        return;
+      }
+      const modelCode = editor.getValue().trim();
+      if (!modelCode) {
+        setStatus('Model editor is empty.', 'error');
+        return;
+      }
+
+      let dataColumns, dataN, dataJ;
+      try {
+        const parsedRows = parseCSV(loadedData);
+        const { columns } = prepareDataColumns(parsedRows);
+        dataN = parsedRows.length;
+        dataColumns = columns;
+        dataJ = columns.group ? new Set(Array.from(columns.group)).size : 0;
+      } catch (e) {
+        setStatus(`Data error: ${e.message}`, 'error');
+        return;
+      }
+
+      const cfg = settings.getSettings();
+
+      if (samplerWorker) samplerWorker.terminate();
+
+      let priorSamples = {};
+
+      samplerWorker = new Worker(
+        new URL('./samplers/sampler-worker.js', import.meta.url),
+        { type: 'module' }
+      );
+
+      setStatus('Running prior predictive check…', 'running');
+
+      samplerWorker.onmessage = (event) => {
+        const msg = event.data;
+        if (msg.type === 'SAMPLES') {
+          if (!priorSamples[msg.paramName]) priorSamples[msg.paramName] = [];
+          for (const v of msg.values) priorSamples[msg.paramName].push(v);
+          priorDensity.setSamples(msg.paramName, priorSamples[msg.paramName]);
+        } else if (msg.type === 'DONE') {
+          setStatus('Prior check complete.', 'done');
+          priorDensity.render();
+          priorSummary.update(msg.summary);
+          samplerWorker = null;
+          // Switch to prior-check tab
+          tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+          tabPanes.forEach(p => p.classList.remove('active'));
+          const pcBtn  = document.querySelector('[data-tab="prior-check"]');
+          const pcPane = document.getElementById('pane-prior-check');
+          if (pcBtn)  { pcBtn.classList.add('active');  pcBtn.setAttribute('aria-selected', 'true'); }
+          if (pcPane) pcPane.classList.add('active');
+        } else if (msg.type === 'ERROR') {
+          setStatus(`Prior check error: ${msg.message}`, 'error');
+          samplerWorker = null;
+        }
+      };
+
+      samplerWorker.onerror = (err) => {
+        setStatus(`Worker error: ${err.message}`, 'error');
+        samplerWorker = null;
+      };
+
+      samplerWorker.postMessage({
+        type: 'START',
+        modelSource: modelCode,
+        dataColumns,
+        dataN,
+        dataJ,
+        settings: { ...cfg, nSamples: Math.min(cfg.nSamples, 500) },
+        priorOnly: true,
+      });
     });
   }
 

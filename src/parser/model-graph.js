@@ -102,7 +102,7 @@ function evaluateExpr(expr, paramValues, dataColumns) {
 
     case 'IndexExpr': {
       // e.g. y[i], group[i], beta[j]
-      const base = expr.name; // variable name string
+      const base = expr.object?.name ?? expr.name; // variable name string
       const indices = expr.indices.map(idx => Math.round(evaluateExpr(idx, paramValues, dataColumns)));
       const key = indices.length === 1
         ? `${base}[${indices[0]}]`
@@ -328,7 +328,7 @@ function resolveLHS(lhsExpr, loopVars, dataColumns) {
     const indices = lhsExpr.indices.map(idx =>
       Math.round(evaluateExpr(idx, loopVars, dataColumns))
     );
-    return { baseName: lhsExpr.name, indices };
+    return { baseName: lhsExpr.object.name, indices };
   }
 
   // Link-function on LHS: log(mu[i]) <- ..., logit(p[i]) <- ...
@@ -572,6 +572,27 @@ export class ModelGraph {
   }
 
   /**
+   * Compute log prior only (sum of prior log-densities for unobserved nodes).
+   * Used for prior predictive checks.
+   *
+   * @param {object} paramValues - Map of param name → current value
+   * @returns {number}
+   */
+  logPriorOnly(paramValues) {
+    this._requireBuilt();
+    const allValues = this._mergeValues(paramValues);
+    let logP = 0;
+    for (const node of this.nodes.values()) {
+      if (node.type === 'stochastic' && !node.observed) {
+        const lp = this._logDensityNode(node, allValues);
+        if (!isFinite(lp)) return -Infinity;
+        logP += lp;
+      }
+    }
+    return logP;
+  }
+
+  /**
    * Compute full (unnormalized) log posterior.
    *
    * @param {object} paramValues - Map of param name → current value
@@ -706,7 +727,7 @@ export class ModelGraph {
    * @param {object} loopVars
    */
   _processStochastic(stmt, loopVars) {
-    const lhs = resolveLHS(stmt.target, loopVars, this._dataColumns);
+    const lhs = resolveLHS(stmt.lhs, loopVars, this._dataColumns);
     const nodeName = makeNodeName(lhs.baseName, lhs.indices);
 
     // Determine if this node's value is observed in the data
@@ -765,11 +786,11 @@ export class ModelGraph {
    * @param {object} loopVars
    */
   _processDeterministic(stmt, loopVars) {
-    const lhs = resolveLHS(stmt.target, loopVars, this._dataColumns);
+    const lhs = resolveLHS(stmt.lhs, loopVars, this._dataColumns);
     const nodeName = makeNodeName(lhs.baseName, lhs.indices);
 
     // Substitute loop variables into the RHS expression
-    const rhs = this._substituteLoopVars(stmt.value, loopVars);
+    const rhs = this._substituteLoopVars(stmt.rhs, loopVars);
 
     // If there is a link function on the LHS, we need to wrap the RHS
     // in the inverse link, or more precisely, we store the link and let

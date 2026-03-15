@@ -164,9 +164,15 @@ export function dgamma(x, shape, rate) {
 export function rgamma(shape, rate) {
   if (shape <= 0 || rate <= 0) throw new RangeError('rgamma: shape and rate must be > 0');
 
-  // Handle shape < 1 via the boosting trick: Gamma(a) = Gamma(a+1) * U^(1/a)
+  // Handle shape < 1 via the boosting trick in log-space to avoid underflow:
+  // Gamma(a) ~ Gamma(a+1) * U^(1/a), computed as exp(log(Gamma(a+1)) + log(U)/a)
   if (shape < 1) {
-    return rgamma(shape + 1, rate) * Math.pow(Math.random(), 1 / shape);
+    const u = Math.random();
+    if (u === 0) return Number.MIN_VALUE;
+    const base = rgamma(shape + 1, rate);
+    if (base <= 0) return Number.MIN_VALUE;
+    const result = Math.exp(Math.log(base) + Math.log(u) / shape);
+    return result > 0 ? result : Number.MIN_VALUE;
   }
 
   const d = shape - 1 / 3;

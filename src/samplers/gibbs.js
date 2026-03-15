@@ -47,12 +47,13 @@ export async function runGibbs(graph, settings) {
     nSamples = 1000,
     burnin   = 500,
     thin     = 1,
+    priorOnly  = false,
     onSample   = null,
     onProgress = null,
     stopSignal = null,
   } = settings;
 
-  const params = graph.getParameters();
+  const params = graph.parameters;
 
   // Allocate result containers: samples[paramName][chainIdx][sampleIdx]
   // We store as chains × samples so callers can slice per-chain easily.
@@ -89,7 +90,7 @@ export async function runGibbs(graph, settings) {
       // One full Gibbs sweep in random parameter order.
       const order = shuffled(params);
       for (const paramName of order) {
-        updateParameter(paramName, graph, paramValues);
+        updateParameter(paramName, graph, paramValues, { priorOnly });
       }
 
       // Determine whether this iteration is a saved sample.
@@ -127,7 +128,7 @@ export async function runGibbs(graph, settings) {
  * @param {import('../parser/model-graph.js').ModelGraph} graph
  * @param {Object} paramValues - Current parameter values (mutated in place).
  */
-export function updateParameter(paramName, graph, paramValues) {
+export function updateParameter(paramName, graph, paramValues, options = {}) {
   const node = graph.nodes.get(paramName);
   if (!node) return;
 
@@ -164,10 +165,13 @@ export function updateParameter(paramName, graph, paramValues) {
 
   const currentValue = paramValues[paramName];
 
-  // Build the log full-conditional: log prior + log likelihood contributions.
+  // Build the log full-conditional.
+  const logFn = options.priorOnly
+    ? (pv) => graph.logPriorOnly(pv)
+    : (pv) => graph.logPosterior(pv);
   const logFC = (value) => {
     const testValues = { ...paramValues, [paramName]: value };
-    return graph.logPosterior(testValues);
+    return logFn(testValues);
   };
 
   paramValues[paramName] = sliceSample(paramName, currentValue, logFC, {

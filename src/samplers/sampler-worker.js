@@ -60,7 +60,7 @@ function flushSamples(chainIdx, buffer) {
  * @param {number} dataJ         Number of groups (may be 0 if no random effects).
  * @param {Object} settings      { nChains, nSamples, burnin, thin }
  */
-async function startSampling(modelSource, dataColumns, dataN, dataJ, settings) {
+async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, priorOnly = false) {
     stopRequested = false;
 
     const { nChains, nSamples, burnin, thin } = settings;
@@ -73,7 +73,8 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings) {
     const ast = parser.parse();
 
     // --- Build model graph -------------------------------------------------
-    const graph = new ModelGraph(ast, { dataColumns, N: dataN, J: dataJ });
+    const graph = new ModelGraph(ast, { columns: dataColumns, N: dataN, J: dataJ });
+    graph.build();
 
     // --- Collect all samples across chains (keyed by paramName) for the
     //     final summary computation. Structure: { paramName: number[][] }
@@ -92,6 +93,7 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings) {
         nSamples,
         burnin,
         thin,
+        priorOnly,
 
         /**
          * Called once per *saved* sample (after thinning and burn-in).
@@ -183,9 +185,9 @@ self.onmessage = function onmessage(event) {
     }
 
     if (msg.type === 'START') {
-        const { modelSource, dataColumns, dataN, dataJ, settings } = msg;
+        const { modelSource, dataColumns, dataN, dataJ, settings, priorOnly } = msg;
 
-        startSampling(modelSource, dataColumns, dataN, dataJ, settings).catch(
+        startSampling(modelSource, dataColumns, dataN, dataJ, settings, priorOnly).catch(
             (err) => {
                 self.postMessage({
                     type: 'ERROR',
