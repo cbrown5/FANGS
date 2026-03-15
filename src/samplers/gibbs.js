@@ -48,9 +48,9 @@ export async function runGibbs(graph, settings) {
     burnin   = 500,
     thin     = 1,
     priorOnly  = false,
-    onSample   = null,
-    onProgress = null,
-    stopSignal = null,
+    onSample    = null,
+    onProgress  = null,
+    shouldStop  = null,
   } = settings;
 
   const params = graph.parameters;
@@ -78,12 +78,12 @@ export async function runGibbs(graph, settings) {
       if (iter % UI_YIELD_INTERVAL === 0) {
         await yieldToUI();
         if (onProgress) {
-          onProgress({ iter, total: totalIters, chainIdx: c });
+          onProgress(c, iter, totalIters, { ...paramValues });
         }
       }
 
       // Check for external stop request.
-      if (stopSignal && stopSignal.stop) {
+      if (shouldStop && shouldStop()) {
         return samples;
       }
 

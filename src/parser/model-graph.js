@@ -262,7 +262,7 @@ function _walkDeps(expr, nodes, dataColumns, loopVars, deps) {
     }
 
     case 'IndexExpr': {
-      const base = expr.name;
+      const base = expr.object?.name ?? expr.name;
       // Evaluate indices substituting loop variables
       const indices = expr.indices.map(idx => {
         try {
@@ -892,7 +892,8 @@ export class ModelGraph {
           return null;
         });
         if (indices.every(v => v !== null)) {
-          const key = makeNodeName(expr.name, indices);
+          const base = expr.object?.name ?? expr.name;
+          const key = makeNodeName(base, indices);
           return this.nodes.has(key) ? key : null;
         }
       } catch (_) { /* ignore */ }
