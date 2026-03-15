@@ -30,6 +30,17 @@ export class ModelGraphError extends Error {
   }
 }
 
+/**
+ * Returns true for both regular Arrays and TypedArrays (e.g. Float64Array).
+ * Data columns from prepareDataColumns() arrive as Float64Arrays, so all
+ * array checks must use this helper rather than Array.isArray().
+ * @param {*} v
+ * @returns {boolean}
+ */
+function isDataArray(v) {
+  return Array.isArray(v) || ArrayBuffer.isView(v);
+}
+
 // ---------------------------------------------------------------------------
 // Distribution log-density dispatch
 // ---------------------------------------------------------------------------
@@ -95,7 +106,7 @@ function evaluateExpr(expr, paramValues, dataColumns) {
         const col = dataColumns[name];
         // If it resolves to a scalar-shaped column treat its first element
         if (typeof col === 'number') return col;
-        if (Array.isArray(col) && col.length === 1) return col[0];
+        if (isDataArray(col) && col.length === 1) return col[0];
       }
       throw new ModelGraphError(`evaluateExpr: unknown identifier '${name}'`);
     }
@@ -111,7 +122,7 @@ function evaluateExpr(expr, paramValues, dataColumns) {
       // Look up in data columns (1-based indexing as in BUGS)
       if (base in dataColumns) {
         const col = dataColumns[base];
-        if (Array.isArray(col)) {
+        if (isDataArray(col)) {
           const idx = indices[0] - 1; // convert 1-based → 0-based
           if (idx >= 0 && idx < col.length) return col[idx];
         }
@@ -976,7 +987,7 @@ export class ModelGraph {
     if (!(varName in this._dataColumns)) return false;
     const col = this._dataColumns[varName];
     if (typeof col === 'number') return indices.length === 0;
-    if (Array.isArray(col)) {
+    if (isDataArray(col)) {
       if (indices.length === 0) return false; // whole array, not a scalar
       const i = indices[0] - 1; // 1-based → 0-based
       return i >= 0 && i < col.length && col[i] !== null && col[i] !== undefined && !Number.isNaN(col[i]);
@@ -993,7 +1004,7 @@ export class ModelGraph {
   _lookupData(varName, indices) {
     const col = this._dataColumns[varName];
     if (typeof col === 'number') return col;
-    if (Array.isArray(col) && indices.length > 0) {
+    if (isDataArray(col) && indices.length > 0) {
       return col[indices[0] - 1]; // 1-based → 0-based
     }
     return undefined;
