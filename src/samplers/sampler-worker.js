@@ -85,10 +85,8 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
     const allSamples = {};
 
     // --- Per-chain sample buffers (flushed every BATCH_SIZE saved samples) -
-    // We create one buffer per chain; they are set up inside the loop below.
-
-    // Total iterations that will actually be saved (for progress reporting).
-    const totalSaved = nSamples;
+    // Declared here as a closure variable so the post-runGibbs flush can access them.
+    const chainBuffers = {};
 
     // --- Run sampler -------------------------------------------------------
     await runGibbs(graph, {
@@ -114,14 +112,11 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
             }
 
             // Lazily initialise the per-chain batch buffer.
-            if (!this._buffers) {
-                this._buffers = {};
-            }
-            if (!this._buffers[chainIdx]) {
-                this._buffers[chainIdx] = makeSampleBuffer(Object.keys(paramValues));
+            if (!chainBuffers[chainIdx]) {
+                chainBuffers[chainIdx] = makeSampleBuffer(Object.keys(paramValues));
             }
 
-            const buffer = this._buffers[chainIdx];
+            const buffer = chainBuffers[chainIdx];
 
             for (const [name, value] of Object.entries(paramValues)) {
                 buffer[name].push(value);
@@ -162,10 +157,8 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
     });
 
     // Flush any remaining buffered samples for every chain.
-    if (this && this._buffers) {
-        for (const [chainIdx, buffer] of Object.entries(this._buffers)) {
-            flushSamples(Number(chainIdx), buffer);
-        }
+    for (const [chainIdx, buffer] of Object.entries(chainBuffers)) {
+        flushSamples(Number(chainIdx), buffer);
     }
 
     // If sampling was stopped early we may have fewer samples than requested;

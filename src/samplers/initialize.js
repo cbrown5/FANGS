@@ -138,7 +138,7 @@ export function drawFromPrior(node, paramValues, graph) {
     case 'dpois': {
       // Poisson — initialize at a random draw from a flatter Gamma.
       const [lambda] = args;
-      // Treat lambda as Gamma(shape=1, rate=1/lambda) and flatten by halving shape.
+      // Use Gamma(0.5, 1/lambda) — half the prior shape for overdispersion.
       const rate = 1 / Math.max(lambda, 1e-6);
       return rgamma(0.5, rate);
     }

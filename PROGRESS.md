@@ -70,6 +70,32 @@ Implemented per `handling-scalar-params.md`:
 
 ---
 
+## What Has Been Done (Recent)
+
+### Code review cleanup
+
+Identified and fixed bugs, dead code, and a fragile heuristic found during a
+full codebase audit:
+
+- **Bug fix (critical)**: `sampler-worker.js` — the post-`runGibbs` flush used
+  `this._buffers` where `this` was `globalThis`/`undefined`, not the settings
+  object. The final batch of < `BATCH_SIZE` samples was silently dropped every
+  run. Fixed by replacing with a `chainBuffers` closure variable declared before
+  the `runGibbs` call.
+- **Dead code removed**: unused `totalSaved` variable in `sampler-worker.js`;
+  four unused `LOG_DENSITY` aliases (`dnormal`, `dpoisson`, `dbernoulli`,
+  `dbinomial`) in `model-graph.js`.
+- **Logic improvement**: `distributionUsesParam` in `gibbs.js` previously
+  detected parameter dependencies by numerical perturbation (evaluate expression
+  twice, compare). Replaced with a deterministic recursive AST traversal
+  (`exprReferencesVar`), eliminating false negatives from flat expressions and
+  false positives from floating-point noise.
+- **Comment fixes**: misleading "Circular buffer" comment in `trace-plot.js`
+  (implementation uses `Array.shift`, a sliding window); ambiguous Poisson
+  initialisation comment in `initialize.js`.
+
+---
+
 ## What Needs to Be Done Next
 
 ### 1. Statistical validation against R/nimble references
