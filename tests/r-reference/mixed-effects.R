@@ -36,6 +36,56 @@ has_jsonlite <- requireNamespace("jsonlite", quietly = TRUE)
 if (has_jsonlite) library(jsonlite)
 
 # ---------------------------------------------------------------------------
+# Helper: approximate effective sample size (Geyer's monotone sequence)
+# ---------------------------------------------------------------------------
+
+effectiveSize_approx <- function(x) {
+  n <- length(x)
+  if (n < 4) return(n)
+  acf_vals <- acf(x, lag.max = min(n - 1, 500), plot = FALSE)$acf[-1]
+  pairwise  <- acf_vals[seq(1, length(acf_vals) - 1, by = 2)] +
+               acf_vals[seq(2, length(acf_vals),     by = 2)]
+  first_neg <- which(pairwise < 0)[1]
+  if (is.na(first_neg)) first_neg <- length(pairwise)
+  rho_sum <- sum(pairwise[seq_len(first_neg - 1)])
+  n / max(1, 1 + 2 * rho_sum)
+}
+
+# ---------------------------------------------------------------------------
+# Helper: manual JSON serialiser
+# ---------------------------------------------------------------------------
+
+to_json_manual <- function(x, indent = 0) {
+  pad  <- paste(rep("  ", indent),     collapse = "")
+  pad1 <- paste(rep("  ", indent + 1), collapse = "")
+
+  if (is.list(x)) {
+    if (is.null(names(x))) {
+      items <- vapply(x, to_json_manual, character(1), indent = indent + 1)
+      paste0("[\n", paste(pad1, items, sep = "", collapse = ",\n"), "\n", pad, "]")
+    } else {
+      kvs <- mapply(function(k, v) {
+        paste0(pad1, '"', k, '": ', to_json_manual(v, indent + 1))
+      }, names(x), x, SIMPLIFY = FALSE)
+      paste0("{\n", paste(unlist(kvs), collapse = ",\n"), "\n", pad, "}")
+    }
+  } else if (is.character(x)) {
+    paste0('"', gsub('"', '\\"', x), '"')
+  } else if (is.numeric(x) && length(x) == 1) {
+    if (is.nan(x) || is.infinite(x)) "null"
+    else formatC(x, format = "g", digits = 8)
+  } else if (is.logical(x) && length(x) == 1) {
+    if (x) "true" else "false"
+  } else if (is.numeric(x)) {
+    vals <- ifelse(is.nan(x) | is.infinite(x), "null",
+                   formatC(x, format = "g", digits = 8))
+    paste0("[", paste(vals, collapse = ", "), "]")
+  } else {
+    paste0('"', as.character(x), '"')
+  }
+}
+
+# ---------------------------------------------------------------------------
 # 2. Load data
 # ---------------------------------------------------------------------------
 
@@ -246,53 +296,3 @@ if (has_jsonlite) {
 
 writeLines(json_str, output_path)
 cat(sprintf("\nReference JSON written to: %s\n", normalizePath(output_path)))
-
-# ---------------------------------------------------------------------------
-# Helper: approximate effective sample size (Geyer's monotone sequence)
-# ---------------------------------------------------------------------------
-
-effectiveSize_approx <- function(x) {
-  n <- length(x)
-  if (n < 4) return(n)
-  acf_vals <- acf(x, lag.max = min(n - 1, 500), plot = FALSE)$acf[-1]
-  pairwise  <- acf_vals[seq(1, length(acf_vals) - 1, by = 2)] +
-               acf_vals[seq(2, length(acf_vals),     by = 2)]
-  first_neg <- which(pairwise < 0)[1]
-  if (is.na(first_neg)) first_neg <- length(pairwise)
-  rho_sum <- sum(pairwise[seq_len(first_neg - 1)])
-  n / max(1, 1 + 2 * rho_sum)
-}
-
-# ---------------------------------------------------------------------------
-# Helper: manual JSON serialiser
-# ---------------------------------------------------------------------------
-
-to_json_manual <- function(x, indent = 0) {
-  pad  <- paste(rep("  ", indent),     collapse = "")
-  pad1 <- paste(rep("  ", indent + 1), collapse = "")
-
-  if (is.list(x)) {
-    if (is.null(names(x))) {
-      items <- vapply(x, to_json_manual, character(1), indent = indent + 1)
-      paste0("[\n", paste(pad1, items, sep = "", collapse = ",\n"), "\n", pad, "]")
-    } else {
-      kvs <- mapply(function(k, v) {
-        paste0(pad1, '"', k, '": ', to_json_manual(v, indent + 1))
-      }, names(x), x, SIMPLIFY = FALSE)
-      paste0("{\n", paste(unlist(kvs), collapse = ",\n"), "\n", pad, "}")
-    }
-  } else if (is.character(x)) {
-    paste0('"', gsub('"', '\\"', x), '"')
-  } else if (is.numeric(x) && length(x) == 1) {
-    if (is.nan(x) || is.infinite(x)) "null"
-    else formatC(x, format = "g", digits = 8)
-  } else if (is.logical(x) && length(x) == 1) {
-    if (x) "true" else "false"
-  } else if (is.numeric(x)) {
-    vals <- ifelse(is.nan(x) | is.infinite(x), "null",
-                   formatC(x, format = "g", digits = 8))
-    paste0("[", paste(vals, collapse = ", "), "]")
-  } else {
-    paste0('"', as.character(x), '"')
-  }
-}

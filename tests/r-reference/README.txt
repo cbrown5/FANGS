@@ -29,6 +29,13 @@ Run from the project root directory (FANGS/):
     Rscript tests/r-reference/linear-model.R
     Rscript tests/r-reference/mixed-effects.R
 
+To batch run tests:
+
+    for f in tests/r-reference/*.R; do
+      echo "Running $f"
+      Rscript "$f"
+    done
+
 Each script will:
   1. Read data/example.csv
   2. Compile and run a NIMBLE MCMC (3 chains, 10000 samples, 2000 burn-in)

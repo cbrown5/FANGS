@@ -132,7 +132,8 @@ result <- list(
 # 6. Write JSON
 # ---------------------------------------------------------------------------
 
-out_path <- file.path(dirname(sys.frame(1)$ofile %||% "."), "poisson-glm-reference.json")
+script_file <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+out_path <- file.path(dirname(if (!is.null(script_file)) script_file else "."), "poisson-glm-reference.json")
 
 if (has_jsonlite) {
   write(toJSON(result, auto_unbox = TRUE, digits = 6), out_path)
