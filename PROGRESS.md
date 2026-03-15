@@ -112,13 +112,10 @@ Requires R + nimble to be installed.
   assert that FANGS posterior means are within ~0.1 SD of nimble reference values
   and that 95% CIs overlap.
 
-### ~~2. Educational pop-up system~~ ✓ Done
-`src/ui/popups.js` implemented. 17 Markdown content files in `src/content/popups/`
-cover MCMC, Gibbs sampling, chains, burn-in, thinning, trace plots, R-hat, ESS,
-posteriors, priors, credible intervals, PPC, prior check, precision (τ), and
-mixed-effects models. `?` trigger buttons are attached via `data-popup` HTML
-attributes and programmatically on summary table column headers. See README.md
-for instructions on adding new popups.
+### 2. Minor bug fixes
+- Bug in pop-up system. Clicking a '?' causes the page to freeze. Needs to be fixed. 
+- The traces in the 'Trace plots' start on the RHS of the graph and go backwards. The x-limits are wrong (go from 1 to 25, instead of showing 1000s). They should start at 1 and to left to right
+- Scales on all plots are difficult to read. Should use whole numbers for tick marks (e.g. -2, -1, 0, 1, 2 or -5, 0, 5, 10), that scale with scale of variables/parameters. Research JS plotting packages we can use. There is probably a good js plotting package we can import to handle this for us?
 
 ### 3. Posterior predictive samples (full PPC)
 The PPC tab currently shows observed `y` only (no simulated predictions).
@@ -137,6 +134,10 @@ finite and the posterior mean is in the right direction.
 - Status-bar styling for `running` / `done` / `error` states
 - Disable model selector buttons while sampling is in progress
 - Show per-chain Rhat colour coding in the summary table (red if Rhat > 1.1)
+
+### 6. Add about and instructions pages
+Add pages for About and Instructions. Access these via a hamburger menu in header bar. 
+Also add links to Github and seascapemodels.org
 
 ---
 

@@ -107,6 +107,8 @@ FANGS/
 - Use Web Workers for sampling to keep the UI responsive
 - Canvas or SVG for plots (no heavy charting library needed)
 
+
+
 ## Default Example
 
 The app should launch with:
@@ -166,3 +168,11 @@ The dashboard has:
    - **Prior Check**: Run model forward from priors only (no data likelihood)
 3. **Download button**: Export parameter samples as CSV
 4. **Pop-up system**: Educational tooltips/modals that can be enabled for teaching
+
+## Pop-up system
+`src/ui/popups.js` implemented. 17 Markdown content files in `src/content/popups/`
+cover MCMC, Gibbs sampling, chains, burn-in, thinning, trace plots, R-hat, ESS,
+posteriors, priors, credible intervals, PPC, prior check, precision (τ), and
+mixed-effects models. `?` trigger buttons are attached via `data-popup` HTML
+attributes and programmatically on summary table column headers. See README.md
+for instructions on adding new popups.
