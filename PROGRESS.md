@@ -72,6 +72,21 @@ Implemented per `handling-scalar-params.md`:
 
 ## What Has Been Done (Recent)
 
+### Test infrastructure and R reference results
+
+- Installed `vitest` via `npm install` (was listed in `package.json` but not installed)
+- All tests now run with `npx vitest run` — **219/222 passing**
+- **3 pre-existing failures** in `Pipeline: posterior means in ballpark of true DGP (100 iterations)`:
+  - After 100 iterations the Gibbs sampler returns alpha≈−3.5, beta≈−1.8, tau≈0.015
+  - OLS on the default data gives alpha≈1.79, beta≈1.48, confirming the data is correct
+  - Root cause is likely poor convergence or an initialisation issue in a very short run;
+    also, the current data includes a `treatment` effect not in the simple model, which confounds alpha
+  - These failures are blocked on item 2 below (simplify default data) — once treatment is
+    removed from the DGP, re-run and re-verify the test bounds
+- Moved R reference JSON outputs from project root into `tests/r-reference/results/`
+- Updated all four R scripts to write to `tests/r-reference/results/` (with auto-create)
+- Updated README and PROGRESS.md running instructions to reflect `npx vitest run` and new output path
+
 ### Code review cleanup
 
 Identified and fixed bugs, dead code, and a fragile heuristic found during a
@@ -99,18 +114,15 @@ full codebase audit:
 ## What Needs to Be Done Next
 
 ### 1. Statistical validation against R/nimble references
-Requires R + nimble to be installed.
 
-- Run all four R reference scripts to generate JSON fixture files:
-  ```bash
-  Rscript tests/r-reference/linear-model.R
-  Rscript tests/r-reference/mixed-effects.R
-  Rscript tests/r-reference/poisson-glm.R
-  Rscript tests/r-reference/binomial-glm.R
-  ```
-- Add fixture loading to `integration.test.js`: read the generated JSON files and
-  assert that FANGS posterior means are within ~0.1 SD of nimble reference values
-  and that 95% CIs overlap.
+R reference scripts have been run; JSON fixtures are in `tests/r-reference/results/`.
+
+Remaining:
+- Add fixture loading to `integration.test.js`: read the JSON files and assert that
+  FANGS posterior means are within ~0.1 SD of nimble reference values and that 95% CIs overlap.
+- **Blocked** on item 2 (simplify default data) — the 3 failing pipeline tests use the current
+  data with a treatment effect not present in the simple model, giving wrong DGP expectations.
+  Fix the data first, then re-verify test bounds, then add reference comparisons.
 
 ### 2. Minor bug fixes
 - Bug in pop-up system. Clicking a '?' causes the page to freeze. Needs to be fixed. 
@@ -151,12 +163,14 @@ Also add links to Github and seascapemodels.org
 # Serve locally (no build step needed)
 npx serve .
 
-# Run tests
-node tests/parser.test.js
-node tests/distributions.test.js
-node tests/integration.test.js
+# Install JS dependencies (one-time)
+npm install
+
+# Run all JS tests
+npx vitest run
 
 # R reference tests (requires R + nimble)
+# Output goes to tests/r-reference/results/
 Rscript tests/r-reference/linear-model.R
 Rscript tests/r-reference/mixed-effects.R
 Rscript tests/r-reference/poisson-glm.R

@@ -19,7 +19,7 @@
 #   Rscript linear-model.R
 #
 # Output:
-#   tests/r-reference/linear-model-reference.json
+#   tests/r-reference/results/linear-model-reference.json
 
 # ---------------------------------------------------------------------------
 # 1. Dependencies
@@ -249,10 +249,11 @@ for (p in param_names) {
 # ---------------------------------------------------------------------------
 
 # Determine output path
-output_path <- file.path(script_dir, "linear-model-reference.json")
+output_path <- file.path(script_dir, "results", "linear-model-reference.json")
 if (!dir.exists(dirname(output_path))) {
-  output_path <- "tests/r-reference/linear-model-reference.json"
+  output_path <- "tests/r-reference/results/linear-model-reference.json"
 }
+if (!dir.exists(dirname(output_path))) dir.create(dirname(output_path), recursive = TRUE)
 
 if (has_jsonlite) {
   json_str <- jsonlite::toJSON(summaries, pretty = TRUE, auto_unbox = TRUE)

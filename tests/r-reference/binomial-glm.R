@@ -18,7 +18,7 @@
 #   Rscript binomial-glm.R
 #
 # Output:
-#   tests/r-reference/binomial-glm-reference.json
+#   tests/r-reference/results/binomial-glm-reference.json
 
 # ---------------------------------------------------------------------------
 # 1. Dependencies
@@ -120,7 +120,9 @@ result <- list(
 # ---------------------------------------------------------------------------
 
 script_file <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
-out_path <- file.path(dirname(if (!is.null(script_file)) script_file else "."), "binomial-glm-reference.json")
+script_dir <- dirname(if (!is.null(script_file)) script_file else ".")
+out_path <- file.path(script_dir, "results", "binomial-glm-reference.json")
+if (!dir.exists(dirname(out_path))) dir.create(dirname(out_path), recursive = TRUE)
 
 if (has_jsonlite) {
   write(toJSON(result, auto_unbox = TRUE, digits = 6), out_path)

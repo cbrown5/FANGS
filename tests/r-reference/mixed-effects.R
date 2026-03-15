@@ -21,7 +21,7 @@
 #   Rscript mixed-effects.R
 #
 # Output:
-#   tests/r-reference/mixed-effects-reference.json
+#   tests/r-reference/results/mixed-effects-reference.json
 
 # ---------------------------------------------------------------------------
 # 1. Dependencies
@@ -283,10 +283,11 @@ for (p in group_params) {
 # 8. Write JSON
 # ---------------------------------------------------------------------------
 
-output_path <- file.path(script_dir, "mixed-effects-reference.json")
+output_path <- file.path(script_dir, "results", "mixed-effects-reference.json")
 if (!dir.exists(dirname(output_path))) {
-  output_path <- "tests/r-reference/mixed-effects-reference.json"
+  output_path <- "tests/r-reference/results/mixed-effects-reference.json"
 }
+if (!dir.exists(dirname(output_path))) dir.create(dirname(output_path), recursive = TRUE)
 
 if (has_jsonlite) {
   json_str <- jsonlite::toJSON(summaries, pretty = TRUE, auto_unbox = TRUE)

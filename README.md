@@ -18,11 +18,42 @@ Then open `http://localhost:3000` in your browser.
 
 ## Running tests
 
+### JavaScript app tests
+
+Install dependencies first (one-time):
+
 ```bash
-node tests/parser.test.js
-node tests/distributions.test.js
-node tests/integration.test.js
+npm install
 ```
+
+Then run all tests:
+
+```bash
+npx vitest run
+```
+
+Or run a specific test file:
+
+```bash
+npx vitest run tests/parser.test.js
+npx vitest run tests/distributions.test.js
+npx vitest run tests/integration.test.js
+```
+
+### R reference tests
+
+Requires R with the `nimble` package installed (`install.packages("nimble")`).
+
+Run from the project root:
+
+```bash
+Rscript tests/r-reference/linear-model.R
+Rscript tests/r-reference/mixed-effects.R
+Rscript tests/r-reference/poisson-glm.R
+Rscript tests/r-reference/binomial-glm.R
+```
+
+Reference JSON fixtures are written to `tests/r-reference/results/`.
 
 ## Adding a new educational popup
 
