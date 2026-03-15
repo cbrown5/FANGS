@@ -71,11 +71,6 @@ const LOG_DENSITY = {
   dlnorm: (x, meanlog, preclog) => dlnorm(x, meanlog, preclog),
 };
 
-// Aliases
-LOG_DENSITY.dnormal   = LOG_DENSITY.dnorm;
-LOG_DENSITY.dpoisson  = LOG_DENSITY.dpois;
-LOG_DENSITY.dbernoulli = LOG_DENSITY.dbern;
-LOG_DENSITY.dbinomial = LOG_DENSITY.dbinom;
 
 // ---------------------------------------------------------------------------
 // Expression evaluator (pure, no side-effects)

@@ -69,7 +69,7 @@ export class TracePlot {
       entry.chains.set(chainIdx, chain);
     }
 
-    // Circular buffer: drop the oldest point when at capacity
+    // Sliding window: drop the oldest point when at capacity
     if (chain.length >= MAX_POINTS) {
       chain.shift();
     }

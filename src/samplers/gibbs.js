@@ -285,7 +285,7 @@ export function conjugateBetaBinom(node, graph, paramValues) {
     if (childDist !== 'dbern' && childDist !== 'dbin' && childDist !== 'dbinom') continue;
 
     // Check that this node's probability parameter refers to our node.
-    if (!distributionUsesParam(child, node.name, 0, graph, paramValues)) continue;
+    if (!distributionUsesParam(child, node.name, 0)) continue;
 
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
@@ -332,7 +332,7 @@ export function conjugateGammaPoisson(node, graph, paramValues) {
   for (const [, child] of graph.nodes) {
     if (!child.observed) continue;
     if (child.distribution?.name !== 'dpois') continue;
-    if (!distributionUsesParam(child, node.name, 0, graph, paramValues)) continue;
+    if (!distributionUsesParam(child, node.name, 0)) continue;
 
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
@@ -367,7 +367,7 @@ function collectNormalChildren(node, graph, paramValues) {
     if (child.distribution?.name !== 'dnorm') continue;
 
     // Check that the first parameter (mean) evaluates to or references our node.
-    if (!distributionUsesParam(child, node.name, 0, graph, paramValues)) continue;
+    if (!distributionUsesParam(child, node.name, 0)) continue;
 
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
@@ -402,7 +402,7 @@ function collectNormalChildResiduals(node, graph, paramValues) {
     if (child.distribution?.name !== 'dnorm') continue;
 
     // Tau (precision) is the second argument — check it references our node.
-    if (!distributionUsesParam(child, node.name, 1, graph, paramValues)) continue;
+    if (!distributionUsesParam(child, node.name, 1)) continue;
 
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
@@ -417,29 +417,40 @@ function collectNormalChildResiduals(node, graph, paramValues) {
 }
 
 /**
+ * Recursively check whether an expression AST node references a given variable name.
+ *
+ * @param {Object} expr - AST expression node.
+ * @param {string} varName - Variable name to look for.
+ * @returns {boolean}
+ */
+function exprReferencesVar(expr, varName) {
+  if (!expr) return false;
+  switch (expr.type) {
+    case 'NumberLiteral': return false;
+    case 'Identifier':    return expr.name === varName;
+    case 'BinaryOp':      return exprReferencesVar(expr.left, varName) || exprReferencesVar(expr.right, varName);
+    case 'UnaryOp':       return exprReferencesVar(expr.operand, varName);
+    case 'FunctionCall':  return expr.args.some(a => exprReferencesVar(a, varName));
+    case 'IndexExpr':     return exprReferencesVar(expr.object, varName) || expr.indices.some(i => exprReferencesVar(i, varName));
+    default:              return false;
+  }
+}
+
+/**
  * Determine whether a given argument position of `child`'s distribution
  * expression directly references the named parameter.
  *
- * This is a heuristic: we evaluate the expression with the parameter perturbed
- * by a tiny delta and check whether the result changes. If it does, the
- * expression depends on that parameter. This allows us to detect both direct
- * references (`tau`) and simple linear references (`tau`).
+ * Uses AST traversal rather than numerical perturbation to avoid false
+ * negatives (flat expressions) and false positives (floating-point noise).
  *
  * @param {Object} child - A graph node.
  * @param {string} paramName - Parameter name to check.
  * @param {number} argIdx - Which distribution argument to probe.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues - Current values.
  * @returns {boolean}
  */
-function distributionUsesParam(child, paramName, argIdx, graph, paramValues) {
+function distributionUsesParam(child, paramName, argIdx) {
   if (!child.distribution?.paramExprs?.[argIdx]) return false;
-  const expr = child.distribution.paramExprs[argIdx];
-  const base  = graph.evaluateExpr(expr, paramValues);
-  const delta = 1e-5 * (Math.abs(paramValues[paramName] ?? 1) + 1);
-  const perturbed = { ...paramValues, [paramName]: (paramValues[paramName] ?? 1) + delta };
-  const perturb   = graph.evaluateExpr(expr, perturbed);
-  return Math.abs(perturb - base) > 1e-10;
+  return exprReferencesVar(child.distribution.paramExprs[argIdx], paramName);
 }
 
 /**
