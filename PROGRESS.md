@@ -26,6 +26,8 @@ implementations across parser, samplers, UI, and tests.
 | `ui/ppc-plot.js` | Done | Posterior predictive check plot |
 | `ui/settings.js` | Done | Sampler settings panel (chains, samples, burn-in, thin) |
 | `ui/data-table.js` | Done | Renders loaded CSV as a scrollable HTML table (max 200 rows) |
+| `ui/popups.js` | Done | Educational popup system: fetches Markdown files, parses to HTML, shows modal overlay; trigger buttons attached via `data-popup` attributes |
+| `content/popups/*.md` | Done | 17 Markdown files containing popup text; edit these to update popup content |
 | `utils/distributions.js` | Done | Log-densities and samplers for dnorm, dgamma, dbeta, dpois, dbern, dbinom, dunif, dlnorm; logit/invLogit; fixed rgamma underflow for small shape |
 | `utils/math.js` | Done | Statistical math helpers |
 | `utils/diagnostics.js` | Done | Rhat, ESS, convergence checks |
@@ -59,6 +61,13 @@ Implemented per `handling-scalar-params.md`:
 - The panel updates live (debounced 400ms) as the model text changes and when new data is loaded
 - Constants are passed to the sampler worker via `dataConstants` and merged into the `ModelGraph` data object so they are available as named scalars during evaluation
 
+### Educational popup system
+
+- `src/ui/popups.js`: scans `[data-popup]` elements on load and appends a small `?` button; clicking fetches `src/content/popups/<id>.md`, converts it with an inline Markdown parser, and shows a modal overlay
+- 17 Markdown files in `src/content/popups/` cover all key concepts (MCMC, Gibbs, chains, burn-in, thinning, trace plots, R-hat, ESS, posterior, prior, credible intervals, PPC, prior check, precision/τ, mixed-effects, posteriors tab, summary tab)
+- `?` buttons appear on: sampler setting labels (Chains, Samples, Burn-in, Thinning), the "Sampler settings" section header, and pane titles (Trace, Posteriors, Summary, PPC, Prior Check)
+- Summary table column headers (R-hat, ESS, Mean, 2.5%, 97.5%) also get popup triggers via `attachPopupTrigger()` called from `app.js`
+
 ---
 
 ## What Needs to Be Done Next
@@ -77,10 +86,13 @@ Requires R + nimble to be installed.
   assert that FANGS posterior means are within ~0.1 SD of nimble reference values
   and that 95% CIs overlap.
 
-### 2. Educational pop-up system
-`ui/popups.js` is listed in the architecture but not yet created. Add tooltip/modal
-pop-ups for teaching use — explain what each parameter means, what Rhat measures,
-how to interpret the trace plot, etc.
+### ~~2. Educational pop-up system~~ ✓ Done
+`src/ui/popups.js` implemented. 17 Markdown content files in `src/content/popups/`
+cover MCMC, Gibbs sampling, chains, burn-in, thinning, trace plots, R-hat, ESS,
+posteriors, priors, credible intervals, PPC, prior check, precision (τ), and
+mixed-effects models. `?` trigger buttons are attached via `data-popup` HTML
+attributes and programmatically on summary table column headers. See README.md
+for instructions on adding new popups.
 
 ### 3. Posterior predictive samples (full PPC)
 The PPC tab currently shows observed `y` only (no simulated predictions).
