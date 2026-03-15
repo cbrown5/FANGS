@@ -9,14 +9,14 @@ implementations across parser, samplers, UI, and tests.
 
 | File | Status | Notes |
 |------|--------|-------|
-| `app.js` | Done | Full UI orchestration: editor, data upload, tab switching, run/stop/download, sampler worker wiring, prior predictive check |
+| `app.js` | Done | Full UI orchestration: editor, data upload, tab switching, run/stop/download, sampler worker wiring, prior predictive check, model constants panel |
 | `parser/lexer.js` | Done | Tokenises BUGS/JAGS syntax |
 | `parser/parser.js` | Done | Builds AST from token stream; fixed infinite-loop on unclosed brace |
 | `parser/model-graph.js` | Done | DAG from AST; detects conjugate structure per node (`conjugateType`); fixed IndexExpr edge wiring (`expr.object.name`) |
 | `samplers/gibbs.js` | Done | Component-wise Gibbs loop; conjugate updates for normal-normal, gamma-precision, beta-binom, gamma-Poisson; falls back to slice; fixed `onProgress` call signature and `shouldStop` callback |
 | `samplers/slice.js` | Done | Slice sampler fallback for non-conjugate nodes |
 | `samplers/initialize.js` | Done | Overdispersed chain initialisation from priors |
-| `samplers/sampler-worker.js` | Done | Web Worker wrapper: receives START/STOP messages, streams SAMPLES/PROGRESS/DONE/ERROR back to the main thread; supports `priorOnly` flag |
+| `samplers/sampler-worker.js` | Done | Web Worker wrapper: receives START/STOP messages, streams SAMPLES/PROGRESS/DONE/ERROR back to the main thread; supports `priorOnly` flag; accepts `dataConstants` |
 | `data/csv-loader.js` | Done | CSV parsing and column preparation |
 | `data/default-data.js` | Done | Built-in example dataset and pre-filled model text |
 | `ui/editor.js` | Done | Model text editor with error display |
@@ -46,18 +46,22 @@ implementations across parser, samplers, UI, and tests.
 
 ---
 
-## What Needs to Be Done Next
+## What Has Been Done (Recent)
 
-### 0. Handling model scalars ✓ DONE
+### Model constants panel
 
 Implemented per `handling-scalar-params.md`:
 - `extractRequiredScalars(modelText)` in `app.js` scans for `1:NAME` patterns in for-loop bounds
-- A **Model constants** panel appears automatically between the model editor and sampler settings whenever the model references scalar variables
+- A **Model constants** panel appears automatically between the model editor and sampler settings whenever the model references scalar variables not present as CSV columns
 - **N** is always read-only, inferred from the number of data rows
 - **J** is auto-inferred as the number of unique `group` levels when a `group` column is present; otherwise editable
-- Any other scalar (K, M, …) appears as an editable numeric input
+- Any other scalar (K, M, …) appears as an editable numeric input labeled "required — enter value"
 - The panel updates live (debounced 400ms) as the model text changes and when new data is loaded
 - Constants are passed to the sampler worker via `dataConstants` and merged into the `ModelGraph` data object so they are available as named scalars during evaluation
+
+---
+
+## What Needs to Be Done Next
 
 ### 1. Statistical validation against R/nimble references
 Requires R + nimble to be installed.
