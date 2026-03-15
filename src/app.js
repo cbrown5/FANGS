@@ -18,6 +18,7 @@ import { SamplerSettings} from './ui/settings.js';
 import { defaultCSV, defaultModel1, defaultModel2 } from './data/default-data.js';
 import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
 import { renderDataTable } from './ui/data-table.js';
+import { initPopups, attachPopupTrigger } from './ui/popups.js';
 
 // ------------------------------------------------------------------ //
 // Bootstrap                                                            //
@@ -31,9 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
   );
   const trace    = new TracePlot(document.getElementById('trace-container'));
   const density  = new DensityPlot(document.getElementById('density-container'));
-  const summary  = new SummaryTable(document.getElementById('summary-container'));
+  const summary  = new SummaryTable(document.getElementById('summary-container'), attachPopupTrigger);
   const ppc      = new PPCPlot(document.getElementById('ppc-container'));
   const settings = new SamplerSettings(document.getElementById('settings-panel'));
+
+  // -- Initialise educational popups --
+  initPopups();
 
   // -- Pre-fill model 1 --
   editor.setValue(defaultModel1);

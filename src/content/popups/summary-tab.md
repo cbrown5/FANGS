@@ -1,0 +1,35 @@
+# Posterior Summary Table
+
+The **Summary** tab presents key statistics computed from the MCMC samples for each parameter.
+
+## Columns
+
+| Column | Meaning |
+|--------|---------|
+| **Mean** | Posterior mean — the average of all post-burn-in samples |
+| **SD** | Posterior standard deviation — spread of the posterior |
+| **2.5%** | Lower bound of the 95% credible interval |
+| **Median** | Posterior median (50th percentile) — robust central estimate |
+| **97.5%** | Upper bound of the 95% credible interval |
+| **R-hat** | Convergence diagnostic (should be ≤ 1.1) |
+| **ESS** | Effective sample size (should be ≥ 400) |
+
+## Using the summary for inference
+
+**Is an effect present?**
+Check whether the 95% credible interval includes zero. If the interval is entirely positive or entirely negative, the effect is credibly non-zero.
+
+**How large is the effect?**
+The posterior mean (or median) gives a point estimate. The credible interval gives the range of plausible values.
+
+**Is the model reliable?**
+Check R-hat (≤ 1.1) and ESS (≥ 400). Red or orange highlights indicate potential problems.
+
+## Colour coding
+
+- **Red cell** in R-hat column → R-hat > 1.1 (convergence warning — do not interpret results yet)
+- **Orange cell** in ESS column → ESS < 100 (too few effective samples for reliable tail estimates)
+
+## Point estimates
+
+For symmetric posteriors, the mean and median are similar. For skewed posteriors (e.g., τ, variance components), the **median** is often a more representative point estimate than the mean.
