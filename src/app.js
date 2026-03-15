@@ -46,12 +46,23 @@ document.addEventListener('DOMContentLoaded', () => {
     editor.setValue(defaultModel1);
     btn1.classList.add('active');
     btn2.classList.remove('active');
+    updateConstantsPanel();
   });
   btn2.addEventListener('click', () => {
     editor.setValue(defaultModel2);
     btn2.classList.add('active');
     btn1.classList.remove('active');
+    updateConstantsPanel();
   });
+
+  // Update constants panel whenever the model text changes (debounced)
+  {
+    let _debounce = null;
+    document.getElementById('model-editor').addEventListener('input', () => {
+      clearTimeout(_debounce);
+      _debounce = setTimeout(updateConstantsPanel, 400);
+    });
+  }
 
   // -- Data upload --
   const dropZone   = document.getElementById('drop-zone');
@@ -64,6 +75,122 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const dataTableContainer = document.getElementById('data-table-container');
 
+  // -- Model constants panel --
+  const constantsPanel = document.getElementById('model-constants-panel');
+
+  /**
+   * Scan BUGS model text for scalar identifiers used as for-loop upper bounds.
+   * Matches patterns like "1:N", "1:J", "1:K".
+   * @param {string} modelText
+   * @returns {string[]} Array of unique scalar names
+   */
+  function extractRequiredScalars(modelText) {
+    const scalars = new Set();
+    const re = /\b1\s*:\s*([A-Za-z][A-Za-z0-9._]*)\b/g;
+    let m;
+    while ((m = re.exec(modelText)) !== null) {
+      scalars.add(m[1]);
+    }
+    return [...scalars];
+  }
+
+  /**
+   * Render (or hide) the Model constants panel based on the current model text
+   * and loaded data. N is always shown as read-only; other scalars not in the
+   * CSV are shown as editable inputs.
+   */
+  function updateConstantsPanel() {
+    if (!constantsPanel) return;
+
+    const modelText = editor.getValue();
+    const scalars = extractRequiredScalars(modelText);
+
+    // Parse current data columns for inference
+    let csvColumns = {};
+    let dataN = null;
+    if (loadedData) {
+      try {
+        const parsedRows = parseCSV(loadedData);
+        const { columns } = prepareDataColumns(parsedRows);
+        csvColumns = columns;
+        dataN = parsedRows.length;
+      } catch (_) {}
+    }
+
+    // Filter to scalars that are not CSV data columns (except N which is special)
+    const panelScalars = scalars.filter(name => name === 'N' || !(name in csvColumns));
+
+    if (panelScalars.length === 0) {
+      constantsPanel.style.display = 'none';
+      return;
+    }
+
+    constantsPanel.style.display = '';
+
+    let html = '';
+    for (const name of panelScalars) {
+      if (name === 'N') {
+        const val = dataN !== null ? dataN : '';
+        const hint = dataN !== null ? `inferred from ${dataN} data rows` : 'load data to infer';
+        html += `
+          <div class="constant-item">
+            <label for="const-${name}">${name}</label>
+            <div class="constant-value-wrap">
+              <input type="number" id="const-${name}" class="constant-input"
+                     data-constant="${name}" value="${val}" readonly />
+              <span class="constant-hint">${hint}</span>
+            </div>
+          </div>`;
+      } else {
+        // Try to infer from a matching column (e.g. J from unique group values)
+        let inferredVal = null;
+        let inferHint = 'required — enter value';
+
+        // Heuristic: J is often the number of unique levels of 'group'
+        if (name === 'J' && 'group' in csvColumns) {
+          inferredVal = new Set(Array.from(csvColumns.group)).size;
+          inferHint = `inferred: ${inferredVal} groups`;
+        }
+
+        const val = inferredVal !== null ? inferredVal : '';
+        const readonlyAttr = inferredVal !== null ? 'readonly' : '';
+        html += `
+          <div class="constant-item">
+            <label for="const-${name}">${name}</label>
+            <div class="constant-value-wrap">
+              <input type="number" id="const-${name}" class="constant-input"
+                     data-constant="${name}" value="${val}" ${readonlyAttr}
+                     step="1" min="1" />
+              <span class="constant-hint">${inferHint}</span>
+            </div>
+          </div>`;
+      }
+    }
+
+    constantsPanel.innerHTML = `
+      <div class="section-label">Model constants</div>
+      <div class="constants-grid">${html}</div>`;
+  }
+
+  /**
+   * Read the current values from the Model constants panel inputs.
+   * Returns an object mapping constant name → numeric value.
+   * @returns {Object.<string, number>}
+   */
+  function getModelConstants() {
+    const constants = {};
+    if (!constantsPanel) return constants;
+    const inputs = constantsPanel.querySelectorAll('.constant-input');
+    for (const input of inputs) {
+      const name = input.dataset.constant;
+      const val = parseFloat(input.value);
+      if (name && !isNaN(val)) {
+        constants[name] = val;
+      }
+    }
+    return constants;
+  }
+
   function loadCSVText(text, filename) {
     try {
       const rows = parseCSV(text);
@@ -75,6 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dataTableContainer) {
         renderDataTable(dataTableContainer, rows);
       }
+      // Refresh constants panel with new data
+      updateConstantsPanel();
     } catch (e) {
       dataStatus.textContent = `Error: ${e.message}`;
       dataStatus.className   = 'err';
@@ -293,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dataColumns,
       dataN,
       dataJ,
+      dataConstants: getModelConstants(),
       settings: cfg,
     });
   });
@@ -413,11 +543,15 @@ document.addEventListener('DOMContentLoaded', () => {
         dataColumns,
         dataN,
         dataJ,
+        dataConstants: getModelConstants(),
         settings: { ...cfg, nSamples: Math.min(cfg.nSamples, 500) },
         priorOnly: true,
       });
     });
   }
+
+  // Initial constants panel render (must be after all declarations)
+  updateConstantsPanel();
 
   // Initial status
   setStatus('Ready. Load data and press Run to begin.');

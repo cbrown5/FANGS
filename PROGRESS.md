@@ -48,9 +48,16 @@ implementations across parser, samplers, UI, and tests.
 
 ## What Needs to Be Done Next
 
-### 0. Handling model scalars
+### 0. Handling model scalars ✓ DONE
 
-See handline-scalar-params.md
+Implemented per `handling-scalar-params.md`:
+- `extractRequiredScalars(modelText)` in `app.js` scans for `1:NAME` patterns in for-loop bounds
+- A **Model constants** panel appears automatically between the model editor and sampler settings whenever the model references scalar variables
+- **N** is always read-only, inferred from the number of data rows
+- **J** is auto-inferred as the number of unique `group` levels when a `group` column is present; otherwise editable
+- Any other scalar (K, M, …) appears as an editable numeric input
+- The panel updates live (debounced 400ms) as the model text changes and when new data is loaded
+- Constants are passed to the sampler worker via `dataConstants` and merged into the `ModelGraph` data object so they are available as named scalars during evaluation
 
 ### 1. Statistical validation against R/nimble references
 Requires R + nimble to be installed.

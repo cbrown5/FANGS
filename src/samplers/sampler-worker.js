@@ -60,7 +60,7 @@ function flushSamples(chainIdx, buffer) {
  * @param {number} dataJ         Number of groups (may be 0 if no random effects).
  * @param {Object} settings      { nChains, nSamples, burnin, thin }
  */
-async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, priorOnly = false) {
+async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, priorOnly = false, dataConstants = {}) {
     stopRequested = false;
 
     const { nChains, nSamples, burnin, thin } = settings;
@@ -73,7 +73,10 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
     const ast = parser.parse();
 
     // --- Build model graph -------------------------------------------------
-    const graph = new ModelGraph(ast, { columns: dataColumns, N: dataN, J: dataJ });
+    // Merge dataN/dataJ with any additional scalar constants from the UI panel.
+    // dataConstants takes priority so the panel values are authoritative.
+    const graphData = { columns: dataColumns, N: dataN, J: dataJ, ...dataConstants };
+    const graph = new ModelGraph(ast, graphData);
     graph.build();
 
     // --- Collect all samples across chains (keyed by paramName) for the
@@ -185,9 +188,9 @@ self.onmessage = function onmessage(event) {
     }
 
     if (msg.type === 'START') {
-        const { modelSource, dataColumns, dataN, dataJ, settings, priorOnly } = msg;
+        const { modelSource, dataColumns, dataN, dataJ, settings, priorOnly, dataConstants } = msg;
 
-        startSampling(modelSource, dataColumns, dataN, dataJ, settings, priorOnly).catch(
+        startSampling(modelSource, dataColumns, dataN, dataJ, settings, priorOnly, dataConstants ?? {}).catch(
             (err) => {
                 self.postMessage({
                     type: 'ERROR',

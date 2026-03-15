@@ -218,6 +218,63 @@
       font-family: var(--font-mono);
     }
 
+    /* -- Model constants panel -- */
+    .constants-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .constant-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .constant-item label {
+      font-size: 0.82rem;
+      font-family: var(--font-mono);
+      color: #c8e8ff;
+      width: 40px;
+      flex-shrink: 0;
+      font-weight: 600;
+    }
+
+    .constant-value-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .constant-input {
+      width: 80px;
+      background: #0e2030;
+      color: #c8e8ff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      outline: none;
+      flex-shrink: 0;
+    }
+    .constant-input:focus { border-color: var(--accent); }
+    .constant-input[readonly] {
+      opacity: 0.6;
+      cursor: default;
+      border-style: dashed;
+    }
+
+    .constant-hint {
+      font-size: 0.72rem;
+      color: #6a9ab8;
+      font-style: italic;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     /* -- Sampler settings -- */
     .settings-grid {
       display: grid;
@@ -524,6 +581,11 @@
       <textarea id="model-editor" spellcheck="false" autocorrect="off" autocapitalize="off"
         aria-label="BUGS model code"></textarea>
       <div id="editor-error" role="alert" aria-live="polite"></div>
+    </div>
+
+    <!-- Model constants -->
+    <div class="panel-section" id="model-constants-panel" style="display:none">
+      <!-- populated dynamically by app.js -->
     </div>
 
     <!-- Sampler settings -->
