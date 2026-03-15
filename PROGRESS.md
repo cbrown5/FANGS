@@ -48,6 +48,10 @@ implementations across parser, samplers, UI, and tests.
 
 ## What Needs to Be Done Next
 
+### 0. Handling model scalars
+
+See handline-scalar-params.md
+
 ### 1. Statistical validation against R/nimble references
 Requires R + nimble to be installed.
 
