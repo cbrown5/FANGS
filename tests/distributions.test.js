@@ -518,7 +518,6 @@ describe('dlnorm (Log-Normal log-density)', () => {
   it('log density of LogNormal(0,1) at x=1 equals dnorm(0,0,1) - log(1)', () => {
     // dlnorm(x, ml, pl) = dnorm(log(x), ml, pl) - log(x)
     // At x=1: log(1)=0, so dlnorm(1,0,1) = dnorm(0,0,1)
-    const { dnorm: _dn } = await import('../src/utils/distributions.js').catch(() => ({ dnorm }));
     expect(dlnorm(1, 0, 1)).toBeCloseTo(dnorm(0, 0, 1), 8);
   });
 
@@ -610,6 +609,7 @@ describe('logit and invLogit', () => {
 
   it('invLogit is numerically stable for large positive x', () => {
     expect(isFinite(invLogit(100))).toBe(true);
-    expect(invLogit(100)).toBeLessThan(1);
+    // At x=35, exp(-35)≈6e-16 so 1/(1+exp(-35)) is representably < 1 in float64
+    expect(invLogit(35)).toBeLessThan(1);
   });
 });

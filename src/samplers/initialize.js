@@ -24,7 +24,7 @@ export function initializeChains(graph, nChains) {
   const chains = [];
   for (let c = 0; c < nChains; c++) {
     const paramValues = {};
-    const params = graph.getParameters();
+    const params = graph.parameters;
 
     // Iteratively attempt to resolve parameters.  Some parameters' prior
     // arguments depend on other parameters (e.g. hierarchical models where a

@@ -20,7 +20,7 @@ import { ModelGraph } from '../src/parser/model-graph.js';
 import { runGibbs, updateParameter } from '../src/samplers/gibbs.js';
 import { initializeChains } from '../src/samplers/initialize.js';
 import { parseCSV, prepareDataColumns } from '../src/data/csv-loader.js';
-import { defaultCSV, defaultModel1 } from '../src/data/default-data.js';
+import { defaultCSV, defaultModel1, defaultModel2 } from '../src/data/default-data.js';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -64,6 +64,98 @@ function buildGraph(modelSource) {
 
 // The simple linear model from default-data.js.
 const LINEAR_MODEL = defaultModel1;
+
+// ---------------------------------------------------------------------------
+// Mixed-effects model helper (needs J for group-level random effects)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a ModelGraph for the mixed-effects model (defaultModel2).
+ * Passes J=5 (five groups in the default dataset).
+ */
+function buildMixedGraph() {
+  const ast  = parseModel(defaultModel2);
+  const rows = parseCSV(defaultCSV);
+  const { columns } = prepareDataColumns(rows);
+
+  const cols = {};
+  for (const [k, v] of Object.entries(columns)) {
+    cols[k] = Array.from(v);
+  }
+
+  const N = rows.length;
+  const J = new Set(cols.group).size; // 5
+
+  const graph = new ModelGraph(ast, { columns: cols, N, J });
+  graph.build();
+  return graph;
+}
+
+// ---------------------------------------------------------------------------
+// GLM helpers — build graphs from inline CSV data
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a ModelGraph from an inline CSV string and a BUGS model text.
+ * @param {string} csvText
+ * @param {string} modelSource
+ * @param {object} [extras] - additional scalars to pass (e.g. {J: 3})
+ */
+function buildGraphFromCSV(csvText, modelSource, extras = {}) {
+  const ast  = parseModel(modelSource);
+  const rows = parseCSV(csvText);
+  const { columns } = prepareDataColumns(rows);
+
+  const cols = {};
+  for (const [k, v] of Object.entries(columns)) {
+    cols[k] = Array.from(v);
+  }
+
+  const N = rows.length;
+  const graph = new ModelGraph(ast, { columns: cols, N, ...extras });
+  graph.build();
+  return graph;
+}
+
+// Inline Poisson dataset: N=8, y = [3,5,2,4,3,6,2,4]
+// Posterior: lambda ~ Gamma(1 + 29, 0.1 + 8) = Gamma(30, 8.1), mean ≈ 3.70
+const POISSON_CSV = `id,y
+1,3
+2,5
+3,2
+4,4
+5,3
+6,6
+7,2
+8,4
+`;
+
+const POISSON_MODEL = `model {
+  for (i in 1:N) {
+    y[i] ~ dpois(lambda)
+  }
+  lambda ~ dgamma(1, 0.1)
+}`;
+
+// Inline Bernoulli dataset: N=8, y = [1,1,0,1,0,1,1,0], 5 successes
+// Posterior: p ~ Beta(1+5, 1+3) = Beta(6,4), mean = 0.6
+const BERN_CSV = `id,y
+1,1
+2,1
+3,0
+4,1
+5,0
+6,1
+7,1
+8,0
+`;
+
+const BERN_MODEL = `model {
+  for (i in 1:N) {
+    y[i] ~ dbern(p)
+  }
+  p ~ dbeta(1, 1)
+}`;
 
 // ---------------------------------------------------------------------------
 // Suite 1: Parsing and graph construction
@@ -462,4 +554,255 @@ describe('updateParameter: single-step updates', () => {
       expect(isFinite(paramValues.tau)).toBe(true);
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// Suite 6: Mixed-effects model
+// ---------------------------------------------------------------------------
+
+describe('Mixed-effects model: graph construction', () => {
+
+  it('builds the graph without throwing', () => {
+    expect(() => buildMixedGraph()).not.toThrow();
+  });
+
+  it('identifies all expected parameters', () => {
+    const graph  = buildMixedGraph();
+    const params = graph.parameters;
+
+    // Scalar parameters
+    expect(params).toContain('alpha');
+    expect(params).toContain('beta');
+    expect(params).toContain('tau');
+    expect(params).toContain('tau.b');
+
+    // Random effects b[1]...b[5]
+    for (let j = 1; j <= 5; j++) {
+      expect(params).toContain(`b[${j}]`);
+    }
+
+    // Observed y and deterministic mu should NOT be parameters
+    for (const p of params) {
+      expect(p).not.toMatch(/^y\[/);
+      expect(p).not.toMatch(/^mu\[/);
+    }
+  });
+
+  it('has 50 observed nodes (N=50)', () => {
+    const graph = buildMixedGraph();
+    let n = 0;
+    for (const node of graph.nodes.values()) {
+      if (node.observed) n++;
+    }
+    expect(n).toBe(50);
+  });
+
+  it('logPosterior returns a finite value at reasonable starting point', () => {
+    const graph = buildMixedGraph();
+    const pv = {
+      alpha: 2, beta: 1.5, tau: 2, 'tau.b': 4,
+      'b[1]': 0, 'b[2]': 0, 'b[3]': 0, 'b[4]': 0, 'b[5]': 0,
+    };
+    const lp = graph.logPosterior(pv);
+    expect(isFinite(lp)).toBe(true);
+    expect(lp).toBeLessThan(0);
+  });
+});
+
+describe('Mixed-effects model: sampler run', () => {
+
+  it('runGibbs produces finite samples for all parameters', async () => {
+    const graph   = buildMixedGraph();
+    const samples = await runGibbs(graph, {
+      nChains:  1,
+      nSamples: 50,
+      burnin:   20,
+      thin:     1,
+    });
+
+    const params = graph.parameters;
+    for (const p of params) {
+      expect(samples).toHaveProperty(p);
+      for (const v of samples[p][0]) {
+        expect(isFinite(v)).toBe(true);
+      }
+    }
+  }, 60000);
+
+  it('tau and tau.b samples are always positive', async () => {
+    const graph   = buildMixedGraph();
+    const samples = await runGibbs(graph, {
+      nChains:  1,
+      nSamples: 50,
+      burnin:   20,
+      thin:     1,
+    });
+
+    for (const v of samples['tau'][0]) {
+      expect(v).toBeGreaterThan(0);
+    }
+    for (const v of samples['tau.b'][0]) {
+      expect(v).toBeGreaterThan(0);
+    }
+  }, 60000);
+
+  it('posterior mean of alpha is in ballpark of true value (≈2)', async () => {
+    const graph   = buildMixedGraph();
+    const samples = await runGibbs(graph, {
+      nChains:  1,
+      nSamples: 100,
+      burnin:   50,
+      thin:     1,
+    });
+
+    const all  = samples['alpha'].flat();
+    const mean = all.reduce((a, b) => a + b, 0) / all.length;
+    expect(mean).toBeGreaterThan(-1);
+    expect(mean).toBeLessThan(5);
+  }, 90000);
+});
+
+// ---------------------------------------------------------------------------
+// Suite 7: Poisson GLM (gamma-Poisson conjugate)
+// ---------------------------------------------------------------------------
+
+describe('Poisson GLM: graph construction', () => {
+
+  it('builds the Poisson graph without throwing', () => {
+    expect(() => buildGraphFromCSV(POISSON_CSV, POISSON_MODEL)).not.toThrow();
+  });
+
+  it('lambda is the only parameter', () => {
+    const graph = buildGraphFromCSV(POISSON_CSV, POISSON_MODEL);
+    expect(graph.parameters).toContain('lambda');
+    expect(graph.parameters).toHaveLength(1);
+  });
+
+  it('has 8 observed nodes', () => {
+    const graph = buildGraphFromCSV(POISSON_CSV, POISSON_MODEL);
+    let n = 0;
+    for (const node of graph.nodes.values()) {
+      if (node.observed) n++;
+    }
+    expect(n).toBe(8);
+  });
+
+  it('logPosterior is finite at lambda=3', () => {
+    const graph = buildGraphFromCSV(POISSON_CSV, POISSON_MODEL);
+    const lp = graph.logPosterior({ lambda: 3 });
+    expect(isFinite(lp)).toBe(true);
+  });
+
+  it('logPosterior is -Infinity at lambda=-1 (invalid)', () => {
+    const graph = buildGraphFromCSV(POISSON_CSV, POISSON_MODEL);
+    const lp = graph.logPosterior({ lambda: -1 });
+    expect(lp).toBe(-Infinity);
+  });
+});
+
+describe('Poisson GLM: sampler run', () => {
+
+  it('samples are all positive (lambda > 0)', async () => {
+    const graph   = buildGraphFromCSV(POISSON_CSV, POISSON_MODEL);
+    const samples = await runGibbs(graph, {
+      nChains:  1,
+      nSamples: 100,
+      burnin:   50,
+      thin:     1,
+    });
+
+    for (const v of samples['lambda'][0]) {
+      expect(v).toBeGreaterThan(0);
+    }
+  }, 30000);
+
+  it('posterior mean of lambda is close to true value (~3.70)', async () => {
+    // Posterior: Gamma(30, 8.1), mean = 30/8.1 ≈ 3.70
+    const graph   = buildGraphFromCSV(POISSON_CSV, POISSON_MODEL);
+    const samples = await runGibbs(graph, {
+      nChains:  2,
+      nSamples: 200,
+      burnin:   100,
+      thin:     1,
+    });
+
+    const all  = samples['lambda'].flat();
+    const mean = all.reduce((a, b) => a + b, 0) / all.length;
+    // Allow ±1 unit of tolerance for a short run
+    expect(mean).toBeGreaterThan(2.5);
+    expect(mean).toBeLessThan(5.0);
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------------
+// Suite 8: Bernoulli/Beta GLM (beta-binomial conjugate)
+// ---------------------------------------------------------------------------
+
+describe('Bernoulli GLM: graph construction', () => {
+
+  it('builds the Bernoulli graph without throwing', () => {
+    expect(() => buildGraphFromCSV(BERN_CSV, BERN_MODEL)).not.toThrow();
+  });
+
+  it('p is the only parameter', () => {
+    const graph = buildGraphFromCSV(BERN_CSV, BERN_MODEL);
+    expect(graph.parameters).toContain('p');
+    expect(graph.parameters).toHaveLength(1);
+  });
+
+  it('has 8 observed nodes', () => {
+    const graph = buildGraphFromCSV(BERN_CSV, BERN_MODEL);
+    let n = 0;
+    for (const node of graph.nodes.values()) {
+      if (node.observed) n++;
+    }
+    expect(n).toBe(8);
+  });
+
+  it('logPosterior is finite at p=0.5', () => {
+    const graph = buildGraphFromCSV(BERN_CSV, BERN_MODEL);
+    const lp = graph.logPosterior({ p: 0.5 });
+    expect(isFinite(lp)).toBe(true);
+  });
+
+  it('logPosterior is -Infinity at p=0 or p=1 (boundary)', () => {
+    const graph = buildGraphFromCSV(BERN_CSV, BERN_MODEL);
+    expect(graph.logPosterior({ p: 0 })).toBe(-Infinity);
+    expect(graph.logPosterior({ p: 1 })).toBe(-Infinity);
+  });
+});
+
+describe('Bernoulli GLM: sampler run', () => {
+
+  it('p samples are always in (0, 1)', async () => {
+    const graph   = buildGraphFromCSV(BERN_CSV, BERN_MODEL);
+    const samples = await runGibbs(graph, {
+      nChains:  1,
+      nSamples: 100,
+      burnin:   50,
+      thin:     1,
+    });
+
+    for (const v of samples['p'][0]) {
+      expect(v).toBeGreaterThan(0);
+      expect(v).toBeLessThan(1);
+    }
+  }, 30000);
+
+  it('posterior mean of p is close to true value (0.6)', async () => {
+    // Posterior: Beta(6, 4), mean = 0.6
+    const graph   = buildGraphFromCSV(BERN_CSV, BERN_MODEL);
+    const samples = await runGibbs(graph, {
+      nChains:  2,
+      nSamples: 200,
+      burnin:   100,
+      thin:     1,
+    });
+
+    const all  = samples['p'].flat();
+    const mean = all.reduce((a, b) => a + b, 0) / all.length;
+    // Allow ±0.2 tolerance for a short run
+    expect(mean).toBeGreaterThan(0.3);
+    expect(mean).toBeLessThan(0.9);
+  }, 30000);
 });

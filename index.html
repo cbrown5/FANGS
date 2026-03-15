@@ -421,6 +421,54 @@
     .btn-sm:hover { background: var(--blue-light); }
 
     /* ------------------------------------------------------------------ */
+    /* Data table                                                           */
+    /* ------------------------------------------------------------------ */
+    #data-table-container {
+      overflow: auto;
+      max-height: calc(100vh - 160px);
+    }
+
+    .data-preview-table {
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      font-family: var(--font-mono);
+      width: 100%;
+    }
+
+    .data-preview-table th {
+      background: var(--blue-dark);
+      color: #e8f4fd;
+      padding: 6px 12px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      white-space: nowrap;
+    }
+
+    .data-preview-table td {
+      padding: 4px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .data-preview-table tr:nth-child(even) td {
+      background: #f7f9fc;
+    }
+
+    .data-preview-table tr:hover td {
+      background: #e8f0fe;
+    }
+
+    .data-preview-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Responsive                                                           */
     /* ------------------------------------------------------------------ */
     @media (max-width: 900px) {
@@ -523,6 +571,8 @@
 
     <!-- Tab bar -->
     <nav id="tabs" role="tablist" aria-label="Output panels">
+      <button class="tab-btn" role="tab" data-tab="data"
+        aria-selected="false" aria-controls="pane-data">Data</button>
       <button class="tab-btn active" role="tab" data-tab="trace"
         aria-selected="true"  aria-controls="pane-trace">Trace</button>
       <button class="tab-btn" role="tab" data-tab="posteriors"
@@ -537,6 +587,17 @@
 
     <!-- Tab content -->
     <div id="tab-content">
+
+      <!-- Data -->
+      <div class="tab-pane" id="pane-data" role="tabpanel">
+        <div class="pane-title">Loaded Data</div>
+        <div id="data-table-container">
+          <div class="empty-state">
+            <span class="empty-icon">&#128196;</span>
+            <p>Load a CSV file to preview your data here.</p>
+          </div>
+        </div>
+      </div>
 
       <!-- Trace -->
       <div class="tab-pane active" id="pane-trace" role="tabpanel">
@@ -585,17 +646,24 @@
       <!-- Prior Check -->
       <div class="tab-pane" id="pane-prior-check" role="tabpanel">
         <div class="pane-title">Prior Predictive Check</div>
-        <div id="prior-check-container">
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:14px;">
+          Sample from the prior distribution only (ignoring data) to inspect prior sensitivity.
+        </p>
+        <div style="margin-bottom:16px;">
+          <button class="btn-sm" id="btn-prior-check"
+            style="font-size:0.85rem; padding:8px 20px; background:var(--blue-mid);">
+            &#9654; Run Prior Check
+          </button>
+        </div>
+        <div id="prior-density-container">
           <div class="empty-state">
             <span class="empty-icon">&#128270;</span>
-            <p>Run the model forward from priors only (no data likelihood) to inspect prior sensitivity.</p>
+            <p>Prior density plots will appear here after running the prior check.</p>
           </div>
-          <div style="margin-top:16px; text-align:center;">
-            <button class="btn-sm" id="btn-prior-check"
-              style="font-size:0.85rem; padding:8px 20px;">
-              Run Prior Check
-            </button>
-          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="pane-title" style="font-size:0.9rem;">Prior Summary</div>
+          <div id="prior-summary-container"></div>
         </div>
       </div>
 

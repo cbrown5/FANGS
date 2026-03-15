@@ -184,7 +184,7 @@ export class Parser {
   _parseBlock() {
     this._consume(TokenType.LBRACE);
     const statements = [];
-    while (this._peek() && this._peek().type !== TokenType.RBRACE) {
+    while (this._peek() && this._peek().type !== TokenType.RBRACE && this._peek().type !== TokenType.EOF) {
       const stmt = this._parseStatement();
       if (stmt) statements.push(stmt);
     }
