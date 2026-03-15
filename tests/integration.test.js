@@ -806,3 +806,107 @@ describe('Bernoulli GLM: sampler run', () => {
     expect(mean).toBeLessThan(0.9);
   }, 30000);
 });
+
+// ---------------------------------------------------------------------------
+// Suite 9: Float64Array data columns (regression test for the real app path)
+//
+// The web app sends Float64Arrays from prepareDataColumns() directly to the
+// ModelGraph without converting to plain arrays first.  This suite tests the
+// same code paths the worker uses, catching the Array.isArray bug that caused
+// "cannot resolve index expression 'mu[1]'" at runtime.
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a ModelGraph using raw Float64Arrays as columns (the real app path).
+ * The existing buildGraph/buildMixedGraph helpers convert to plain arrays,
+ * which hides the bug.  This helper intentionally does NOT convert.
+ */
+function buildGraphWithTypedArrays(modelSource, extras = {}) {
+  const ast  = parseModel(modelSource);
+  const rows = parseCSV(defaultCSV);
+  const { columns } = prepareDataColumns(rows);
+  // columns values are Float64Arrays — pass them straight through
+  const N = rows.length;
+  const graph = new ModelGraph(ast, { columns, N, ...extras });
+  graph.build();
+  return graph;
+}
+
+describe('Float64Array data columns (real app code path)', () => {
+
+  it('ModelGraph builds without throwing when columns are Float64Arrays', () => {
+    expect(() => buildGraphWithTypedArrays(LINEAR_MODEL)).not.toThrow();
+  });
+
+  it('y[i] nodes are correctly classified as observed', () => {
+    const graph = buildGraphWithTypedArrays(LINEAR_MODEL);
+    let observedCount = 0;
+    for (const node of graph.nodes.values()) {
+      if (node.observed) observedCount++;
+    }
+    expect(observedCount).toBe(50);
+  });
+
+  it('y[i] nodes do NOT appear as free parameters', () => {
+    const graph = buildGraphWithTypedArrays(LINEAR_MODEL);
+    for (const p of graph.parameters) {
+      expect(p).not.toMatch(/^y\[/);
+    }
+  });
+
+  it('logPosterior returns a finite number with Float64Array columns', () => {
+    const graph = buildGraphWithTypedArrays(LINEAR_MODEL);
+    const lp = graph.logPosterior({ alpha: 2, beta: 1.5, tau: 2 });
+    expect(isFinite(lp)).toBe(true);
+    expect(lp).toBeLessThan(0);
+  });
+
+  it('logPosterior result matches the plain-array variant', () => {
+    // Build both variants and check log-posterior agrees to floating-point precision.
+    const graphTyped = buildGraphWithTypedArrays(LINEAR_MODEL);
+    const graphPlain = buildGraph(LINEAR_MODEL);
+    const pv = { alpha: 2, beta: 1.5, tau: 2 };
+    expect(graphTyped.logPosterior(pv)).toBeCloseTo(graphPlain.logPosterior(pv), 6);
+  });
+
+  it('runGibbs produces finite samples with Float64Array columns', async () => {
+    const graph   = buildGraphWithTypedArrays(LINEAR_MODEL);
+    const samples = await runGibbs(graph, {
+      nChains:  1,
+      nSamples: 30,
+      burnin:   10,
+      thin:     1,
+    });
+
+    for (const p of graph.parameters) {
+      expect(samples).toHaveProperty(p);
+      for (const v of samples[p][0]) {
+        expect(isFinite(v)).toBe(true);
+      }
+    }
+  }, 30000);
+
+  it('mixed-effects model builds and runs with Float64Array columns', async () => {
+    const rows = parseCSV(defaultCSV);
+    const { columns } = prepareDataColumns(rows);
+    const J = new Set(Array.from(columns.group)).size;
+
+    const ast   = parseModel(defaultModel2);
+    const graph = new ModelGraph(ast, { columns, N: rows.length, J });
+    graph.build();
+
+    // Observed y nodes must be classified correctly
+    let observedCount = 0;
+    for (const node of graph.nodes.values()) {
+      if (node.observed) observedCount++;
+    }
+    expect(observedCount).toBe(50);
+
+    const pv = {
+      alpha: 2, beta: 1.5, tau: 2, 'tau.b': 4,
+      'b[1]': 0, 'b[2]': 0, 'b[3]': 0, 'b[4]': 0, 'b[5]': 0,
+    };
+    const lp = graph.logPosterior(pv);
+    expect(isFinite(lp)).toBe(true);
+  }, 30000);
+});
