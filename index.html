@@ -590,22 +590,22 @@
 
     <!-- Sampler settings -->
     <div class="panel-section" id="settings-panel">
-      <div class="section-label">Sampler settings</div>
+      <div class="section-label" data-popup="gibbs-sampler">Sampler settings</div>
       <div class="settings-grid">
         <div class="setting-item">
-          <label for="input-chains">Chains</label>
+          <label for="input-chains" data-popup="chains">Chains</label>
           <input type="number" id="input-chains" value="3" min="1" max="10" />
         </div>
         <div class="setting-item">
-          <label for="input-samples">Samples</label>
+          <label for="input-samples" data-popup="mcmc">Samples</label>
           <input type="number" id="input-samples" value="2000" min="100" max="50000" step="100" />
         </div>
         <div class="setting-item">
-          <label for="input-burnin">Burn-in</label>
+          <label for="input-burnin" data-popup="burn-in">Burn-in</label>
           <input type="number" id="input-burnin" value="500" min="0" max="10000" step="100" />
         </div>
         <div class="setting-item">
-          <label for="input-thin">Thinning</label>
+          <label for="input-thin" data-popup="thinning">Thinning</label>
           <input type="number" id="input-thin" value="1" min="1" max="100" />
         </div>
       </div>
@@ -663,7 +663,7 @@
 
       <!-- Trace -->
       <div class="tab-pane active" id="pane-trace" role="tabpanel">
-        <div class="pane-title">Chain Trace Plots</div>
+        <div class="pane-title" data-popup="trace-plot">Chain Trace Plots</div>
         <div id="trace-container">
           <div class="empty-state">
             <span class="empty-icon">&#128200;</span>
@@ -674,7 +674,7 @@
 
       <!-- Posteriors -->
       <div class="tab-pane" id="pane-posteriors" role="tabpanel">
-        <div class="pane-title">Posterior Densities</div>
+        <div class="pane-title" data-popup="posteriors-tab">Posterior Densities</div>
         <div id="density-container">
           <div class="empty-state">
             <span class="empty-icon">&#128202;</span>
@@ -685,7 +685,7 @@
 
       <!-- Summary -->
       <div class="tab-pane" id="pane-summary" role="tabpanel">
-        <div class="pane-title">Posterior Summary</div>
+        <div class="pane-title" data-popup="summary-tab">Posterior Summary</div>
         <div id="summary-container">
           <div class="empty-state">
             <span class="empty-icon">&#128203;</span>
@@ -696,7 +696,7 @@
 
       <!-- PPC -->
       <div class="tab-pane" id="pane-ppc" role="tabpanel">
-        <div class="pane-title">Posterior Predictive Check</div>
+        <div class="pane-title" data-popup="ppc">Posterior Predictive Check</div>
         <div id="ppc-container">
           <div class="empty-state">
             <span class="empty-icon">&#127919;</span>
@@ -707,7 +707,7 @@
 
       <!-- Prior Check -->
       <div class="tab-pane" id="pane-prior-check" role="tabpanel">
-        <div class="pane-title">Prior Predictive Check</div>
+        <div class="pane-title" data-popup="prior-check">Prior Predictive Check</div>
         <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:14px;">
           Sample from the prior distribution only (ignoring data) to inspect prior sensitivity.
         </p>

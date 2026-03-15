@@ -10,11 +10,13 @@
 export class SummaryTable {
   /**
    * @param {HTMLElement} containerEl - Element that will contain the table
+   * @param {Function}    [attachPopupTrigger] - Optional fn(el, id) from popups.js
    */
-  constructor(containerEl) {
+  constructor(containerEl, attachPopupTrigger) {
     if (!containerEl) throw new Error('SummaryTable: containerEl is required');
     this.container = containerEl;
     this._tableEl  = null;
+    this._attachPopup = attachPopupTrigger || null;
     this._injectStyles();
   }
 
@@ -52,11 +54,15 @@ export class SummaryTable {
     const thead = table.createTHead();
     const hrow  = thead.insertRow();
     const cols  = ['Parameter', 'Mean', 'SD', '2.5%', 'Median', '97.5%', 'Rhat', 'ESS'];
+    const colPopups = { 'Rhat': 'rhat', 'ESS': 'ess', 'Mean': 'posterior', '2.5%': 'credible-interval', '97.5%': 'credible-interval' };
     for (const col of cols) {
       const th = document.createElement('th');
       th.textContent = col;
       th.setAttribute('scope', 'col');
       hrow.appendChild(th);
+      if (this._attachPopup && colPopups[col]) {
+        this._attachPopup(th, colPopups[col]);
+      }
     }
 
     // --- Body ---
