@@ -116,6 +116,10 @@ Requires R + nimble to be installed.
 - Bug in pop-up system. Clicking a '?' causes the page to freeze. Needs to be fixed. 
 - The traces in the 'Trace plots' start on the RHS of the graph and go backwards. The x-limits are wrong (go from 1 to 25, instead of showing 1000s). They should start at 1 and to left to right
 - Scales on all plots are difficult to read. Should use whole numbers for tick marks (e.g. -2, -1, 0, 1, 2 or -5, 0, 5, 10), that scale with scale of variables/parameters. Research JS plotting packages we can use. There is probably a good js plotting package we can import to handle this for us?
+- Simplify the model for the default data and provide an R script to generate the default data so I can easily change the default data. Use the model (ie no 'treatment' effect):
+ *   y_i = 2 + 1.5*x_i + b_{group[i]} + eps_i
+ *   b_group ~ N(0, 0.5),  eps ~ N(0, 0.7)
+ * N=50, 5 groups, treatment coded 0/1.
 
 ### 3. Posterior predictive samples (full PPC)
 The PPC tab currently shows observed `y` only (no simulated predictions).
