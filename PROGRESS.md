@@ -38,7 +38,7 @@ implementations across parser, samplers, UI, and tests.
 |------|--------|-------|
 | `parser.test.js` | Done | 148 tests — parser and lexer unit tests |
 | `distributions.test.js` | Done | 92 tests — full unit tests for all log-density and sampler functions |
-| `integration.test.js` | Done | 231 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM; parse → graph → init → Gibbs → statistical validity; fixture comparison vs NIMBLE reference for mixed-effects |
+| `integration.test.js` | Done | ~238 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM, logit-link GLM; parse → graph → init → Gibbs → statistical validity; fixture comparison vs NIMBLE reference for mixed-effects, Poisson, and Bernoulli; logit-link slice-sampler direction test (Suites 11–13 added 2026-03-16) |
 | `r-reference/generate-default-data.R` | Done | R script to regenerate the default CSV dataset |
 | `r-reference/linear-model.R` | Done | R/nimble reference for linear model |
 | `r-reference/mixed-effects.R` | Done | R/nimble reference for mixed-effects model |
