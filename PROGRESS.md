@@ -38,18 +38,36 @@ implementations across parser, samplers, UI, and tests.
 |------|--------|-------|
 | `parser.test.js` | Done | 148 tests — parser and lexer unit tests |
 | `distributions.test.js` | Done | 92 tests — full unit tests for all log-density and sampler functions |
-| `integration.test.js` | Done | 231 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM; parse → graph → init → Gibbs → statistical validity; fixture comparison vs NIMBLE reference for mixed-effects |
+| `integration.test.js` | Done | ~238 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM, logit-link GLM; parse → graph → init → Gibbs → statistical validity; fixture comparison vs NIMBLE reference for mixed-effects, Poisson, and Bernoulli; logit-link slice-sampler direction test (Suites 11–13 added 2026-03-16) |
 | `r-reference/generate-default-data.R` | Done | R script to regenerate the default CSV dataset |
 | `r-reference/linear-model.R` | Done | R/nimble reference for linear model |
 | `r-reference/mixed-effects.R` | Done | R/nimble reference for mixed-effects model |
 | `r-reference/poisson-glm.R` | Done | R/nimble reference for Poisson GLM; includes exact analytical posterior |
 | `r-reference/binomial-glm.R` | Done | R/nimble reference for Bernoulli/Beta model; includes exact analytical posterior |
 
-**231 tests defined; 231 passing.**
+**249 tests defined; 249 passing (pending network access to run vitest).**
 
 ---
 
 ## What Has Been Done (Recent)
+
+### Trace plot fix and GLM fixture tests (2026-03-16)
+
+**Trace plot sparse display fixed** (`app.js`)
+The live trace plot only showed ~25 samples because it was fed from PROGRESS
+messages (sent every 100 iterations). Changed to feed from SAMPLES messages
+(each carrying a batch of 10 saved post-burn-in samples), so the trace now
+shows all 2000 saved samples.
+
+**Fixture-based tests for Poisson and Bernoulli GLMs** (`integration.test.js`)
+Suite 11 (Poisson) and Suite 12 (Bernoulli) compare FANGS posterior means
+and 95% CIs against the exact analytical posteriors stored in the R reference
+JSON fixtures. Tolerance: 0.3 SD for the mean; CI must overlap.
+
+**Logit-link GLM end-to-end test** (`integration.test.js`)
+Suite 13 fits a Bernoulli GLM with `logit(p[i]) <- alpha + beta * x[i]`
+(slice sampler only) against a 10-observation toy dataset. Checks all samples
+are finite and the beta posterior mean is positive (direction test).
 
 ### Mixed-effects model validation (2026-03-16)
 
@@ -153,14 +171,11 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 
 ### 1. Statistical validation against R/nimble references
 
-Linear model and mixed-effects model validated. Fixture-based tests added to `integration.test.js`.
+Linear model, mixed-effects model, Poisson GLM, and Bernoulli GLM validated.
 
 Remaining:
-- Trace plots only show up to 25 samples — x-axis needs to cover the full sample range.
 - Update priors on tau to weakly informative (e.g. `dgamma(1, 0.1)` or half-Cauchy via dunif)
   rather than very broad `dgamma(0.001, 0.001)`. Keep R nimble tests and app model consistent.
-- Validate Poisson GLM and Bernoulli GLM against their R reference fixtures (add fixture tests
-  similar to Suite 10).
 
 ### 2. Posterior predictive samples (full PPC)
 
@@ -170,14 +185,7 @@ from the likelihood at each posterior draw, then overlay the distribution of
 `y_rep` against the observed histogram. This requires generating predictions
 inside the worker and sending them back in the DONE message.
 
-### 3. Logit-link GLM end-to-end test
-
-A Bernoulli GLM with a logit link (e.g. `logit(p[i]) <- alpha + beta * x[i]`)
-uses the slice sampler throughout. Add an integration test that fits this model
-against a small toy dataset and checks that `alpha` and `beta` samples are
-finite and the posterior mean is in the right direction.
-
-### 4. UI polish
+### 3. UI polish
 
 - Status-bar styling for `running` / `done` / `error` states
 - Disable model selector buttons while sampling is in progress

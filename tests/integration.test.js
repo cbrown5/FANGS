@@ -987,3 +987,197 @@ describe('Mixed-effects model: fixture comparison vs NIMBLE reference', () => {
   it('b[4] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[4]', 0.5));
   it('b[5] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[5]', 0.5));
 });
+
+// ---------------------------------------------------------------------------
+// Suite 11: Fixture-based statistical validation — Poisson GLM
+//
+// Uses the exact conjugate posterior: lambda ~ Gamma(30, 8.1)
+// Reference values from tests/r-reference/results/poisson-glm-reference.json
+// (both NIMBLE MCMC and exact analytical posterior stored there).
+// ---------------------------------------------------------------------------
+
+describe('Poisson GLM: fixture comparison vs exact posterior', () => {
+  const REF_PATH = 'tests/r-reference/results/poisson-glm-reference.json';
+
+  let ref;
+  let samples;
+
+  beforeAll(async () => {
+    ref = JSON.parse(readFileSync(REF_PATH, 'utf8'));
+
+    const graph = buildGraphFromCSV(POISSON_CSV, POISSON_MODEL);
+    samples = await runGibbs(graph, {
+      nChains:  3,
+      nSamples: 1000,
+      burnin:   500,
+      thin:     1,
+    });
+  }, 60000);
+
+  function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+  function quantile(arr, p) {
+    const s = arr.slice().sort((a, b) => a - b);
+    const i = p * (s.length - 1);
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return s[lo] + (s[hi] - s[lo]) * (i - lo);
+  }
+
+  function checkParam(paramName, toleranceSDs = 0.3) {
+    const all  = samples[paramName].flat();
+    const fm   = mean(all);
+    // Use the exact posterior values for comparison
+    const exact = ref.exact[paramName];
+    const rm   = exact.mean;
+    const rsd  = exact.sd;
+    const diff = Math.abs(fm - rm) / rsd;
+
+    expect(diff, `${paramName}: FANGS mean ${fm.toFixed(4)} vs exact ${rm.toFixed(4)}, diff=${diff.toFixed(3)} SD`)
+      .toBeLessThan(toleranceSDs);
+
+    const fq2_5  = quantile(all, 0.025);
+    const fq97_5 = quantile(all, 0.975);
+    const rq2_5  = exact.q2_5;
+    const rq97_5 = exact.q97_5;
+    const overlaps = fq2_5 < rq97_5 && fq97_5 > rq2_5;
+    expect(overlaps, `${paramName}: 95% CI [${fq2_5.toFixed(3)}, ${fq97_5.toFixed(3)}] vs exact [${rq2_5.toFixed(3)}, ${rq97_5.toFixed(3)}]`)
+      .toBe(true);
+  }
+
+  it('lambda posterior mean matches exact Gamma(30,8.1) within 0.3 SD', () => checkParam('lambda'));
+});
+
+// ---------------------------------------------------------------------------
+// Suite 12: Fixture-based statistical validation — Bernoulli GLM
+//
+// Uses the exact conjugate posterior: p ~ Beta(6, 4)
+// Reference values from tests/r-reference/results/binomial-glm-reference.json
+// ---------------------------------------------------------------------------
+
+describe('Bernoulli GLM: fixture comparison vs exact posterior', () => {
+  const REF_PATH = 'tests/r-reference/results/binomial-glm-reference.json';
+
+  let ref;
+  let samples;
+
+  beforeAll(async () => {
+    ref = JSON.parse(readFileSync(REF_PATH, 'utf8'));
+
+    const graph = buildGraphFromCSV(BERN_CSV, BERN_MODEL);
+    samples = await runGibbs(graph, {
+      nChains:  3,
+      nSamples: 1000,
+      burnin:   500,
+      thin:     1,
+    });
+  }, 60000);
+
+  function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+  function quantile(arr, p) {
+    const s = arr.slice().sort((a, b) => a - b);
+    const i = p * (s.length - 1);
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return s[lo] + (s[hi] - s[lo]) * (i - lo);
+  }
+
+  function checkParam(paramName, toleranceSDs = 0.3) {
+    const all  = samples[paramName].flat();
+    const fm   = mean(all);
+    const exact = ref.exact[paramName];
+    const rm   = exact.mean;
+    const rsd  = exact.sd;
+    const diff = Math.abs(fm - rm) / rsd;
+
+    expect(diff, `${paramName}: FANGS mean ${fm.toFixed(4)} vs exact ${rm.toFixed(4)}, diff=${diff.toFixed(3)} SD`)
+      .toBeLessThan(toleranceSDs);
+
+    const fq2_5  = quantile(all, 0.025);
+    const fq97_5 = quantile(all, 0.975);
+    const rq2_5  = exact.q2_5;
+    const rq97_5 = exact.q97_5;
+    const overlaps = fq2_5 < rq97_5 && fq97_5 > rq2_5;
+    expect(overlaps, `${paramName}: 95% CI [${fq2_5.toFixed(3)}, ${fq97_5.toFixed(3)}] vs exact [${rq2_5.toFixed(3)}, ${rq97_5.toFixed(3)}]`)
+      .toBe(true);
+  }
+
+  it('p posterior mean matches exact Beta(6,4) within 0.3 SD', () => checkParam('p'));
+});
+
+// ---------------------------------------------------------------------------
+// Suite 13: Logit-link Bernoulli GLM (slice sampler only)
+//
+// Fits:  logit(p[i]) <- alpha + beta * x[i]
+// with a small toy dataset where beta > 0 (higher x → higher P(y=1)).
+// The slice sampler handles this non-conjugate model.  We only check:
+//   - all samples are finite
+//   - posterior means are in the correct direction (beta > 0)
+// ---------------------------------------------------------------------------
+
+// 10 observations: x in {-2,-1,0,1,2} × 2, y generated with alpha=0, beta=1
+// P(y=1|x) = invlogit(x): x=-2→0.12, x=-1→0.27, x=0→0.50, x=1→0.73, x=2→0.88
+const LOGIT_CSV = `id,x,y
+1,-2,0
+2,-1,0
+3,0,1
+4,1,1
+5,2,1
+6,-2,0
+7,-1,1
+8,0,0
+9,1,1
+10,2,1
+`;
+
+const LOGIT_MODEL = `model {
+  for (i in 1:N) {
+    y[i] ~ dbern(p[i])
+    logit(p[i]) <- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 0.04)
+  beta  ~ dnorm(0, 0.04)
+}`;
+
+describe('Logit-link Bernoulli GLM: slice sampler end-to-end', () => {
+
+  it('builds the logit-link graph without throwing', () => {
+    expect(() => buildGraphFromCSV(LOGIT_CSV, LOGIT_MODEL)).not.toThrow();
+  });
+
+  it('has alpha and beta as parameters', () => {
+    const graph = buildGraphFromCSV(LOGIT_CSV, LOGIT_MODEL);
+    expect(graph.parameters).toContain('alpha');
+    expect(graph.parameters).toContain('beta');
+  });
+
+  it('logPosterior is finite at alpha=0, beta=1', () => {
+    const graph = buildGraphFromCSV(LOGIT_CSV, LOGIT_MODEL);
+    const lp = graph.logPosterior({ alpha: 0, beta: 1 });
+    expect(isFinite(lp)).toBe(true);
+  });
+
+  it('all samples are finite', async () => {
+    const graph   = buildGraphFromCSV(LOGIT_CSV, LOGIT_MODEL);
+    const samples = await runGibbs(graph, {
+      nChains:  2,
+      nSamples: 200,
+      burnin:   100,
+      thin:     1,
+    });
+
+    for (const v of samples['alpha'].flat()) expect(isFinite(v)).toBe(true);
+    for (const v of samples['beta'].flat())  expect(isFinite(v)).toBe(true);
+  }, 60000);
+
+  it('posterior mean of beta is positive (data show higher x → higher P(y=1))', async () => {
+    const graph   = buildGraphFromCSV(LOGIT_CSV, LOGIT_MODEL);
+    const samples = await runGibbs(graph, {
+      nChains:  3,
+      nSamples: 500,
+      burnin:   300,
+      thin:     1,
+    });
+
+    const all  = samples['beta'].flat();
+    const mean = all.reduce((a, b) => a + b, 0) / all.length;
+    expect(mean, `beta posterior mean should be positive, got ${mean.toFixed(3)}`).toBeGreaterThan(0);
+  }, 120000);
+});
