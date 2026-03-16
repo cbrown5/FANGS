@@ -368,18 +368,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (msg.chainIdx === 0) {
           setProgress(msg.iter / msg.total);
         }
-        // Feed each param value into the live trace plot
-        for (const [name, value] of Object.entries(msg.paramValues)) {
-          trace.addSample(name, msg.chainIdx, value);
-        }
 
       } else if (msg.type === 'SAMPLES') {
-        // Accumulate all-chain samples for download and density plots
+        // Accumulate all-chain samples for download and density plots,
+        // and feed every saved sample into the live trace plot.
         if (!posteriorSamples[msg.paramName]) {
           posteriorSamples[msg.paramName] = [];
         }
         for (const v of msg.values) {
           posteriorSamples[msg.paramName].push(v);
+          trace.addSample(msg.paramName, msg.chainIdx, v);
         }
         density.setSamples(msg.paramName, posteriorSamples[msg.paramName]);
 
