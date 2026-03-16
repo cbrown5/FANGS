@@ -442,12 +442,23 @@ function detectConjugateType(node, nodeMap) {
   }
 
   if (isNormalPrior) {
-    if (descDists.has('dnorm')) return 'normal-normal';
+    if (descDists.has('dnorm')) {
+      // Only flag as normal-normal if this node appears *directly* as the mean
+      // (first argument) of at least one dnorm descendant.  Nodes that enter via
+      // a deterministic intermediary (e.g. alpha → mu[i] → y[i]) do not have a
+      // simple conjugate form and must be handled by slice sampling.
+      const appearsAsMean = [...descStochastic].some(c => {
+        if (c.distribution?.name !== 'dnorm') return false;
+        const paramNodes = c.distribution?.paramNodes ?? [];
+        return paramNodes.length >= 1 && paramNodes[0] === node.name;
+      });
+      if (appearsAsMean) return 'normal-normal';
+    }
     return null;
   }
 
   if (isBetaPrior) {
-    if (descDists.has('dbern') || descDists.has('dbinom')) return 'beta-binomial';
+    if (descDists.has('dbern') || descDists.has('dbinom')) return 'beta-binom';
     return null;
   }
 

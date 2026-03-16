@@ -647,11 +647,13 @@ describe('Mixed-effects model: sampler run', () => {
   }, 60000);
 
   it('posterior mean of alpha is in ballpark of true value (≈2)', async () => {
+    // Mixed-effects model has correlated alpha/b[j] terms — needs more burn-in
+    // than the simple linear model to achieve reliable convergence.
     const graph   = buildMixedGraph();
     const samples = await runGibbs(graph, {
-      nChains:  1,
-      nSamples: 100,
-      burnin:   50,
+      nChains:  3,
+      nSamples: 500,
+      burnin:   500,
       thin:     1,
     });
 

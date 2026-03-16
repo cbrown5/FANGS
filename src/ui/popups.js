@@ -51,6 +51,7 @@ export function attachPopupTrigger(el, popupId) {
   el.dataset.popupAttached = popupId;
 
   const btn = document.createElement('button');
+  btn.type = 'button';
   btn.className = 'fangs-popup-trigger';
   btn.setAttribute('aria-label', 'Learn more');
   btn.setAttribute('title', 'Learn more');
@@ -77,12 +78,18 @@ async function _showPopup(popupId) {
   let markdown = _cache.get(popupId);
   if (!markdown) {
     try {
-      const res = await fetch(`${POPUP_DIR}${popupId}.md`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(`${POPUP_DIR}${popupId}.md`, { signal: controller.signal });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       markdown = await res.text();
       _cache.set(popupId, markdown);
     } catch (err) {
-      markdown = `# Error\n\nCould not load popup content for **${popupId}**.\n\n\`${err.message}\``;
+      const msg = err.name === 'AbortError'
+        ? 'Request timed out. Run the app via a local server (`npx serve .`) rather than opening the file directly.'
+        : err.message;
+      markdown = `# Error\n\nCould not load popup content for **${popupId}**.\n\n\`${msg}\``;
     }
   }
 

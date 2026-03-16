@@ -213,16 +213,17 @@ export class DensityPlot {
     ctx.lineTo(MARGIN.left, MARGIN.top + plotH);
     ctx.stroke();
 
-    // --- X-axis ticks / labels ---
+    // --- X-axis ticks / labels (nice round numbers) ---
     ctx.fillStyle    = '#555';
     ctx.font         = '10px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    const nXTicks = 5;
-    for (let t = 0; t <= nXTicks; t++) {
-      const v  = xMin + (t / nXTicks) * (xMax - xMin);
-      const px = xScale(v);
-      ctx.fillText(_fmt(v), px, MARGIN.top + plotH + 4);
+    const { ticks: xTicks, step: xStep } = _niceTicks(xMin, xMax, 5);
+    for (const tv of xTicks) {
+      const px = xScale(tv);
+      if (px < MARGIN.left || px > MARGIN.left + plotW) continue;
+      ctx.fillStyle = '#555';
+      ctx.fillText(_fmt(tv, xStep), px, MARGIN.top + plotH + 4);
       ctx.strokeStyle = '#ddd';
       ctx.lineWidth   = 0.5;
       ctx.beginPath();
@@ -238,7 +239,7 @@ export class DensityPlot {
     ctx.textBaseline = 'top';
     ctx.fillText(
       `mean=${_fmt(mean)}  95% CI [${_fmt(q025)}, ${_fmt(q975)}]`,
-      MARGIN.left + plotW,
+      MARGIN.left + plotW - 2,
       MARGIN.top + 2
     );
   }
@@ -303,11 +304,41 @@ function _quantile(sorted, p) {
 }
 
 /**
- * Compact number formatter for axis labels.
+ * Generate nice round tick values for an axis range.
+ * @param {number} lo - axis minimum
+ * @param {number} hi - axis maximum
+ * @param {number} n  - approximate number of ticks desired
+ * @returns {{ ticks: number[], step: number }}
  */
-function _fmt(v) {
-  if (Math.abs(v) >= 1000 || (Math.abs(v) < 0.001 && v !== 0)) {
+function _niceTicks(lo, hi, n) {
+  const range = hi - lo || 1;
+  const roughStep = range / n;
+  const mag = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const norm = roughStep / mag;
+  const step = norm < 1.5 ? mag : norm < 3.5 ? 2 * mag : norm < 7.5 ? 5 * mag : 10 * mag;
+  const start = Math.ceil(lo / step) * step;
+  const ticks = [];
+  for (let v = start; v <= hi + step * 0.001; v += step) {
+    ticks.push(parseFloat(v.toPrecision(10)));
+  }
+  return { ticks, step };
+}
+
+/**
+ * Format a number as a nice axis label (whole numbers preferred).
+ * @param {number} v
+ * @param {number} [step]
+ * @returns {string}
+ */
+function _fmt(v, step) {
+  if (!isFinite(v)) return '';
+  if (Math.abs(v) >= 10000 || (Math.abs(v) < 0.01 && v !== 0)) {
     return v.toExponential(1);
   }
+  if (step !== undefined && step > 0) {
+    const decimals = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
+    return v.toFixed(decimals);
+  }
+  if (Math.abs(v - Math.round(v)) < 1e-9) return String(Math.round(v));
   return parseFloat(v.toPrecision(3)).toString();
 }

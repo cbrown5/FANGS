@@ -25,7 +25,7 @@ export class TracePlot {
     if (!containerEl) throw new Error('TracePlot: containerEl is required');
     this.container = containerEl;
 
-    /** Map<paramName, { canvas, ctx, chains: Map<chainIdx, number[]> }> */
+    /** Map<paramName, { canvas, ctx, chains: Map<chainIdx, number[]>, totalSamples: Map<chainIdx, number> }> */
     this._params = new Map();
     this._nChains = 0;
     this._dirty = new Set(); // params that need redrawing
@@ -68,6 +68,7 @@ export class TracePlot {
       chain = [];
       entry.chains.set(chainIdx, chain);
     }
+    entry.totalSamples.set(chainIdx, (entry.totalSamples.get(chainIdx) || 0) + 1);
 
     // Sliding window: drop the oldest point when at capacity
     if (chain.length >= MAX_POINTS) {
@@ -175,8 +176,9 @@ export class TracePlot {
     const ctx = canvas.getContext('2d');
 
     const chains = new Map();
+    const totalSamples = new Map();
 
-    return { wrapper, canvas, ctx, chains };
+    return { wrapper, canvas, ctx, chains, totalSamples };
   }
 
   /**
@@ -209,14 +211,16 @@ export class TracePlot {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    // --- Collect all values for Y-axis range ---
-    let yMin = Infinity, yMax = -Infinity, maxLen = 0;
-    for (const pts of chains.values()) {
+    // --- Collect all values for Y-axis range and total iteration count ---
+    let yMin = Infinity, yMax = -Infinity, maxLen = 0, maxTotal = 0;
+    for (const [ci, pts] of chains) {
       for (const v of pts) {
         if (v < yMin) yMin = v;
         if (v > yMax) yMax = v;
       }
       if (pts.length > maxLen) maxLen = pts.length;
+      const tot = entry.totalSamples.get(ci) || pts.length;
+      if (tot > maxTotal) maxTotal = tot;
     }
 
     if (maxLen === 0) {
@@ -234,15 +238,18 @@ export class TracePlot {
     const yLo    = yMin - yPad;
     const yHi    = yMax + yPad;
 
+    // Compute nice tick step
+    const { ticks: yTicks, step: yStep } = _niceTicks(yLo, yHi, 4);
+
     const xScale = (i) => MARGIN.left + (i / (MAX_POINTS - 1)) * plotW;
     const yScale = (v) => MARGIN.top + plotH - ((v - yLo) / (yHi - yLo)) * plotH;
 
     // --- Grid lines ---
     ctx.strokeStyle = '#e8edf2';
     ctx.lineWidth   = 0.5;
-    const nYTicks = 4;
-    for (let t = 0; t <= nYTicks; t++) {
-      const y = MARGIN.top + (t / nYTicks) * plotH;
+    for (const tv of yTicks) {
+      const y = yScale(tv);
+      if (y < MARGIN.top || y > MARGIN.top + plotH) continue;
       ctx.beginPath();
       ctx.moveTo(MARGIN.left, y);
       ctx.lineTo(MARGIN.left + plotW, y);
@@ -254,23 +261,25 @@ export class TracePlot {
     ctx.font       = '10px sans-serif';
     ctx.textAlign  = 'right';
     ctx.textBaseline = 'middle';
-    for (let t = 0; t <= nYTicks; t++) {
-      const v = yLo + ((nYTicks - t) / nYTicks) * (yHi - yLo);
-      const y = MARGIN.top + (t / nYTicks) * plotH;
-      ctx.fillText(_fmt(v), MARGIN.left - 4, y);
+    for (const tv of yTicks) {
+      const y = yScale(tv);
+      if (y < MARGIN.top || y > MARGIN.top + plotH) continue;
+      ctx.fillText(_fmt(tv, yStep), MARGIN.left - 4, y);
     }
 
-    // --- X axis labels (iteration numbers) ---
+    // --- X axis labels (actual iteration numbers) ---
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle    = '#666';
+    // The visible window spans from (maxTotal - maxLen + 1) to maxTotal
+    const iterEnd   = maxTotal;
+    const iterStart = Math.max(1, maxTotal - maxLen + 1);
     const nXTicks = 4;
     for (let t = 0; t <= nXTicks; t++) {
-      const fracI = t / nXTicks; // fraction of MAX_POINTS window
-      const x     = MARGIN.left + fracI * plotW;
-      // Approximate iteration shown (based on longest chain)
-      const iterLabel = Math.round(fracI * (maxLen - 1)) + 1;
-      ctx.fillText(iterLabel, x, MARGIN.top + plotH + 4);
+      const frac  = t / nXTicks;
+      const x     = MARGIN.left + frac * plotW;
+      const label = Math.round(iterStart + frac * (iterEnd - iterStart));
+      ctx.fillText(label, x, MARGIN.top + plotH + 4);
     }
 
     // --- Axis lines ---
@@ -291,10 +300,11 @@ export class TracePlot {
       ctx.globalAlpha = 0.85;
       ctx.beginPath();
 
-      // Map each point index onto the X axis relative to the buffer
-      const offset = MAX_POINTS - pts.length; // left shift when buffer not yet full
+      // Map each point left-to-right across the plot area.
+      // When the buffer isn't full, scale within the current number of points.
+      const n = pts.length;
       pts.forEach((v, i) => {
-        const xi = xScale(offset + i);
+        const xi = MARGIN.left + (n < 2 ? 0 : (i / (n - 1))) * plotW;
         const yi = yScale(v);
         if (i === 0) ctx.moveTo(xi, yi);
         else         ctx.lineTo(xi, yi);
@@ -310,13 +320,43 @@ export class TracePlot {
 // ------------------------------------------------------------------ //
 
 /**
- * Format a number compactly for axis labels.
+ * Generate nice round tick values for an axis range.
+ * @param {number} lo  - axis minimum
+ * @param {number} hi  - axis maximum
+ * @param {number} n   - approximate number of ticks desired
+ * @returns {{ ticks: number[], step: number }}
+ */
+function _niceTicks(lo, hi, n) {
+  const range = hi - lo || 1;
+  const roughStep = range / n;
+  const mag = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const norm = roughStep / mag;
+  const step = norm < 1.5 ? mag : norm < 3.5 ? 2 * mag : norm < 7.5 ? 5 * mag : 10 * mag;
+  const start = Math.ceil(lo / step) * step;
+  const ticks = [];
+  for (let v = start; v <= hi + step * 0.001; v += step) {
+    ticks.push(parseFloat(v.toPrecision(10))); // avoid float drift
+  }
+  return { ticks, step };
+}
+
+/**
+ * Format a number as a nice axis label (whole numbers preferred).
  * @param {number} v
+ * @param {number} [step] - the tick step size, used to choose decimal places
  * @returns {string}
  */
-function _fmt(v) {
-  if (Math.abs(v) >= 1000 || (Math.abs(v) < 0.001 && v !== 0)) {
+function _fmt(v, step) {
+  if (!isFinite(v)) return '';
+  if (Math.abs(v) >= 10000 || (Math.abs(v) < 0.01 && v !== 0)) {
     return v.toExponential(1);
   }
-  return v.toPrecision(3).replace(/\.?0+$/, '');
+  // Determine decimal places from step size
+  if (step !== undefined && step > 0) {
+    const decimals = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
+    return v.toFixed(decimals);
+  }
+  // Fallback: whole number if close to integer
+  if (Math.abs(v - Math.round(v)) < 1e-9) return String(Math.round(v));
+  return parseFloat(v.toPrecision(3)).toString();
 }

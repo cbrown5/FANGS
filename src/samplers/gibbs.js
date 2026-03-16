@@ -143,7 +143,7 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
       paramValues[paramName] = conjugateNormalNormal(node, graph, paramValues);
       return;
 
-    case 'gamma-precision':
+    case 'gamma-normal':
       paramValues[paramName] = conjugateGammaOnPrecision(node, graph, paramValues);
       return;
 

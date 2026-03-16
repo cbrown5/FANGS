@@ -100,10 +100,18 @@ export function drawFromPrior(node, paramValues, graph) {
     }
 
     case 'dgamma': {
-      // dgamma(shape, rate) — overdisperse by halving shape (flatter).
+      // dgamma(shape, rate) — overdisperse by drawing from Gamma(1, 1) when
+      // the prior is very diffuse (shape < 0.1, as in dgamma(0.001, 0.001)).
+      // Very small shape causes catastrophic underflow in the boosting trick
+      // (u^(1/shape) → 0 for any u < 1), and very small rate gives enormous
+      // starting values (mean = shape/rate → ∞) that trap the sampler.
+      // A Gamma(1, 1) start (mean=1, SD=1) is overdispersed but recoverable.
       const [shape, rate] = args;
-      const shapeOD = Math.max(shape / 2, 1e-3);
-      const rateOD  = Math.max(rate,  1e-6);
+      if (shape < 0.1 || rate < 0.01) {
+        return rgamma(1, 1);
+      }
+      const shapeOD = Math.max(shape / 2, 0.1);
+      const rateOD  = Math.max(rate, 1e-6);
       return rgamma(shapeOD, rateOD);
     }
 
