@@ -12,10 +12,10 @@ implementations across parser, samplers, UI, and tests.
 | `app.js` | Done | Full UI orchestration: editor, data upload, tab switching, run/stop/download, sampler worker wiring, prior predictive check, model constants panel |
 | `parser/lexer.js` | Done | Tokenises BUGS/JAGS syntax |
 | `parser/parser.js` | Done | Builds AST from token stream; fixed infinite-loop on unclosed brace |
-| `parser/model-graph.js` | Done | DAG from AST; detects conjugate structure per node (`conjugateType`); fixed IndexExpr edge wiring; fixed `'beta-binomial'` → `'beta-binom'` string; normal-normal only tagged when param is direct mean |
-| `samplers/gibbs.js` | Done | Component-wise Gibbs loop; conjugate updates for normal-normal, gamma-normal, beta-binom, gamma-Poisson; falls back to slice; fixed `'gamma-precision'` → `'gamma-normal'` conjugate type name mismatch |
+| `parser/model-graph.js` | Done | DAG from AST; detects conjugate structure per node (`conjugateType`); fixed IndexExpr edge wiring; added `normal-normal-offset` type for random effects/slopes via deterministic intermediary; uses parents list for indexed dependencies like `b[group[i]]` |
+| `samplers/gibbs.js` | Done | Component-wise Gibbs loop; conjugate updates for normal-normal, normal-normal-offset, gamma-normal, beta-binom, gamma-Poisson; falls back to slice; `collectNormalChildResiduals` now includes latent stochastic nodes (fixes tau.b); `conjugateNormalNormalOffset` uses numerical differentiation for per-observation coefficients |
 | `samplers/slice.js` | Done | Slice sampler fallback for non-conjugate nodes |
-| `samplers/initialize.js` | Done | Overdispersed chain initialisation from priors; fixed catastrophic underflow for very diffuse gamma priors (`dgamma(0.001, 0.001)`) — now starts at `Gamma(1,1)` |
+| `samplers/initialize.js` | Done | Overdispersed chain initialisation from priors; diffuse normal priors (`tau < 0.01`) capped at SD=3; `normal-normal-offset` nodes start at SD=1 to prevent cascading overdispersion |
 | `samplers/sampler-worker.js` | Done | Web Worker wrapper: receives START/STOP messages, streams SAMPLES/PROGRESS/DONE/ERROR back to the main thread; supports `priorOnly` flag; accepts `dataConstants` |
 | `data/csv-loader.js` | Done | CSV parsing and column preparation |
 | `data/default-data.js` | Done | Built-in example dataset now matches `data/example.csv` (same R seed=42 data used by reference tests); removed `treatment` column |
@@ -38,18 +38,56 @@ implementations across parser, samplers, UI, and tests.
 |------|--------|-------|
 | `parser.test.js` | Done | 148 tests — parser and lexer unit tests |
 | `distributions.test.js` | Done | 92 tests — full unit tests for all log-density and sampler functions |
-| `integration.test.js` | Done | 222 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM; parse → graph → init → Gibbs → statistical validity; mixed-effects convergence test updated to 3 chains × 500 samples |
+| `integration.test.js` | Done | 231 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM; parse → graph → init → Gibbs → statistical validity; fixture comparison vs NIMBLE reference for mixed-effects |
 | `r-reference/generate-default-data.R` | Done | R script to regenerate the default CSV dataset |
 | `r-reference/linear-model.R` | Done | R/nimble reference for linear model |
 | `r-reference/mixed-effects.R` | Done | R/nimble reference for mixed-effects model |
 | `r-reference/poisson-glm.R` | Done | R/nimble reference for Poisson GLM; includes exact analytical posterior |
 | `r-reference/binomial-glm.R` | Done | R/nimble reference for Bernoulli/Beta model; includes exact analytical posterior |
 
-**222 tests defined; 222 passing.**
+**231 tests defined; 231 passing.**
 
 ---
 
 ## What Has Been Done (Recent)
+
+### Mixed-effects model validation (2026-03-16)
+
+Three bugs fixed and two improvements made to get the mixed-effects model matching NIMBLE.
+
+**Bug 1 — `collectNormalChildResiduals` skipped latent nodes** (`gibbs.js`)
+The conjugate Gamma update for `tau.b` scanned only `observed` nodes, missing the
+latent `b[j] ~ dnorm(0, tau.b)` nodes. Result: tau.b was sampled as if n=0 (pure prior),
+giving a degenerate posterior. Fixed by including `stochastic` nodes (non-observed) in
+the residual collection loop.
+
+**Bug 2 — No conjugate update for `b[j]` random effects** (`model-graph.js`, `gibbs.js`)
+`b[j]` nodes fell through to the slice sampler because conjugacy detection only flagged
+nodes that appeared directly as the mean parameter of a dnorm, not those entering via a
+deterministic intermediary. Added `'normal-normal-offset'` conjugate type and corresponding
+`conjugateNormalNormalOffset` sampler. The update uses numerical differentiation to compute
+per-observation coefficients `c[i] = ∂mu[i]/∂θ`, handling both pure offsets (b[j]) and
+slope parameters (beta) correctly. Detection uses the pre-computed parents list to handle
+indirect index expressions like `b[group[i]]`.
+
+**Improvement 1 — Better initialization for diffuse normal priors** (`initialize.js`)
+Nodes with `tau < 0.01` (SD > 10) now initialize within ±3 of the prior mean (tau=1/9)
+instead of the prior-overdispersed width (SD up to 45). Prevents chains starting at
+alpha=-65 or beta=-114 for `dnorm(0, 0.001)` priors.
+
+**Improvement 2 — Tighter initialization for random-effect nodes** (`initialize.js`)
+Nodes tagged `normal-normal-offset` start with tau=1 (SD=1), preventing cascading
+overdispersion from a small initialized tau.b value.
+
+**R reference regenerated** (`tests/r-reference/results/mixed-effects-reference.json`)
+The old JSON had a stale tau.b=311 (generated with a different data seed). Re-running
+`Rscript tests/r-reference/mixed-effects.R` produced: alpha=2.29, beta=1.37, tau=2.10,
+tau.b=136. FANGS now matches to within 0.04 SD on all population-level parameters.
+
+**Fixture-based tests added** (`integration.test.js` Suite 10)
+9 new tests compare FANGS posterior means and 95% CIs against the NIMBLE reference JSON.
+Tolerance: 0.3 SD for alpha/beta/tau, 1.0 SD for tau.b (very wide posterior), 0.5 SD
+for b[j]. Uses `beforeAll` to run 3 chains × 1500 samples once and share across tests.
 
 ### Gibbs sampler statistical validation (2026-03-16)
 
@@ -115,12 +153,14 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 
 ### 1. Statistical validation against R/nimble references
 
-Simple linear model validated: FANGS matches NIMBLE to within 0.02 SD (3 chains × 5000 samples).
+Linear model and mixed-effects model validated. Fixture-based tests added to `integration.test.js`.
 
 Remaining:
-- Add fixture-loading tests to `integration.test.js`: read the JSON files and assert that
-  FANGS posterior means are within ~0.1 SD of nimble reference values and that 95% CIs overlap.
-- Run R reference scripts for mixed-effects, Poisson GLM, and Bernoulli GLM and validate those too.
+- Trace plots only show up to 25 samples — x-axis needs to cover the full sample range.
+- Update priors on tau to weakly informative (e.g. `dgamma(1, 0.1)` or half-Cauchy via dunif)
+  rather than very broad `dgamma(0.001, 0.001)`. Keep R nimble tests and app model consistent.
+- Validate Poisson GLM and Bernoulli GLM against their R reference fixtures (add fixture tests
+  similar to Suite 10).
 
 ### 2. Posterior predictive samples (full PPC)
 

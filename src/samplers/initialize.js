@@ -48,7 +48,7 @@ export function initializeChains(graph, nChains) {
           const value = drawFromPrior(node, paramValues, graph);
           paramValues[name] = value;
           remaining.delete(name);
-        } catch (_) {
+        } catch (_err) {
           // Prior arguments couldn't be evaluated yet; retry next pass.
         }
       }
@@ -94,7 +94,21 @@ export function drawFromPrior(node, paramValues, graph) {
   switch (distName) {
     case 'dnorm': {
       // dnorm(mu, tau) — overdisperse by halving precision.
+      // For very diffuse priors (tau < 0.01, SD > 10), cap the initialization
+      // spread at SD=3 to avoid starting far from the likelihood mass.
+      // For hierarchical random effect nodes (normal-normal-offset), use a
+      // tighter initialization (SD=1) to avoid cascading overdispersion.
       const [mu, tau] = args;
+      if (node.conjugateType === 'normal-normal-offset') {
+        // Random effect or linear predictor: start near the prior mean
+        // with modest spread (tau=1 → SD=1), overdispersed relative to
+        // the typical narrow posterior but recoverable quickly.
+        return rnorm(mu, 1);
+      }
+      if (tau < 0.01) {
+        // Very diffuse prior: start within ±3 of the prior mean
+        return rnorm(mu, 1 / 9);  // tau=1/9 → SD=3
+      }
       const tauOD = Math.max(tau / 2, 1e-6);
       return rnorm(mu, tauOD);
     }

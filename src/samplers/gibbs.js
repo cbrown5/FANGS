@@ -143,6 +143,10 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
       paramValues[paramName] = conjugateNormalNormal(node, graph, paramValues);
       return;
 
+    case 'normal-normal-offset':
+      paramValues[paramName] = conjugateNormalNormalOffset(node, graph, paramValues);
+      return;
+
     case 'gamma-normal':
       paramValues[paramName] = conjugateGammaOnPrecision(node, graph, paramValues);
       return;
@@ -222,6 +226,132 @@ export function conjugateNormalNormal(node, graph, paramValues) {
   const muN  = (tau0 * mu0 + tauLik * sumY) / tauN;
 
   return dist.rnorm(muN, tauN);
+}
+
+/**
+ * Conjugate normal-normal update for a node that enters the mean of Normal
+ * observations linearly through a deterministic node.
+ *
+ * Handles both pure additive offsets (random effects: b[j]) and slope
+ * parameters (beta with coefficient x[i]), using numerical differentiation
+ * to determine the per-observation coefficient c[i] = ∂mu[i]/∂θ.
+ *
+ * Full conditional for θ ~ dnorm(mu0, tau0):
+ *   c[i]    = ∂mu[i]/∂θ  (computed by numerical perturbation)
+ *   sumWtResid = Σ c[i] * (y[i] - mu_without[i])
+ *   sumWtSq    = Σ c[i]^2
+ *   tau_n   = tau0 + tau * sumWtSq
+ *   mu_n    = (tau0 * mu0 + tau * sumWtResid) / tau_n
+ *
+ * @param {Object} node - Stochastic node for θ.
+ * @param {import('../parser/model-graph.js').ModelGraph} graph
+ * @param {Object} paramValues - Current values.
+ * @returns {number} Posterior draw.
+ */
+export function conjugateNormalNormalOffset(node, graph, paramValues) {
+  const priorArgs = node.distribution.paramExprs.map((e) =>
+    graph.evaluateExpr(e, paramValues)
+  );
+  const mu0  = priorArgs[0];
+  const tau0 = Math.max(priorArgs[1], 1e-10);
+
+  const theta   = paramValues[node.name];
+  const eps     = Math.max(Math.abs(theta) * 1e-5, 1e-7);
+
+  let sumWtResid = 0;
+  let sumWtSq    = 0;
+  let tauLik     = tau0; // fallback — overwritten by first matching child
+
+  // Find all observed dnorm children that depend on this node.
+  for (const [, child] of graph.nodes) {
+    if (!child.observed) continue;
+    if (child.distribution?.name !== 'dnorm') continue;
+
+    const meanExpr = child.distribution.paramExprs[0];
+    if (!meanExprDependsOn(meanExpr, node.name, graph, paramValues)) continue;
+
+    const y = resolveObservedValue(child, paramValues);
+    if (y === null) continue;
+
+    tauLik = Math.max(
+      graph.evaluateExpr(child.distribution.paramExprs[1], paramValues),
+      1e-10
+    );
+
+    // Coefficient c[i] = ∂mu[i]/∂θ via central differences.
+    const pvPlus  = { ...paramValues, [node.name]: theta + eps };
+    const pvMinus = { ...paramValues, [node.name]: theta - eps };
+    const muPlus  = graph.evaluateExpr(meanExpr, pvPlus);
+    const muMinus = graph.evaluateExpr(meanExpr, pvMinus);
+    const ci      = (muPlus - muMinus) / (2 * eps);
+
+    if (!isFinite(ci) || Math.abs(ci) < 1e-14) continue;
+
+    // Partial mean (excluding θ's contribution): mu_without = mu - c[i]*θ
+    const muFull    = graph.evaluateExpr(meanExpr, paramValues);
+    const muWithout = muFull - ci * theta;
+
+    sumWtResid += ci * (y - muWithout);
+    sumWtSq    += ci * ci;
+  }
+
+  const tauN = tau0 + tauLik * sumWtSq;
+  const muN  = (tau0 * mu0 + tauLik * sumWtResid) / tauN;
+
+  return dist.rnorm(muN, tauN);
+}
+
+/**
+ * Check whether a mean expression (possibly an Identifier referencing a
+ * deterministic node like mu[i]) ultimately depends on a given parameter name.
+ *
+ * Uses the graph's pre-computed parents list for deterministic nodes, which
+ * correctly handles indirect index expressions like b[group[i]].
+ *
+ * @param {object} meanExpr - AST expression for the mean.
+ * @param {string} paramName - The parameter to check for.
+ * @param {import('../parser/model-graph.js').ModelGraph} graph
+ * @param {object} paramValues
+ * @returns {boolean}
+ */
+function meanExprDependsOn(meanExpr, paramName, graph, paramValues) {
+  // Fast path: the expression directly references paramName (scalar case).
+  if (exprReferencesVar(meanExpr, paramName)) return true;
+
+  // If meanExpr is a single node reference (Identifier or IndexExpr), check
+  // if that deterministic node's parents list includes our paramName.
+  // Using parents list (not AST traversal) correctly handles indexed expressions
+  // like b[group[i]] where the resolved parent is b[1], b[2], etc.
+  const refName = extractSingleNodeRef(meanExpr);
+  if (refName) {
+    const refNode = graph.nodes.get(refName);
+    if (refNode && refNode.type === 'deterministic') {
+      return refNode.parents.includes(paramName);
+    }
+  }
+
+  return false;
+}
+
+/**
+ * If an expression is a simple node reference (Identifier or IndexExpr with
+ * numeric indices), return the canonical node name string. Otherwise null.
+ *
+ * @param {object} expr
+ * @returns {string|null}
+ */
+function extractSingleNodeRef(expr) {
+  if (!expr) return null;
+  if (expr.type === 'Identifier') return expr.name;
+  if (expr.type === 'IndexExpr') {
+    // Indices should already be NumberLiterals (loop vars substituted)
+    const base = expr.object?.name ?? expr.name;
+    const indices = expr.indices.map(i => i.type === 'NumberLiteral' ? i.value : null);
+    if (indices.every(v => v !== null)) {
+      return `${base}[${indices.join(',')}]`;
+    }
+  }
+  return null;
 }
 
 /**
@@ -398,14 +528,24 @@ function collectNormalChildResiduals(node, graph, paramValues) {
   let n          = 0;
 
   for (const [, child] of graph.nodes) {
-    if (!child.observed) continue;
+    // Include both observed nodes (e.g. y[i] ~ dnorm(mu[i], tau)) AND
+    // unobserved stochastic nodes (e.g. b[j] ~ dnorm(0, tau.b)).
+    if (child.type !== 'observed' && child.type !== 'stochastic') continue;
     if (child.distribution?.name !== 'dnorm') continue;
 
     // Tau (precision) is the second argument — check it references our node.
     if (!distributionUsesParam(child, node.name, 1)) continue;
 
-    const y = resolveObservedValue(child, paramValues);
-    if (y === null) continue;
+    // Get the current value: observed nodes have a fixed value; latent
+    // stochastic nodes have their current sampled value in paramValues.
+    let y;
+    if (child.observed) {
+      y = resolveObservedValue(child, paramValues);
+    } else {
+      y = paramValues[child.name];
+      if (y === undefined || y === null) continue;
+    }
+    if (y === null || y === undefined) continue;
 
     // Mean is the first argument.
     const mu = graph.evaluateExpr(child.distribution.paramExprs[0], paramValues);

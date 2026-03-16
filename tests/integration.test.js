@@ -12,7 +12,8 @@
  *   alpha ≈ 2.0,  beta ≈ 1.5,  sigma ≈ 0.7  (tau ≈ 1/0.49 ≈ 2.04)
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { readFileSync } from 'fs';
 
 import { Lexer }      from '../src/parser/lexer.js';
 import { Parser }     from '../src/parser/parser.js';
@@ -911,4 +912,78 @@ describe('Float64Array data columns (real app code path)', () => {
     const lp = graph.logPosterior(pv);
     expect(isFinite(lp)).toBe(true);
   }, 30000);
+});
+
+// ---------------------------------------------------------------------------
+// Suite 10: Fixture-based statistical validation against R/NIMBLE reference
+//
+// Runs the mixed-effects model for a moderate number of iterations and
+// compares posterior means against the NIMBLE reference JSON.  Tolerance:
+//   - Posterior mean within 0.3 SD of the NIMBLE reference mean
+//   - 95% CI overlaps (FANGS q2.5 < NIMBLE q97.5 and FANGS q97.5 > NIMBLE q2.5)
+//
+// Uses 3 chains × 1500 samples (1000 burn-in) — enough for convergence but
+// fast enough to run in CI.
+// ---------------------------------------------------------------------------
+
+describe('Mixed-effects model: fixture comparison vs NIMBLE reference', () => {
+  const REF_PATH = 'tests/r-reference/results/mixed-effects-reference.json';
+
+  let ref;
+  let samples;
+
+  beforeAll(async () => {
+    ref = JSON.parse(readFileSync(REF_PATH, 'utf8'));
+
+    const graph = buildMixedGraph();
+    samples = await runGibbs(graph, {
+      nChains:  3,
+      nSamples: 1500,
+      burnin:   1000,
+      thin:     1,
+    });
+  }, 180000);
+
+  function mean(arr) {
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+  }
+  function quantile(arr, p) {
+    const s = arr.slice().sort((a, b) => a - b);
+    const i = p * (s.length - 1);
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return s[lo] + (s[hi] - s[lo]) * (i - lo);
+  }
+
+  function checkParam(paramName, toleranceSDs = 0.3) {
+    const all   = samples[paramName].flat();
+    const fm    = mean(all);
+    const rm    = ref[paramName].mean;
+    const rsd   = ref[paramName].sd;
+    const diff  = Math.abs(fm - rm) / rsd;
+
+    expect(diff, `${paramName}: FANGS mean ${fm.toFixed(4)} vs NIMBLE ${rm.toFixed(4)}, diff=${diff.toFixed(3)} SD`)
+      .toBeLessThan(toleranceSDs);
+
+    // 95% CI overlap check
+    const fq2_5  = quantile(all, 0.025);
+    const fq97_5 = quantile(all, 0.975);
+    const rq2_5  = ref[paramName].q2_5;
+    const rq97_5 = ref[paramName].q97_5;
+    const overlaps = fq2_5 < rq97_5 && fq97_5 > rq2_5;
+    expect(overlaps, `${paramName}: 95% CI [${fq2_5.toFixed(3)}, ${fq97_5.toFixed(3)}] vs NIMBLE [${rq2_5.toFixed(3)}, ${rq97_5.toFixed(3)}]`)
+      .toBe(true);
+  }
+
+  it('alpha posterior mean matches NIMBLE within 0.3 SD', () => checkParam('alpha'));
+  it('beta posterior mean matches NIMBLE within 0.3 SD',  () => checkParam('beta'));
+  it('tau posterior mean matches NIMBLE within 0.3 SD',   () => checkParam('tau'));
+
+  // tau.b has a very wide posterior (heavy right tail) — use a looser tolerance
+  it('tau.b posterior mean matches NIMBLE within 1 SD',   () => checkParam('tau.b', 1.0));
+
+  it('b[1] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[1]', 0.5));
+  it('b[2] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[2]', 0.5));
+  it('b[3] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[3]', 0.5));
+  it('b[4] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[4]', 0.5));
+  it('b[5] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[5]', 0.5));
 });

@@ -389,6 +389,26 @@ function stochasticDescendants(node, nodeMap, visited = new Set()) {
 }
 
 /**
+ * Recursively check whether an expression AST node references a given variable.
+ * Used within model-graph.js for conjugacy detection.
+ * @param {object} expr
+ * @param {string} varName
+ * @returns {boolean}
+ */
+function exprReferencesVar_mg(expr, varName) {
+  if (!expr) return false;
+  switch (expr.type) {
+    case 'NumberLiteral': return false;
+    case 'Identifier':    return expr.name === varName;
+    case 'BinaryOp':      return exprReferencesVar_mg(expr.left, varName) || exprReferencesVar_mg(expr.right, varName);
+    case 'UnaryOp':       return exprReferencesVar_mg(expr.operand, varName);
+    case 'FunctionCall':  return expr.args.some(a => exprReferencesVar_mg(a, varName));
+    case 'IndexExpr':     return exprReferencesVar_mg(expr.object, varName) || expr.indices.some(i => exprReferencesVar_mg(i, varName));
+    default:              return false;
+  }
+}
+
+/**
  * Given an unobserved stochastic node and the full node registry, determine
  * the conjugate update type (or null if none applies).
  *
@@ -443,16 +463,32 @@ function detectConjugateType(node, nodeMap) {
 
   if (isNormalPrior) {
     if (descDists.has('dnorm')) {
-      // Only flag as normal-normal if this node appears *directly* as the mean
-      // (first argument) of at least one dnorm descendant.  Nodes that enter via
-      // a deterministic intermediary (e.g. alpha → mu[i] → y[i]) do not have a
-      // simple conjugate form and must be handled by slice sampling.
+      // Check if this node appears *directly* as the mean (first argument) of
+      // at least one dnorm descendant → simple normal-normal conjugate.
       const appearsAsMean = [...descStochastic].some(c => {
         if (c.distribution?.name !== 'dnorm') return false;
         const paramNodes = c.distribution?.paramNodes ?? [];
         return paramNodes.length >= 1 && paramNodes[0] === node.name;
       });
       if (appearsAsMean) return 'normal-normal';
+
+      // Check if this node appears as an additive offset via a deterministic
+      // intermediary (e.g. b[j] → mu[i] (det) → y[i] (dnorm)).
+      // This covers random effects in mixed-effects models.
+      // We use the parents list (already resolved) rather than AST traversal
+      // to handle indirect index expressions like b[group[i]].
+      const appearsAsOffset = [...descStochastic].some(c => {
+        if (c.distribution?.name !== 'dnorm') return false;
+        if (!c.observed) return false;
+        // The mean param (paramNodes[0]) should be a deterministic node that
+        // lists our node as a parent.
+        const meanParamName = c.distribution?.paramNodes?.[0];
+        if (!meanParamName) return false;
+        const meanNode = nodeMap.get(meanParamName);
+        if (!meanNode || meanNode.type !== 'deterministic') return false;
+        return meanNode.parents.includes(node.name);
+      });
+      if (appearsAsOffset) return 'normal-normal-offset';
     }
     return null;
   }
