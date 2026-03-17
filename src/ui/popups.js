@@ -5,22 +5,20 @@
  * ## How it works
  * 1. Any HTML element with a `data-popup="<id>"` attribute gets a small "?" button
  *    appended to it automatically when `initPopups()` is called.
- * 2. Clicking the "?" button fetches `src/content/popups/<id>.md`, converts it to
- *    HTML with a minimal Markdown parser, and displays a modal overlay.
+ * 2. Clicking the "?" button looks up content from the inline bundle
+ *    (src/content/popups-bundle.js), converts it to HTML, and displays a modal overlay.
  * 3. `attachPopupTrigger(el, id)` can also be called programmatically for
  *    dynamically-created elements (e.g. summary table headers).
  *
  * ## Adding new popups
- * 1. Create `src/content/popups/<your-id>.md` with the content (plain Markdown).
- * 2. Add `data-popup="your-id"` to the relevant HTML element, OR call
+ * 1. Create/edit `src/content/popups/<your-id>.md` with the content.
+ * 2. Run `node src/content/build-popups-bundle.js` to regenerate the bundle, OR
+ *    manually add the content to `src/content/popups-bundle.js`.
+ * 3. Add `data-popup="your-id"` to the relevant HTML element, OR call
  *    `attachPopupTrigger(element, 'your-id')` from JavaScript.
- * That's it — no other changes needed.
  */
 
-const POPUP_DIR = 'src/content/popups/';
-
-/** @type {Map<string, string>} cache of fetched markdown (keyed by popup id) */
-const _cache = new Map();
+import { POPUP_CONTENT } from '../content/popups-bundle.js';
 
 // ------------------------------------------------------------------ //
 // Public API                                                          //
@@ -69,30 +67,14 @@ export function attachPopupTrigger(el, popupId) {
 // ------------------------------------------------------------------ //
 
 /**
- * Fetch (or retrieve from cache) the Markdown for a popup ID, parse it to
+ * Look up the Markdown for a popup ID from the inline bundle, parse it to
  * HTML, and open the modal.
  *
  * @param {string} popupId
  */
-async function _showPopup(popupId) {
-  let markdown = _cache.get(popupId);
-  if (!markdown) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch(`${POPUP_DIR}${popupId}.md`, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      markdown = await res.text();
-      _cache.set(popupId, markdown);
-    } catch (err) {
-      const msg = err.name === 'AbortError'
-        ? 'Request timed out. Run the app via a local server (`npx serve .`) rather than opening the file directly.'
-        : err.message;
-      markdown = `# Error\n\nCould not load popup content for **${popupId}**.\n\n\`${msg}\``;
-    }
-  }
-
+function _showPopup(popupId) {
+  const markdown = POPUP_CONTENT[popupId]
+    ?? `# Not found\n\nNo popup content registered for **${popupId}**.`;
   _openModal(_parseMarkdown(markdown), popupId);
 }
 
