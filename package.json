@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:popups": "node scripts/build-popups-bundle.js",
+    "dev": "npx serve .",
+    "start": "npm run build:popups && npx serve ."
   },
   "devDependencies": {
     "vitest": "^2.0.0"

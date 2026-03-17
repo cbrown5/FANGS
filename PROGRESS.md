@@ -26,8 +26,8 @@ implementations across parser, samplers, UI, and tests.
 | `ui/ppc-plot.js` | Done | Posterior predictive check plot |
 | `ui/settings.js` | Done | Sampler settings panel (chains, samples, burn-in, thin) |
 | `ui/data-table.js` | Done | Renders loaded CSV as a scrollable HTML table (max 200 rows) |
-| `ui/popups.js` | Done | Educational popup system; `type="button"` fix; 5-second fetch timeout with helpful file:// error message |
-| `content/popups/*.md` | Done | 17 Markdown files containing popup text; edit these to update popup content |
+| `ui/popups.js` | Done | Educational popup system; async fetch from `_rendered/` with bundle fallback; KaTeX CSS injected for math |
+| `content/popups/*.qmd` | Done | 17 Quarto source files; build with `npm run build:popups` (requires Quarto) |
 | `utils/distributions.js` | Done | Log-densities and samplers for dnorm, dgamma, dbeta, dpois, dbern, dbinom, dunif, dlnorm; logit/invLogit; fixed rgamma underflow for small shape |
 | `utils/math.js` | Done | Statistical math helpers |
 | `utils/diagnostics.js` | Done | Rhat, ESS, convergence checks |
@@ -55,12 +55,11 @@ implementations across parser, samplers, UI, and tests.
 
 **Popup system rewritten to use inline bundle** (`src/ui/popups.js`, `src/content/popups-bundle.js`)
 The previous implementation fetched `.md` files at runtime via `fetch()`, which crashed the app
-when opened via `file://` and timed out unreliably on some servers. The new approach:
-- All 17 popup Markdown strings are stored inline in `src/content/popups-bundle.js` as a JS object.
-- `popups.js` imports the bundle synchronously — no `fetch()`, no async loading, no timeouts.
-- Popups now work reliably regardless of how the app is served.
-- To update popup text: edit the `.md` source file, then copy the updated text into
-  the matching entry in `popups-bundle.js`. See README for full instructions.
+when opened via `file://` and timed out unreliably on some servers. The system now uses a
+Quarto-based authoring pipeline: `.qmd` source files are rendered to HTML fragments at build
+time via `npm run build:popups`; at runtime `popups.js` fetches from `_rendered/` in server
+mode, falling back to the pre-rendered `popups-bundle.js` for `file://` use.
+See README for full authoring instructions.
 
 **Trace plot x-axis fixed and rendering batched** (`src/ui/trace-plot.js`, `src/app.js`)
 - X-axis is now fixed from 1 to `nSamples` (set at run start) — the scale no longer shifts

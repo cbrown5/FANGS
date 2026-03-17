@@ -58,3 +58,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Quarto build artifacts
+src/content/popups/_rendered/
+src/content/popups/.quarto/

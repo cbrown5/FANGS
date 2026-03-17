@@ -5,20 +5,26 @@
  * ## How it works
  * 1. Any HTML element with a `data-popup="<id>"` attribute gets a small "?" button
  *    appended to it automatically when `initPopups()` is called.
- * 2. Clicking the "?" button looks up content from the inline bundle
- *    (src/content/popups-bundle.js), converts it to HTML, and displays a modal overlay.
+ * 2. Clicking the "?" button fetches the pre-rendered HTML fragment from
+ *    `src/content/popups/_rendered/<id>.html` (server mode), or falls back to
+ *    the inline bundle `src/content/popups-bundle.js` (file:// mode).
  * 3. `attachPopupTrigger(el, id)` can also be called programmatically for
  *    dynamically-created elements (e.g. summary table headers).
  *
  * ## Adding new popups
- * 1. Create/edit `src/content/popups/<your-id>.md` with the content.
- * 2. Run `node src/content/build-popups-bundle.js` to regenerate the bundle, OR
- *    manually add the content to `src/content/popups-bundle.js`.
+ * 1. Create `src/content/popups/<your-id>.qmd` with content in Markdown or
+ *    Quarto-extended Markdown (LaTeX math with $...$, etc.).
+ * 2. Run `npm run build:popups` to render and regenerate the bundle.
+ *    (Requires Quarto: https://quarto.org)
  * 3. Add `data-popup="your-id"` to the relevant HTML element, OR call
  *    `attachPopupTrigger(element, 'your-id')` from JavaScript.
+ * 4. Commit both the `.qmd` source and the updated `popups-bundle.js`.
  */
 
 import { POPUP_CONTENT } from '../content/popups-bundle.js';
+
+// In-memory cache: popup ID → HTML string (fetched or from bundle)
+const _cache = new Map();
 
 // ------------------------------------------------------------------ //
 // Public API                                                          //
@@ -40,7 +46,7 @@ export function initPopups() {
  * Safe to call multiple times on the same element (idempotent via data attribute).
  *
  * @param {HTMLElement} el       - The element to attach the trigger to
- * @param {string}      popupId  - The popup ID (maps to `<id>.md`)
+ * @param {string}      popupId  - The popup ID (maps to `<id>.qmd`)
  */
 export function attachPopupTrigger(el, popupId) {
   if (!el || !popupId) return;
@@ -67,22 +73,61 @@ export function attachPopupTrigger(el, popupId) {
 // ------------------------------------------------------------------ //
 
 /**
- * Look up the Markdown for a popup ID from the inline bundle, parse it to
- * HTML, and open the modal.
+ * Return the HTML string for a popup ID.
+ *
+ * Strategy:
+ *   1. Return from in-memory cache if already loaded.
+ *   2. Try fetch() from the pre-rendered .html file (requires a server).
+ *   3. Fall back to the pre-rendered bundle (works with file://).
+ *
+ * @param {string} popupId
+ * @returns {Promise<string>} HTML string
+ */
+async function fetchPopupContent(popupId) {
+  if (_cache.has(popupId)) return _cache.get(popupId);
+
+  // Attempt live fetch (server mode — requires npx serve . or similar)
+  try {
+    const url = `src/content/popups/_rendered/${popupId}.html`;
+    const resp = await fetch(url);
+    if (resp.ok) {
+      const html = await resp.text();
+      _cache.set(popupId, html);
+      return html;
+    }
+  } catch (_) {
+    // fetch() throws on file:// — fall through to bundle
+  }
+
+  // Bundle fallback (pre-rendered HTML strings, works everywhere)
+  const html = POPUP_CONTENT[popupId]
+    ?? `<p><em>No popup content found for <code>${popupId}</code>.</em></p>`;
+  _cache.set(popupId, html);
+  return html;
+}
+
+/**
+ * Fetch HTML for a popup ID and open the modal.
+ * Shows a loading placeholder immediately while the fetch is in flight.
  *
  * @param {string} popupId
  */
-function _showPopup(popupId) {
-  const markdown = POPUP_CONTENT[popupId]
-    ?? `# Not found\n\nNo popup content registered for **${popupId}**.`;
-  _openModal(_parseMarkdown(markdown), popupId);
+async function _showPopup(popupId) {
+  // Show loading state immediately so the UI feels responsive
+  _openModal('<p class="fangs-popup-loading">Loading\u2026</p>', popupId);
+
+  const html = await fetchPopupContent(popupId);
+
+  // Replace the body content once loaded
+  const body = document.querySelector('#fangs-popup-modal .fangs-popup-body');
+  if (body) body.innerHTML = html;
 }
 
 /**
  * Create and show the modal overlay.
  *
- * @param {string} html     - Rendered HTML content
- * @param {string} popupId  - Used for aria-labelledby
+ * @param {string} html     - HTML content to display
+ * @param {string} popupId  - Used for aria-label
  */
 function _openModal(html, popupId) {
   // Remove any existing modal first
@@ -129,144 +174,23 @@ function _openModal(html, popupId) {
 }
 
 // ------------------------------------------------------------------ //
-// Markdown parser                                                     //
-// ------------------------------------------------------------------ //
-
-/**
- * Convert a subset of Markdown to HTML.
- *
- * Supported syntax:
- *   # H1, ## H2, ### H3
- *   **bold**, *italic*, `inline code`
- *   - unordered list items
- *   Blank-line-delimited paragraphs
- *   Fenced code blocks (``` ... ```)
- *   | table | rows |
- *
- * @param {string} md - Raw Markdown text
- * @returns {string}  - HTML string
- */
-function _parseMarkdown(md) {
-  const lines = md.split('\n');
-  const out = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // --- Fenced code block ---
-    if (line.trimStart().startsWith('```')) {
-      const fence = [];
-      i++;
-      while (i < lines.length && !lines[i].trimStart().startsWith('```')) {
-        fence.push(_esc(lines[i]));
-        i++;
-      }
-      i++; // skip closing ```
-      out.push(`<pre class="fangs-popup-pre"><code>${fence.join('\n')}</code></pre>`);
-      continue;
-    }
-
-    // --- Table ---
-    if (line.includes('|') && lines[i + 1] && lines[i + 1].includes('---')) {
-      const tableLines = [];
-      while (i < lines.length && lines[i].includes('|')) {
-        tableLines.push(lines[i]);
-        i++;
-      }
-      out.push(_parseTable(tableLines));
-      continue;
-    }
-
-    // --- Headings ---
-    const h3 = line.match(/^###\s+(.*)/);
-    if (h3) { out.push(`<h3>${_inline(h3[1])}</h3>`); i++; continue; }
-
-    const h2 = line.match(/^##\s+(.*)/);
-    if (h2) { out.push(`<h2>${_inline(h2[1])}</h2>`); i++; continue; }
-
-    const h1 = line.match(/^#\s+(.*)/);
-    if (h1) { out.push(`<h1>${_inline(h1[1])}</h1>`); i++; continue; }
-
-    // --- Unordered list ---
-    if (line.match(/^[-*]\s+/)) {
-      const items = [];
-      while (i < lines.length && lines[i].match(/^[-*]\s+/)) {
-        items.push(`<li>${_inline(lines[i].replace(/^[-*]\s+/, ''))}</li>`);
-        i++;
-      }
-      out.push(`<ul>${items.join('')}</ul>`);
-      continue;
-    }
-
-    // --- Blank line ---
-    if (line.trim() === '') { i++; continue; }
-
-    // --- Paragraph ---
-    const para = [];
-    while (i < lines.length && lines[i].trim() !== '' &&
-           !lines[i].match(/^[#\-*]/) && !lines[i].includes('|') &&
-           !lines[i].trimStart().startsWith('```')) {
-      para.push(_inline(lines[i]));
-      i++;
-    }
-    if (para.length) out.push(`<p>${para.join(' ')}</p>`);
-  }
-
-  return out.join('\n');
-}
-
-/**
- * Parse a Markdown table block (array of raw lines) into an HTML table.
- */
-function _parseTable(tableLines) {
-  const rows = tableLines.filter(l => !l.match(/^\|[-| :]+\|?\s*$/));
-  const html = ['<table class="fangs-popup-table">'];
-  rows.forEach((row, idx) => {
-    const cells = row.split('|').map(c => c.trim()).filter((_, i, a) =>
-      i > 0 && i < a.length - 1 || (i === 0 && c !== '') || (i === a.length - 1 && c !== ''));
-    const tag = idx === 0 ? 'th' : 'td';
-    html.push('<tr>' + cells.map(c => `<${tag}>${_inline(c)}</${tag}>`).join('') + '</tr>');
-  });
-  html.push('</table>');
-  return html.join('');
-}
-
-/**
- * Apply inline formatting: bold, italic, inline code, HTML escaping.
- *
- * @param {string} text
- * @returns {string}
- */
-function _inline(text) {
-  return _esc(text)
-    // Bold **text**
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic *text* (not preceded or followed by *)
-    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-    // Inline code `code`
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
-}
-
-/**
- * Escape HTML special characters.
- *
- * @param {string} str
- * @returns {string}
- */
-function _esc(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-// ------------------------------------------------------------------ //
 // Styles                                                              //
 // ------------------------------------------------------------------ //
 
 function _injectStyles() {
   if (document.getElementById('fangs-popup-styles')) return;
+
+  // KaTeX CSS — required to render math spans pre-rendered by Quarto at build time.
+  // Math is already converted to HTML by Quarto; this CSS handles the visual styling.
+  if (!document.getElementById('fangs-katex-css')) {
+    const katexLink = document.createElement('link');
+    katexLink.id = 'fangs-katex-css';
+    katexLink.rel = 'stylesheet';
+    katexLink.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+    katexLink.crossOrigin = 'anonymous';
+    document.head.appendChild(katexLink);
+  }
+
   const style = document.createElement('style');
   style.id = 'fangs-popup-styles';
   style.textContent = `
@@ -354,6 +278,12 @@ function _injectStyles() {
       color: #1c2b3a;
     }
 
+    /* ---- Loading placeholder ---- */
+    .fangs-popup-loading {
+      color: #888;
+      font-style: italic;
+    }
+
     /* ---- Typography inside popup ---- */
     .fangs-popup-body h1 {
       font-size: 1.25rem;
@@ -394,14 +324,16 @@ function _injectStyles() {
       font-size: 0.85em;
       color: #1a3a5c;
     }
-    .fangs-popup-pre {
+
+    /* ---- Code blocks (plain <pre><code>) ---- */
+    .fangs-popup-body pre {
       background: #0e2030;
       border-radius: 6px;
       padding: 12px 16px;
       overflow-x: auto;
       margin: 10px 0;
     }
-    .fangs-popup-pre code {
+    .fangs-popup-body pre code {
       background: none;
       border: none;
       padding: 0;
@@ -409,24 +341,46 @@ function _injectStyles() {
       font-size: 0.82rem;
       line-height: 1.5;
     }
-    .fangs-popup-table {
+
+    /* ---- Code blocks from Quarto (div.sourceCode > pre) ---- */
+    .fangs-popup-body div.sourceCode {
+      margin: 10px 0;
+    }
+    .fangs-popup-body div.sourceCode pre {
+      background: #0e2030;
+      border-radius: 6px;
+      padding: 12px 16px;
+      overflow-x: auto;
+      margin: 0;
+    }
+    .fangs-popup-body div.sourceCode pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #c8e8ff;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* ---- Tables ---- */
+    .fangs-popup-body table {
       border-collapse: collapse;
       width: 100%;
       font-size: 0.85rem;
       margin: 10px 0;
     }
-    .fangs-popup-table th {
+    .fangs-popup-body th {
       background: #1a3a5c;
       color: #e8f4fd;
       padding: 6px 10px;
       text-align: left;
       font-weight: 600;
     }
-    .fangs-popup-table td {
+    .fangs-popup-body td {
       padding: 5px 10px;
       border-bottom: 1px solid #e0e6ed;
     }
-    .fangs-popup-table tr:nth-child(even) td {
+    .fangs-popup-body tr:nth-child(even) td {
       background: #f7f9fc;
     }
     .fangs-popup-body strong {
