@@ -230,6 +230,9 @@ Implementation notes:
 - `sampler-worker.js` / `app.js`: no changes needed — `predictions.y` already
   contains the full set of replicate arrays in observation order.
 
+Known issues:
+- Help buttons still cause crash of app
+
 ### 2. Regenerate R reference fixture JSON files
 
 R scripts now use weakly-informative priors (`dgamma(1, 0.1)`, `dnorm(0, 0.04)`).
