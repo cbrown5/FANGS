@@ -213,7 +213,13 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 
 ## What Needs to Be Done Next
 
-### 1. Observed vs predicted scatter plot on the PPC tab
+### 1. Fixes
+
+- Help buttons still cause crash of app. I've asked to fix this several times but it continues to be an issue. Do a deep dive on the implementation and look at alternative methods for implementing the help pop-ups. For instance the developer could manually render the .md files to .html using quarto render tools. They just do this only when they update the .md files. Then the app works directly off of the .html files and doesn't have to live convert .md files
+- Trace plots. keep x-axis constant (so show 1 to max samples). Plots every sample (including thinned samples), but 100 samples at a time, to speed up the app. 
+
+
+### 2. Observed vs predicted scatter plot on the PPC tab
 
 Add a second plot to the PPC tab showing observed `y` on the x-axis against
 posterior mean predicted `ŷ` (mean of y_rep across all replicates for each
@@ -230,10 +236,7 @@ Implementation notes:
 - `sampler-worker.js` / `app.js`: no changes needed — `predictions.y` already
   contains the full set of replicate arrays in observation order.
 
-Known issues:
-- Help buttons still cause crash of app
-
-### 2. Regenerate R reference fixture JSON files
+### 3. Regenerate R reference fixture JSON files
 
 R scripts now use weakly-informative priors (`dgamma(1, 0.1)`, `dnorm(0, 0.04)`).
 Re-run the R scripts when R + NIMBLE is available to update the JSON fixtures:
@@ -243,7 +246,7 @@ Rscript tests/r-reference/mixed-effects.R
 ```
 Existing fixtures still pass the 0.3-SD tolerance until then.
 
-### 3. Additional example models and popup content
+### 4. Additional example models and popup content
 
 - Add Poisson GLM and Bernoulli GLM example models to the model selector buttons
 - Additional popup content for GLM-specific concepts (log link, logit link, overdispersion)
