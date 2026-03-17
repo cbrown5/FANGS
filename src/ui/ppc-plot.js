@@ -26,6 +26,14 @@ const FAN_STROKE   = 'rgba(239,108,0,0.15)';
 const MEAN_SIM     = 'rgba(239,108,0,0.9)';
 const MEAN_OBS     = '#1a3a5c';
 
+// Scatter plot constants
+const SCATTER_HEIGHT = 260;
+const SCATTER_MARGIN = { top: 20, right: 20, bottom: 48, left: 56 };
+const POINT_COLOR    = 'rgba(33,150,243,0.75)';
+const POINT_STROKE   = '#1565c0';
+const CI_COLOR       = 'rgba(33,150,243,0.2)';
+const REF_LINE_COLOR = '#888';
+
 export class PPCPlot {
   /**
    * @param {HTMLElement} containerEl
@@ -55,6 +63,7 @@ export class PPCPlot {
     this._observed  = observed;
     this._predicted = predicted || [];
     this._draw();
+    this._drawScatter();
   }
 
   /**
@@ -66,6 +75,10 @@ export class PPCPlot {
     if (this._ctx) {
       this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
       this._drawEmpty();
+    }
+    if (this._scatterCtx) {
+      this._scatterCtx.clearRect(0, 0, this._scatterCanvas.width, this._scatterCanvas.height);
+      this._drawScatterEmpty();
     }
   }
 
@@ -112,6 +125,43 @@ export class PPCPlot {
     this._canvas = canvas;
     this._ctx    = canvas.getContext('2d');
     this._drawEmpty();
+
+    // --- Scatter plot section ---
+    const divider = document.createElement('hr');
+    divider.style.cssText = 'margin: 16px 0 10px 0; border: none; border-top: 1px solid #e0e0e0;';
+    this.container.appendChild(divider);
+
+    const scatterTitle = document.createElement('div');
+    scatterTitle.textContent = 'Observed vs. Posterior Mean Predicted';
+    scatterTitle.style.cssText = `
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 8px;
+      font-style: italic;
+    `;
+    this.container.appendChild(scatterTitle);
+
+    const scatterLegend = document.createElement('div');
+    scatterLegend.style.cssText = 'display:flex; gap:16px; margin-bottom:8px; font-size:0.78rem; color:#444;';
+    scatterLegend.innerHTML = `
+      <span style="display:flex;align-items:center;gap:5px;">
+        <span style="display:inline-block;width:12px;height:12px;background:${POINT_COLOR};border:1px solid ${POINT_STROKE};border-radius:50%;"></span>
+        Observation (bars = 90% CI)
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;">
+        <span style="display:inline-block;width:24px;height:2px;background:${REF_LINE_COLOR};border-radius:2px;"></span>
+        1:1 line
+      </span>
+    `;
+    this.container.appendChild(scatterLegend);
+
+    const scatterCanvas = document.createElement('canvas');
+    scatterCanvas.style.cssText = `display:block; width:100%; height:${SCATTER_HEIGHT}px;`;
+    this.container.appendChild(scatterCanvas);
+
+    this._scatterCanvas = scatterCanvas;
+    this._scatterCtx    = scatterCanvas.getContext('2d');
+    this._drawScatterEmpty();
   }
 
   _drawEmpty() {
@@ -319,6 +369,161 @@ export class PPCPlot {
     for (let t = 0; t <= nYTicks; t++) {
       const v = (t / nYTicks) * yMax;
       ctx.fillText(_fmtAxis(v), MARGIN.left - 4, yScale(v));
+    }
+  }
+
+  _drawScatterEmpty() {
+    const ctx  = this._scatterCtx;
+    const cssW = this._scatterCanvas.clientWidth || 500;
+    const cssH = SCATTER_HEIGHT;
+    _resizeCanvas(this._scatterCanvas, ctx, cssW, cssH);
+
+    ctx.clearRect(0, 0, cssW, cssH);
+    ctx.fillStyle = '#f7f9fc';
+    ctx.fillRect(0, 0, cssW, cssH);
+    ctx.fillStyle = '#aaa';
+    ctx.font      = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Run the model to see observed vs. predicted.', cssW / 2, cssH / 2);
+  }
+
+  _drawScatter() {
+    const obs  = this._observed;
+    const pred = this._predicted;
+    if (!obs || obs.length === 0 || !pred || pred.length === 0) {
+      this._drawScatterEmpty();
+      return;
+    }
+
+    const n = obs.length;
+    const nReps = pred.length;
+
+    // Per-observation: posterior mean and 5th/95th percentile
+    const yHat  = new Float64Array(n);
+    const yLo   = new Float64Array(n);
+    const yHi   = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const vals = pred.map(rep => rep[i]).sort((a, b) => a - b);
+      let sum = 0;
+      for (const v of vals) sum += v;
+      yHat[i] = sum / nReps;
+      yLo[i]  = vals[Math.floor(0.05 * nReps)];
+      yHi[i]  = vals[Math.min(Math.ceil(0.95 * nReps), nReps - 1)];
+    }
+
+    const ctx  = this._scatterCtx;
+    const cssW = this._scatterCanvas.clientWidth || 500;
+    const cssH = SCATTER_HEIGHT;
+    _resizeCanvas(this._scatterCanvas, ctx, cssW, cssH);
+
+    const W     = cssW;
+    const H     = cssH;
+    const plotW = W - SCATTER_MARGIN.left - SCATTER_MARGIN.right;
+    const plotH = H - SCATTER_MARGIN.top  - SCATTER_MARGIN.bottom;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    // Axis range: cover both observed and predicted
+    const allVals = [...obs, ...yHat, ...yLo, ...yHi];
+    let vMin = Math.min(...allVals);
+    let vMax = Math.max(...allVals);
+    const pad = (vMax - vMin) * 0.08 || 1;
+    vMin -= pad;
+    vMax += pad;
+
+    const xScale = (v) => SCATTER_MARGIN.left + ((v - vMin) / (vMax - vMin)) * plotW;
+    const yScale = (v) => SCATTER_MARGIN.top  + plotH - ((v - vMin) / (vMax - vMin)) * plotH;
+
+    // --- 1:1 reference line ---
+    ctx.beginPath();
+    ctx.strokeStyle = REF_LINE_COLOR;
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.moveTo(xScale(vMin), yScale(vMin));
+    ctx.lineTo(xScale(vMax), yScale(vMax));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // --- CI bars and points ---
+    for (let i = 0; i < n; i++) {
+      const cx = xScale(obs[i]);
+      const cy = yScale(yHat[i]);
+      const cyLo = yScale(yLo[i]);
+      const cyHi = yScale(yHi[i]);
+
+      // Vertical CI bar
+      ctx.beginPath();
+      ctx.strokeStyle = CI_COLOR;
+      ctx.lineWidth   = 1.5;
+      ctx.moveTo(cx, cyLo);
+      ctx.lineTo(cx, cyHi);
+      ctx.stroke();
+
+      // Cap ticks
+      ctx.beginPath();
+      ctx.moveTo(cx - 3, cyLo);
+      ctx.lineTo(cx + 3, cyLo);
+      ctx.moveTo(cx - 3, cyHi);
+      ctx.lineTo(cx + 3, cyHi);
+      ctx.stroke();
+
+      // Point
+      ctx.beginPath();
+      ctx.fillStyle   = POINT_COLOR;
+      ctx.strokeStyle = POINT_STROKE;
+      ctx.lineWidth   = 0.8;
+      ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // --- Axes ---
+    ctx.strokeStyle = '#aaa';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(SCATTER_MARGIN.left, SCATTER_MARGIN.top);
+    ctx.lineTo(SCATTER_MARGIN.left, SCATTER_MARGIN.top + plotH);
+    ctx.lineTo(SCATTER_MARGIN.left + plotW, SCATTER_MARGIN.top + plotH);
+    ctx.stroke();
+
+    // X-axis label
+    ctx.fillStyle    = '#555';
+    ctx.font         = '11px sans-serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Observed', SCATTER_MARGIN.left + plotW / 2, H - 4);
+
+    // Y-axis label
+    ctx.save();
+    ctx.translate(12, SCATTER_MARGIN.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font         = '11px sans-serif';
+    ctx.fillStyle    = '#555';
+    ctx.fillText('Predicted (posterior mean)', 0, 0);
+    ctx.restore();
+
+    // X-axis ticks
+    ctx.fillStyle    = '#555';
+    ctx.font         = '10px sans-serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    const nTicks = 5;
+    for (let t = 0; t <= nTicks; t++) {
+      const v = vMin + (t / nTicks) * (vMax - vMin);
+      ctx.fillText(_fmtAxis(v), xScale(v), SCATTER_MARGIN.top + plotH + 5);
+    }
+
+    // Y-axis ticks
+    ctx.textAlign    = 'right';
+    ctx.textBaseline = 'middle';
+    for (let t = 0; t <= nTicks; t++) {
+      const v = vMin + (t / nTicks) * (vMax - vMin);
+      ctx.fillText(_fmtAxis(v), SCATTER_MARGIN.left - 4, yScale(v));
     }
   }
 }
