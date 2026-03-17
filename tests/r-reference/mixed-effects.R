@@ -9,10 +9,10 @@
 #   y[i]  ~ dnorm(mu[i], tau)
 #   mu[i] <- alpha + beta * x[i] + b[group[i]]
 #   b[j]  ~ dnorm(0, tau.b)          for j in 1:J
-#   alpha ~ dnorm(0, 0.001)
-#   beta  ~ dnorm(0, 0.001)
-#   tau   ~ dgamma(0.001, 0.001)
-#   tau.b ~ dgamma(0.001, 0.001)
+#   alpha ~ dnorm(0, 0.04)
+#   beta  ~ dnorm(0, 0.04)
+#   tau   ~ dgamma(1, 0.1)
+#   tau.b ~ dgamma(1, 0.1)
 #
 # Note: dnorm in NIMBLE/JAGS uses precision (1/variance) as the second argument.
 # sigma_residual = 1/sqrt(tau),  sigma_group = 1/sqrt(tau.b)
@@ -137,10 +137,10 @@ mixed_code <- nimbleCode({
   for (j in 1:J) {
     b[j] ~ dnorm(0, tau.b)
   }
-  alpha ~ dnorm(0, 0.001)
-  beta  ~ dnorm(0, 0.001)
-  tau   ~ dgamma(0.001, 0.001)
-  tau.b ~ dgamma(0.001, 0.001)
+  alpha ~ dnorm(0, 0.04)
+  beta  ~ dnorm(0, 0.04)
+  tau   ~ dgamma(1, 0.1)
+  tau.b ~ dgamma(1, 0.1)
 })
 
 # ---------------------------------------------------------------------------

@@ -315,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
     settings.setEnabled(false);
     btnRun.disabled  = true;
     btnStop.disabled = false;
+    btn1.disabled = true;
+    btn2.disabled = true;
 
     const cfg = settings.getSettings();
 
@@ -387,16 +389,19 @@ document.addEventListener('DOMContentLoaded', () => {
         density.render();
         summary.update(msg.summary);
 
-        // Basic PPC: use observed y and show without predictions for now
+        // PPC: pass observed y and posterior predictive replicates
         const yObs = dataColumns.y ? Array.from(dataColumns.y) : [];
         if (yObs.length > 0) {
-          ppc.update(yObs, []);
+          const predicted = msg.predictions?.y ?? [];
+          ppc.update(yObs, predicted);
         }
 
         btnDownload.disabled = false;
         settings.setEnabled(true);
         btnRun.disabled  = false;
         btnStop.disabled = true;
+        btn1.disabled = false;
+        btn2.disabled = false;
         samplerWorker = null;
 
       } else if (msg.type === 'ERROR') {
@@ -405,6 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
         settings.setEnabled(true);
         btnRun.disabled  = false;
         btnStop.disabled = true;
+        btn1.disabled = false;
+        btn2.disabled = false;
         samplerWorker = null;
       }
     };
@@ -414,6 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
       settings.setEnabled(true);
       btnRun.disabled  = false;
       btnStop.disabled = true;
+      btn1.disabled = false;
+      btn2.disabled = false;
       samplerWorker = null;
     };
 
@@ -445,6 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
     settings.setEnabled(true);
     btnRun.disabled  = false;
     btnStop.disabled = true;
+    btn1.disabled = false;
+    btn2.disabled = false;
   });
 
   // -- Download CSV --

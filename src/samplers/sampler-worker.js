@@ -165,7 +165,67 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
     // that is acceptable — just summarise whatever was collected.
     const summary = summarizeAll(allSamples);
 
-    self.postMessage({ type: 'DONE', summary });
+    // Generate posterior predictive replicates (y_rep) from a random subset
+    // of posterior draws (up to 200 replicates to keep the message small).
+    const predictions = _generatePredictions(graph, allSamples, 200);
+
+    self.postMessage({ type: 'DONE', summary, predictions });
+}
+
+// ---------------------------------------------------------------------------
+// Posterior predictive helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Draw up to `maxReps` posterior predictive replicates by sampling from the
+ * likelihood at randomly selected posterior parameter states.
+ *
+ * @param {import('../parser/model-graph.js').ModelGraph} graph
+ * @param {Object.<string, number[][]>} allSamples  { paramName: chains[chain][sample] }
+ * @param {number} maxReps  Maximum number of replicate datasets to generate
+ * @returns {Object.<string, number[][]>} { varName: [ repArray, repArray, ... ] }
+ */
+function _generatePredictions(graph, allSamples, maxReps) {
+    const paramNames = Object.keys(allSamples);
+    if (paramNames.length === 0) return {};
+
+    // Collect all (chainIdx, sampleIdx) pairs
+    const pairs = [];
+    const nChains = allSamples[paramNames[0]].length;
+    for (let c = 0; c < nChains; c++) {
+        const nSamp = allSamples[paramNames[0]][c].length;
+        for (let s = 0; s < nSamp; s++) {
+            pairs.push([c, s]);
+        }
+    }
+
+    // Shuffle and take up to maxReps
+    for (let i = pairs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+    }
+    const selected = pairs.slice(0, maxReps);
+
+    // Generate a y_rep for each selected posterior draw
+    const result = {};
+    for (const [c, s] of selected) {
+        const paramValues = {};
+        for (const name of paramNames) {
+            paramValues[name] = allSamples[name][c][s];
+        }
+        let rep;
+        try {
+            rep = graph.samplePredictive(paramValues);
+        } catch (_) {
+            continue;
+        }
+        for (const [varName, values] of Object.entries(rep)) {
+            if (!result[varName]) result[varName] = [];
+            result[varName].push(values);
+        }
+    }
+
+    return result;
 }
 
 // ---------------------------------------------------------------------------

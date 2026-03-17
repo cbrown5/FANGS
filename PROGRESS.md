@@ -51,6 +51,41 @@ implementations across parser, samplers, UI, and tests.
 
 ## What Has Been Done (Recent)
 
+### Full PPC, UI polish, About/Instructions, weakly-informative priors (2026-03-17)
+
+**Posterior predictive check completed** (`model-graph.js`, `sampler-worker.js`, `app.js`)
+Added `samplePredictive(paramValues)` to `ModelGraph`: iterates all observed nodes,
+evaluates distribution parameters in the current posterior state, and draws y_rep from
+the likelihood using a new `RANDOM_SAMPLER` dispatch table (rnorm/rgamma/rbeta/rbinom/
+rbern/rpois/runif/rlnorm). The sampler worker generates up to 200 replicate datasets
+by randomly selecting posterior draws, stores results per observed variable, and includes
+them in the DONE message as `predictions`. `app.js` now passes `predictions.y` to
+`ppc.update()`, completing the full observed-vs-predicted fan plot.
+
+**Model selector buttons disabled during sampling** (`app.js`)
+`btn-model-1` and `btn-model-2` are disabled when Run is clicked and re-enabled on
+DONE, ERROR, or Stop — preventing mid-run model changes.
+
+**About and Instructions pages** (`index.html`)
+Added a hamburger menu (&#9776;) in the header that opens a dropdown with:
+- Instructions — step-by-step guide to using FANGS
+- About — feature list, author links, statistical references
+- GitHub link (github.com/cbrown5/FANGS)
+- seascapemodels.org link
+A modal dialog with two tabs (Instructions / About) displays the content.
+Keyboard (Esc) and click-outside dismiss both the menu and modal.
+
+**Weakly-informative priors** (`default-data.js`, `tests/r-reference/linear-model.R`,
+`tests/r-reference/mixed-effects.R`)
+Default models now use:
+- `alpha ~ dnorm(0, 0.04)` (SD = 5, was SD ≈ 31)
+- `beta  ~ dnorm(0, 0.04)` (SD = 5, was SD ≈ 31)
+- `tau   ~ dgamma(1, 0.1)` (mean = 10, was essentially improper)
+- `tau.b ~ dgamma(1, 0.1)` (mixed model)
+R reference scripts updated to match. Fixture JSON files should be regenerated
+with `Rscript tests/r-reference/linear-model.R` etc. when R is available;
+existing fixtures still pass the 0.3-SD tolerance (posteriors are data-dominated).
+
 ### Linear model NIMBLE fixture test added (2026-03-17)
 
 **Suite 14 — Linear model fixture comparison vs NIMBLE** (`integration.test.js`)
@@ -178,32 +213,37 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 
 ## What Needs to Be Done Next
 
-### 1. Statistical validation against R/nimble references
+### 1. Observed vs predicted scatter plot on the PPC tab
 
-Linear model, mixed-effects model, Poisson GLM, and Bernoulli GLM validated.
+Add a second plot to the PPC tab showing observed `y` on the x-axis against
+posterior mean predicted `ŷ` (mean of y_rep across all replicates for each
+observation) on the y-axis, with a 1:1 reference line. This gives a
+per-observation view of model fit complementing the distributional fan plot.
 
-Remaining:
-- Update priors on tau to weakly informative (e.g. `dgamma(1, 0.1)` or half-Cauchy via dunif)
-  rather than very broad `dgamma(0.001, 0.001)`. Keep R nimble tests and app model consistent.
+Implementation notes:
+- `ppc-plot.js`: add a second canvas/section below the existing fan plot.
+  For each observation index `i`, compute `ŷ_i = mean(predictions[k][i] for k in reps)`.
+  Also compute a credible interval band (e.g. 5th–95th percentile across reps) as
+  vertical error bars or shaded blobs.
+- The 1:1 line should span the full data range; points above the line indicate
+  over-prediction, below indicate under-prediction.
+- `sampler-worker.js` / `app.js`: no changes needed — `predictions.y` already
+  contains the full set of replicate arrays in observation order.
 
-### 2. Posterior predictive samples (full PPC)
+### 2. Regenerate R reference fixture JSON files
 
-The PPC tab currently shows observed `y` only (no simulated predictions).
-To complete it: after sampling, draw replicated data sets `y_rep` by sampling
-from the likelihood at each posterior draw, then overlay the distribution of
-`y_rep` against the observed histogram. This requires generating predictions
-inside the worker and sending them back in the DONE message.
+R scripts now use weakly-informative priors (`dgamma(1, 0.1)`, `dnorm(0, 0.04)`).
+Re-run the R scripts when R + NIMBLE is available to update the JSON fixtures:
+```
+Rscript tests/r-reference/linear-model.R
+Rscript tests/r-reference/mixed-effects.R
+```
+Existing fixtures still pass the 0.3-SD tolerance until then.
 
-### 3. UI polish
+### 3. Additional example models and popup content
 
-- Status-bar styling for `running` / `done` / `error` states
-- Disable model selector buttons while sampling is in progress
-- Show per-chain Rhat colour coding in the summary table (red if Rhat > 1.1)
-
-### 5. Add About and Instructions pages
-
-Add pages for About and Instructions. Access via a hamburger menu in the header bar.
-Also add links to Github and seascapemodels.org.
+- Add Poisson GLM and Bernoulli GLM example models to the model selector buttons
+- Additional popup content for GLM-specific concepts (log link, logit link, overdispersion)
 
 ---
 

@@ -17,6 +17,7 @@
 
 import {
   dnorm, dgamma, dbeta, dbinom, dbern, dpois, dunif, dlnorm,
+  rnorm, rgamma, rbeta, rbinom, rbern, rpois, runif, rlnorm,
 } from '../utils/distributions.js';
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,20 @@ const LOG_DENSITY = {
   dlnorm: (x, meanlog, preclog) => dlnorm(x, meanlog, preclog),
 };
 
+/**
+ * Map from BUGS distribution name → random sampler function.
+ * Each function receives (...params) in BUGS argument order and returns a draw.
+ */
+const RANDOM_SAMPLER = {
+  dnorm:  (mu, tau)            => rnorm(mu, tau),
+  dgamma: (shape, rate)        => rgamma(shape, rate),
+  dbeta:  (a, b)               => rbeta(a, b),
+  dbinom: (p, n)               => rbinom(n, p),   // JAGS: dbinom(p, n)
+  dbern:  (p)                  => rbern(p),
+  dpois:  (lambda)             => rpois(lambda),
+  dunif:  (lower, upper)       => runif(lower, upper),
+  dlnorm: (meanlog, preclog)   => rlnorm(meanlog, preclog),
+};
 
 // ---------------------------------------------------------------------------
 // Expression evaluator (pure, no side-effects)
@@ -600,6 +615,53 @@ export class ModelGraph {
       logL += contrib;
     }
     return logL;
+  }
+
+  /**
+   * Draw a replicated dataset y_rep from the posterior predictive distribution.
+   *
+   * For each observed node, evaluates the distribution parameters using the
+   * current paramValues (which includes deterministic nodes after _mergeValues),
+   * then draws a single replicated value from the likelihood.
+   *
+   * @param {object} paramValues - Map of param name → current value
+   * @returns {Object.<string, number[]>} Map of base variable name → array of
+   *   replicated values in observation order (e.g. { y: [2.3, 1.1, ...] })
+   */
+  samplePredictive(paramValues) {
+    this._requireBuilt();
+    const allValues = this._mergeValues(paramValues);
+    const result = {};
+
+    for (const node of this.nodes.values()) {
+      if (node.type !== 'observed') continue;
+      const distName = node.distribution?.name;
+      if (!distName) continue;
+      const samplerFn = RANDOM_SAMPLER[distName];
+      if (!samplerFn) continue;
+
+      let params;
+      try {
+        params = node.distribution.paramExprs.map(expr =>
+          evaluateExpr(expr, allValues, this._dataColumns)
+        );
+      } catch (_) {
+        continue;
+      }
+
+      let yRep;
+      try {
+        yRep = samplerFn(...params);
+      } catch (_) {
+        continue;
+      }
+
+      const base = baseName(node.name);
+      if (!result[base]) result[base] = [];
+      result[base].push(yRep);
+    }
+
+    return result;
   }
 
   /**

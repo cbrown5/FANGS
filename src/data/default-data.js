@@ -83,9 +83,9 @@ export const defaultModel1 = `model {
     y[i] ~ dnorm(mu[i], tau)
     mu[i] <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.001)
-  beta ~ dnorm(0, 0.001)
-  tau ~ dgamma(0.001, 0.001)
+  alpha ~ dnorm(0, 0.04)
+  beta ~ dnorm(0, 0.04)
+  tau ~ dgamma(1, 0.1)
 }`;
 
 /**
@@ -101,8 +101,8 @@ export const defaultModel2 = `model {
   for (j in 1:J) {
     b[j] ~ dnorm(0, tau.b)
   }
-  alpha ~ dnorm(0, 0.001)
-  beta ~ dnorm(0, 0.001)
-  tau ~ dgamma(0.001, 0.001)
-  tau.b ~ dgamma(0.001, 0.001)
+  alpha ~ dnorm(0, 0.04)
+  beta ~ dnorm(0, 0.04)
+  tau ~ dgamma(1, 0.1)
+  tau.b ~ dgamma(1, 0.1)
 }`;
