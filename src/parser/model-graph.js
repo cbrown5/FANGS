@@ -586,6 +586,11 @@ export class ModelGraph {
     }
 
     this._built = true;
+
+    // Precompute for fast _mergeValues calls during sampling.
+    this._buildBaseValues();
+    this._detNodesSorted = this._topoSortDeterministic();
+
     return this;
   }
 
@@ -1213,58 +1218,77 @@ export class ModelGraph {
    * Merge paramValues with all observed node values and evaluate all
    * deterministic nodes to build a complete value map.
    *
-   * Deterministic nodes are evaluated in topological order (parents before
-   * children) using a simple repeated-pass approach.
+   * Uses precomputed _baseValues (observed + scalar constants) and
+   * _detNodesSorted (topological order) so that a single forward pass over
+   * deterministic nodes is sufficient — no repeated passes needed.
    *
    * @param {object} paramValues
    * @returns {object} combined map
    */
   _mergeValues(paramValues) {
-    const allValues = Object.assign({}, paramValues);
+    // _baseValues holds observed node values + data scalars; paramValues
+    // (current sampled parameters) override base where keys collide.
+    const allValues = Object.assign({}, this._baseValues, paramValues);
 
-    // Inject observed values
-    for (const node of this.nodes.values()) {
-      if (node.observed && node.value !== undefined) {
-        allValues[node.name] = node.value;
+    // Single forward pass in topological order (parents evaluated before children).
+    for (const node of this._detNodesSorted) {
+      try {
+        const linkScaleVal = evaluateExpr(node.deterministicExpr, allValues, this._dataColumns);
+        allValues[node.name] = node.linkFn
+          ? this._applyInverseLink(node.linkFn, linkScaleVal)
+          : linkScaleVal;
+      } catch (_) {
+        // Dependency not yet available (shouldn't happen with correct topo order,
+        // but guard defensively).
       }
-    }
-
-    // Inject data scalars (N, J, …)
-    for (const [key, val] of Object.entries(this._dataColumns)) {
-      if (typeof val === 'number' && !(key in allValues)) {
-        allValues[key] = val;
-      }
-    }
-
-    // Evaluate deterministic nodes (topological order via repeated passes)
-    const detNodes = [...this.nodes.values()].filter(n => n.type === 'deterministic');
-    let remaining = detNodes.length;
-    const maxPasses = detNodes.length + 1;
-    let pass = 0;
-
-    while (remaining > 0 && pass < maxPasses) {
-      pass++;
-      let resolved = 0;
-      for (const node of detNodes) {
-        if (node.name in allValues) continue; // already evaluated
-        try {
-          const linkScaleVal = evaluateExpr(node.deterministicExpr, allValues, this._dataColumns);
-          // If the deterministic node has a link function on its LHS (e.g. log(mu[i]) <- ...),
-          // the expression gives the link-scale value. The node name (mu[i], p[i], etc.)
-          // represents the natural-scale value, so we apply the inverse link here.
-          allValues[node.name] = node.linkFn
-            ? this._applyInverseLink(node.linkFn, linkScaleVal)
-            : linkScaleVal;
-          resolved++;
-        } catch (_) {
-          // Dependencies not yet available — will retry in a later pass
-        }
-      }
-      remaining -= resolved;
-      if (resolved === 0) break; // no progress; probably a cycle or missing dependency
     }
 
     return allValues;
+  }
+
+  /**
+   * Precompute the "base" values object: observed node values + scalar data
+   * constants. This is merged with paramValues on every _mergeValues call, so
+   * computing it once at build time avoids re-iterating all nodes each time.
+   */
+  _buildBaseValues() {
+    const base = {};
+    for (const node of this.nodes.values()) {
+      if (node.observed && node.value !== undefined) {
+        base[node.name] = node.value;
+      }
+    }
+    for (const [key, val] of Object.entries(this._dataColumns)) {
+      if (typeof val === 'number') base[key] = val;
+    }
+    this._baseValues = base;
+  }
+
+  /**
+   * Return deterministic nodes in topological order (parents before children).
+   * Computed once at build time so _mergeValues can evaluate them in a single
+   * forward pass instead of the repeated-pass approach.
+   *
+   * @returns {object[]}
+   */
+  _topoSortDeterministic() {
+    const sorted = [];
+    const visited = new Set();
+
+    const visit = (node) => {
+      if (visited.has(node.name)) return;
+      visited.add(node.name);
+      for (const parentName of node.parents) {
+        const parent = this.nodes.get(parentName);
+        if (parent && parent.type === 'deterministic') visit(parent);
+      }
+      sorted.push(node);
+    };
+
+    for (const node of this.nodes.values()) {
+      if (node.type === 'deterministic') visit(node);
+    }
+    return sorted;
   }
 
   _requireBuilt() {

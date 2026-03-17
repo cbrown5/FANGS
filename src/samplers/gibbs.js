@@ -73,6 +73,9 @@ export async function runGibbs(graph, settings) {
     const paramValues = chains[c];
     let savedCount = 0;
 
+    // Pre-allocate the sweep order array once per chain (shuffled in-place each iter).
+    const order = params.slice();
+
     for (let iter = 0; iter < totalIters; iter++) {
       // Yield to the event loop periodically to keep the UI responsive.
       if (iter % UI_YIELD_INTERVAL === 0) {
@@ -88,7 +91,7 @@ export async function runGibbs(graph, settings) {
       }
 
       // One full Gibbs sweep in random parameter order.
-      const order = shuffled(params);
+      shuffleInPlace(order);
       for (const paramName of order) {
         updateParameter(paramName, graph, paramValues, { priorOnly });
       }
@@ -170,12 +173,15 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
   const currentValue = paramValues[paramName];
 
   // Build the log full-conditional.
+  // Mutate paramValues[paramName] in-place rather than spreading a new object
+  // on every evaluation — _mergeValues copies paramValues internally so this
+  // is safe and avoids O(params) allocations per slice sampling step.
   const logFn = options.priorOnly
     ? (pv) => graph.logPriorOnly(pv)
     : (pv) => graph.logPosterior(pv);
   const logFC = (value) => {
-    const testValues = { ...paramValues, [paramName]: value };
-    return logFn(testValues);
+    paramValues[paramName] = value;
+    return logFn(paramValues);
   };
 
   paramValues[paramName] = sliceSample(paramName, currentValue, logFC, {
@@ -279,10 +285,14 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
     );
 
     // Coefficient c[i] = ∂mu[i]/∂θ via central differences.
-    const pvPlus  = { ...paramValues, [node.name]: theta + eps };
-    const pvMinus = { ...paramValues, [node.name]: theta - eps };
-    const muPlus  = graph.evaluateExpr(meanExpr, pvPlus);
-    const muMinus = graph.evaluateExpr(meanExpr, pvMinus);
+    // Mutate paramValues in-place (safe: graph.evaluateExpr calls _mergeValues
+    // which copies paramValues before use, so the caller's object is unaffected
+    // at the cost of copying — but we avoid two extra object spreads per child).
+    paramValues[node.name] = theta + eps;
+    const muPlus  = graph.evaluateExpr(meanExpr, paramValues);
+    paramValues[node.name] = theta - eps;
+    const muMinus = graph.evaluateExpr(meanExpr, paramValues);
+    paramValues[node.name] = theta; // restore for muFull and subsequent children
     const ci      = (muPlus - muMinus) / (2 * eps);
 
     if (!isFinite(ci) || Math.abs(ci) < 1e-14) continue;
@@ -409,8 +419,10 @@ export function conjugateBetaBinom(node, graph, paramValues) {
   let sumSuccesses = 0;
   let sumFailures  = 0;
 
-  for (const [, child] of graph.nodes) {
-    if (!child.observed) continue;
+  // Use precomputed children list (O(children)) rather than scanning all nodes.
+  for (const childName of node.children) {
+    const child = graph.nodes.get(childName);
+    if (!child || !child.observed) continue;
     const childDist = child.distribution?.name;
     if (childDist !== 'dbern' && childDist !== 'dbin' && childDist !== 'dbinom') continue;
 
@@ -459,8 +471,10 @@ export function conjugateGammaPoisson(node, graph, paramValues) {
   let sumY = 0;
   let n    = 0;
 
-  for (const [, child] of graph.nodes) {
-    if (!child.observed) continue;
+  // Use precomputed children list (O(children)) rather than scanning all nodes.
+  for (const childName of node.children) {
+    const child = graph.nodes.get(childName);
+    if (!child || !child.observed) continue;
     if (child.distribution?.name !== 'dpois') continue;
     if (!distributionUsesParam(child, node.name, 0)) continue;
 
@@ -492,8 +506,10 @@ function collectNormalChildren(node, graph, paramValues) {
   let n      = 0;
   let tauLik = 1; // default; overwritten by first child found
 
-  for (const [, child] of graph.nodes) {
-    if (!child.observed) continue;
+  // Use precomputed children list (O(children)) rather than scanning all nodes.
+  for (const childName of node.children) {
+    const child = graph.nodes.get(childName);
+    if (!child || !child.observed) continue;
     if (child.distribution?.name !== 'dnorm') continue;
 
     // Check that the first parameter (mean) evaluates to or references our node.
@@ -527,7 +543,10 @@ function collectNormalChildResiduals(node, graph, paramValues) {
   let sumSqResid = 0;
   let n          = 0;
 
-  for (const [, child] of graph.nodes) {
+  // Use precomputed children list (O(children)) rather than scanning all nodes.
+  for (const childName of node.children) {
+    const child = graph.nodes.get(childName);
+    if (!child) continue;
     // Include both observed nodes (e.g. y[i] ~ dnorm(mu[i], tau)) AND
     // unobserved stochastic nodes (e.g. b[j] ~ dnorm(0, tau.b)).
     if (child.type !== 'observed' && child.type !== 'stochastic') continue;
@@ -694,21 +713,18 @@ function computeSliceWidth(node, paramValues, graph) {
 }
 
 /**
- * Return a new array containing the elements of `arr` in a uniformly random
- * order (Fisher-Yates shuffle). Does not mutate the input.
+ * Fisher-Yates shuffle of `arr` in place.
+ * Avoids the per-iteration array allocation of the previous `shuffled()` helper.
  *
  * @param {string[]} arr
- * @returns {string[]}
  */
-function shuffled(arr) {
-  const out = arr.slice();
-  for (let i = out.length - 1; i > 0; i--) {
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    const tmp = out[i];
-    out[i] = out[j];
-    out[j] = tmp;
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
   }
-  return out;
 }
 
 /**

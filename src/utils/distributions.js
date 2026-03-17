@@ -17,6 +17,21 @@
 const LOG_2PI = Math.log(2 * Math.PI);
 const LOG_PI  = Math.log(Math.PI);
 
+// Lanczos approximation coefficients for logGamma (g=7, n=9, Paul Godfrey).
+// Declared at module scope so the array is allocated once, not on every call.
+const _LANCZOS_G = 7;
+const _LANCZOS_C = [
+   0.99999999999980993,
+ 676.5203681218851,
+-1259.1392167224028,
+  771.32342877765313,
+ -176.61502916214059,
+   12.507343278686905,
+   -0.13857109526572012,
+    9.9843695780195716e-6,
+    1.5056327351493116e-7,
+];
+
 /**
  * Log of the gamma function via Lanczos approximation (Spouge variant).
  * Accurate to ~15 significant figures for x > 0.
@@ -26,28 +41,15 @@ const LOG_PI  = Math.log(Math.PI);
  */
 function logGamma(x) {
   if (x <= 0) return Infinity;
-  // Lanczos coefficients (g=7, n=9) from Paul Godfrey
-  const g = 7;
-  const c = [
-     0.99999999999980993,
-   676.5203681218851,
- -1259.1392167224028,
-   771.32342877765313,
-  -176.61502916214059,
-    12.507343278686905,
-    -0.13857109526572012,
-     9.9843695780195716e-6,
-     1.5056327351493116e-7,
-  ];
   if (x < 0.5) {
     // Reflection formula: Γ(x)Γ(1-x) = π/sin(πx)
     return LOG_PI - Math.log(Math.sin(Math.PI * x)) - logGamma(1 - x);
   }
   x -= 1;
-  let a = c[0];
-  const t = x + g + 0.5;
-  for (let i = 1; i < g + 2; i++) {
-    a += c[i] / (x + i);
+  let a = _LANCZOS_C[0];
+  const t = x + _LANCZOS_G + 0.5;
+  for (let i = 1; i < _LANCZOS_G + 2; i++) {
+    a += _LANCZOS_C[i] / (x + i);
   }
   return 0.5 * LOG_2PI + (x + 0.5) * Math.log(t) - t + Math.log(a);
 }
