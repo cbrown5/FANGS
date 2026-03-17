@@ -51,6 +51,18 @@ implementations across parser, samplers, UI, and tests.
 
 ## What Has Been Done (Recent)
 
+### Observed vs predicted scatter plot on PPC tab (2026-03-17)
+
+**Second PPC canvas added** (`src/ui/ppc-plot.js`)
+A scatter plot of observed `y` (x-axis) vs posterior mean predicted `ŷ` (y-axis)
+is now rendered below the existing fan/histogram plot on the PPC tab. Implementation:
+- For each observation index `i`, `ŷ_i = mean(predictions[k][i])` across all replicates;
+  5th–95th percentile CI is drawn as vertical error bars with cap ticks.
+- A dashed 1:1 reference line spans the full data range; points above indicate
+  over-prediction, below indicate under-prediction.
+- `_drawScatter()` / `_drawScatterEmpty()` added to `PPCPlot`; `update()` and `clear()`
+  updated to drive the second canvas. No changes needed in `sampler-worker.js` or `app.js`.
+
 ### Popup crash fix and trace plot constant x-axis (2026-03-17)
 
 **Popup system rewritten to use inline bundle** (`src/ui/popups.js`, `src/content/popups-bundle.js`)
@@ -231,23 +243,6 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 
 ## What Needs to Be Done Next
 
-
-### 2. Observed vs predicted scatter plot on the PPC tab
-
-Add a second plot to the PPC tab showing observed `y` on the x-axis against
-posterior mean predicted `ŷ` (mean of y_rep across all replicates for each
-observation) on the y-axis, with a 1:1 reference line. This gives a
-per-observation view of model fit complementing the distributional fan plot.
-
-Implementation notes:
-- `ppc-plot.js`: add a second canvas/section below the existing fan plot.
-  For each observation index `i`, compute `ŷ_i = mean(predictions[k][i] for k in reps)`.
-  Also compute a credible interval band (e.g. 5th–95th percentile across reps) as
-  vertical error bars or shaded blobs.
-- The 1:1 line should span the full data range; points above the line indicate
-  over-prediction, below indicate under-prediction.
-- `sampler-worker.js` / `app.js`: no changes needed — `predictions.y` already
-  contains the full set of replicate arrays in observation order.
 
 ### 3. Regenerate R reference fixture JSON files
 
