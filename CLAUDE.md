@@ -145,10 +145,17 @@ The app should launch with:
 ## Commands
 
 ```bash
-# No build system yet — open index.html directly or use a local server
+# Serve the app locally (required for fetch-based popup loading)
 npx serve .
 
-# Run tests (once test framework is set up)
+# Render popup .qmd files via Quarto and regenerate the JS bundle
+# Prerequisite: Quarto must be installed (https://quarto.org)
+npm run build:popups
+
+# Start: build popups then serve
+npm start
+
+# Run tests
 npx vitest
 
 # Run R reference tests
@@ -170,9 +177,39 @@ The dashboard has:
 4. **Pop-up system**: Educational tooltips/modals that can be enabled for teaching
 
 ## Pop-up system
-`src/ui/popups.js` implemented. 17 Markdown content files in `src/content/popups/`
+
+`src/ui/popups.js` implemented. 17 Quarto `.qmd` source files in `src/content/popups/`
 cover MCMC, Gibbs sampling, chains, burn-in, thinning, trace plots, R-hat, ESS,
 posteriors, priors, credible intervals, PPC, prior check, precision (τ), and
 mixed-effects models. `?` trigger buttons are attached via `data-popup` HTML
-attributes and programmatically on summary table column headers. See README.md
-for instructions on adding new popups.
+attributes and programmatically on summary table column headers.
+
+### Popup content pipeline
+
+```
+src/content/popups/<id>.qmd        ← author here (Markdown + LaTeX math)
+        │
+        │  npm run build:popups
+        │  (runs: quarto render src/content/popups)
+        ▼
+src/content/popups/_rendered/<id>.html   ← HTML fragment (git-ignored)
+        │
+        ├─ fetch() at runtime (server mode: npx serve .)
+        │
+src/content/popups-bundle.js             ← fallback bundle (committed to git)
+        │
+        └─ imported by popups.js when fetch() unavailable (file:// mode)
+```
+
+**Content authoring:**
+- Write standard Markdown in `.qmd` files; LaTeX math with `$...$` (inline) and `$$...$$` (display) is supported — Quarto renders it to KaTeX HTML at build time
+- After editing, run `npm run build:popups` to regenerate both `_rendered/` and `popups-bundle.js`
+- Commit the `.qmd` source and the updated `popups-bundle.js` (not `_rendered/`)
+
+**Adding a new popup:**
+1. Create `src/content/popups/<your-id>.qmd`
+2. Run `npm run build:popups`
+3. Add `data-popup="your-id"` to an HTML element, or call `attachPopupTrigger(element, 'your-id')` from JS
+4. Commit `.qmd` + updated `popups-bundle.js`
+
+**Prerequisites:** [Quarto](https://quarto.org) must be installed as a system tool to run `build:popups`. The committed `popups-bundle.js` means the app works for users without Quarto installed.
