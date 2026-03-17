@@ -213,10 +213,36 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 
 ## What Needs to Be Done Next
 
-Further ideas (all existing functionality is complete):
-- Add Poisson and Binomial GLM example models to the model selector
-- R scripts need re-running with updated priors to regenerate fixture JSON files
-  (requires R + NIMBLE; the new weakly-informative priors are already in the R scripts)
+### 1. Observed vs predicted scatter plot on the PPC tab
+
+Add a second plot to the PPC tab showing observed `y` on the x-axis against
+posterior mean predicted `ŷ` (mean of y_rep across all replicates for each
+observation) on the y-axis, with a 1:1 reference line. This gives a
+per-observation view of model fit complementing the distributional fan plot.
+
+Implementation notes:
+- `ppc-plot.js`: add a second canvas/section below the existing fan plot.
+  For each observation index `i`, compute `ŷ_i = mean(predictions[k][i] for k in reps)`.
+  Also compute a credible interval band (e.g. 5th–95th percentile across reps) as
+  vertical error bars or shaded blobs.
+- The 1:1 line should span the full data range; points above the line indicate
+  over-prediction, below indicate under-prediction.
+- `sampler-worker.js` / `app.js`: no changes needed — `predictions.y` already
+  contains the full set of replicate arrays in observation order.
+
+### 2. Regenerate R reference fixture JSON files
+
+R scripts now use weakly-informative priors (`dgamma(1, 0.1)`, `dnorm(0, 0.04)`).
+Re-run the R scripts when R + NIMBLE is available to update the JSON fixtures:
+```
+Rscript tests/r-reference/linear-model.R
+Rscript tests/r-reference/mixed-effects.R
+```
+Existing fixtures still pass the 0.3-SD tolerance until then.
+
+### 3. Additional example models and popup content
+
+- Add Poisson GLM and Bernoulli GLM example models to the model selector buttons
 - Additional popup content for GLM-specific concepts (log link, logit link, overdispersion)
 
 ---
