@@ -51,6 +51,41 @@ implementations across parser, samplers, UI, and tests.
 
 ## What Has Been Done (Recent)
 
+### Full PPC, UI polish, About/Instructions, weakly-informative priors (2026-03-17)
+
+**Posterior predictive check completed** (`model-graph.js`, `sampler-worker.js`, `app.js`)
+Added `samplePredictive(paramValues)` to `ModelGraph`: iterates all observed nodes,
+evaluates distribution parameters in the current posterior state, and draws y_rep from
+the likelihood using a new `RANDOM_SAMPLER` dispatch table (rnorm/rgamma/rbeta/rbinom/
+rbern/rpois/runif/rlnorm). The sampler worker generates up to 200 replicate datasets
+by randomly selecting posterior draws, stores results per observed variable, and includes
+them in the DONE message as `predictions`. `app.js` now passes `predictions.y` to
+`ppc.update()`, completing the full observed-vs-predicted fan plot.
+
+**Model selector buttons disabled during sampling** (`app.js`)
+`btn-model-1` and `btn-model-2` are disabled when Run is clicked and re-enabled on
+DONE, ERROR, or Stop — preventing mid-run model changes.
+
+**About and Instructions pages** (`index.html`)
+Added a hamburger menu (&#9776;) in the header that opens a dropdown with:
+- Instructions — step-by-step guide to using FANGS
+- About — feature list, author links, statistical references
+- GitHub link (github.com/cbrown5/FANGS)
+- seascapemodels.org link
+A modal dialog with two tabs (Instructions / About) displays the content.
+Keyboard (Esc) and click-outside dismiss both the menu and modal.
+
+**Weakly-informative priors** (`default-data.js`, `tests/r-reference/linear-model.R`,
+`tests/r-reference/mixed-effects.R`)
+Default models now use:
+- `alpha ~ dnorm(0, 0.04)` (SD = 5, was SD ≈ 31)
+- `beta  ~ dnorm(0, 0.04)` (SD = 5, was SD ≈ 31)
+- `tau   ~ dgamma(1, 0.1)` (mean = 10, was essentially improper)
+- `tau.b ~ dgamma(1, 0.1)` (mixed model)
+R reference scripts updated to match. Fixture JSON files should be regenerated
+with `Rscript tests/r-reference/linear-model.R` etc. when R is available;
+existing fixtures still pass the 0.3-SD tolerance (posteriors are data-dominated).
+
 ### Linear model NIMBLE fixture test added (2026-03-17)
 
 **Suite 14 — Linear model fixture comparison vs NIMBLE** (`integration.test.js`)
@@ -178,32 +213,11 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 
 ## What Needs to Be Done Next
 
-### 1. Statistical validation against R/nimble references
-
-Linear model, mixed-effects model, Poisson GLM, and Bernoulli GLM validated.
-
-Remaining:
-- Update priors on tau to weakly informative (e.g. `dgamma(1, 0.1)` or half-Cauchy via dunif)
-  rather than very broad `dgamma(0.001, 0.001)`. Keep R nimble tests and app model consistent.
-
-### 2. Posterior predictive samples (full PPC)
-
-The PPC tab currently shows observed `y` only (no simulated predictions).
-To complete it: after sampling, draw replicated data sets `y_rep` by sampling
-from the likelihood at each posterior draw, then overlay the distribution of
-`y_rep` against the observed histogram. This requires generating predictions
-inside the worker and sending them back in the DONE message.
-
-### 3. UI polish
-
-- Status-bar styling for `running` / `done` / `error` states
-- Disable model selector buttons while sampling is in progress
-- Show per-chain Rhat colour coding in the summary table (red if Rhat > 1.1)
-
-### 5. Add About and Instructions pages
-
-Add pages for About and Instructions. Access via a hamburger menu in the header bar.
-Also add links to Github and seascapemodels.org.
+Further ideas (all existing functionality is complete):
+- Add Poisson and Binomial GLM example models to the model selector
+- R scripts need re-running with updated priors to regenerate fixture JSON files
+  (requires R + NIMBLE; the new weakly-informative priors are already in the R scripts)
+- Additional popup content for GLM-specific concepts (log link, logit link, overdispersion)
 
 ---
 

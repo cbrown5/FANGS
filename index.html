@@ -77,6 +77,153 @@
       gap: 12px;
     }
 
+    /* -- Hamburger menu -- */
+    #btn-menu {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      color: #8ab8d8;
+      font-size: 1.3rem;
+      line-height: 1;
+      transition: color 0.15s, background 0.15s;
+    }
+    #btn-menu:hover { background: rgba(255,255,255,0.1); color: #e8f4fd; }
+
+    /* -- Dropdown menu -- */
+    #nav-menu {
+      position: absolute;
+      top: 48px;
+      right: 16px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      z-index: 200;
+      min-width: 180px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #nav-menu.open { display: flex; }
+    .nav-menu-item {
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 11px 18px;
+      font-size: 0.88rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-menu-item:hover { background: #f0f6ff; }
+    .nav-menu-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    /* -- Info modal -- */
+    #info-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    #info-modal-overlay.open { display: flex; }
+    #info-modal {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+      max-width: 680px;
+      width: 92%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #info-modal-header {
+      background: var(--blue-dark);
+      color: #e8f4fd;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    #info-modal-header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    #btn-modal-close {
+      background: none;
+      border: none;
+      color: #8ab8d8;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    #btn-modal-close:hover { color: #fff; }
+    #info-modal-tabs {
+      display: flex;
+      background: #f0f4f8;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .info-tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 22px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .info-tab-btn.active {
+      color: var(--blue-dark);
+      border-bottom-color: var(--blue-light);
+    }
+    .info-tab-btn:hover { color: var(--blue-dark); }
+    #info-modal-body {
+      overflow-y: auto;
+      padding: 24px 28px;
+      flex: 1;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: var(--text);
+    }
+    #info-modal-body h3 {
+      color: var(--blue-dark);
+      font-size: 1rem;
+      margin: 0 0 8px;
+    }
+    #info-modal-body h4 {
+      color: var(--blue-mid);
+      font-size: 0.9rem;
+      margin: 16px 0 6px;
+    }
+    #info-modal-body p { margin-bottom: 10px; }
+    #info-modal-body ul { margin: 0 0 10px 20px; }
+    #info-modal-body li { margin-bottom: 4px; }
+    #info-modal-body a { color: var(--blue-light); text-decoration: none; }
+    #info-modal-body a:hover { text-decoration: underline; }
+    .info-pane { display: none; }
+    .info-pane.active { display: block; }
+
     #btn-download {
       background: var(--blue-mid);
       color: #e8f4fd;
@@ -545,8 +692,94 @@
   <span class="subtitle">Fast Accessible Numeric Gibbs Sampler &mdash; Bayesian inference in your browser</span>
   <div class="header-right">
     <button id="btn-download" disabled title="Download posterior samples as CSV">&#8659; Download CSV</button>
+    <button id="btn-menu" aria-label="Menu" aria-expanded="false" aria-haspopup="true">&#9776;</button>
   </div>
 </header>
+
+<!-- Dropdown nav menu -->
+<nav id="nav-menu" role="menu" aria-label="Site navigation">
+  <button class="nav-menu-item" id="menu-instructions" role="menuitem">
+    <span>&#9432;</span> Instructions
+  </button>
+  <button class="nav-menu-item" id="menu-about" role="menuitem">
+    <span>&#9675;</span> About
+  </button>
+  <div class="nav-menu-sep"></div>
+  <a class="nav-menu-item" href="https://github.com/cbrown5/FANGS" target="_blank" rel="noopener" role="menuitem">
+    <span>&#9670;</span> GitHub
+  </a>
+  <a class="nav-menu-item" href="https://www.seascapemodels.org" target="_blank" rel="noopener" role="menuitem">
+    <span>&#9670;</span> seascapemodels.org
+  </a>
+</nav>
+
+<!-- Info modal (About / Instructions) -->
+<div id="info-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
+  <div id="info-modal">
+    <div id="info-modal-header">
+      <h2 id="info-modal-title">FANGS</h2>
+      <button id="btn-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div id="info-modal-tabs">
+      <button class="info-tab-btn active" data-info-tab="instructions">Instructions</button>
+      <button class="info-tab-btn" data-info-tab="about">About</button>
+    </div>
+    <div id="info-modal-body">
+
+      <!-- Instructions pane -->
+      <div class="info-pane active" id="info-pane-instructions">
+        <h3>Getting started</h3>
+        <p>FANGS fits Bayesian mixed-effects models using Gibbs sampling — entirely in your browser, with no software installation required.</p>
+        <h4>1. Load data</h4>
+        <p>Drag and drop a CSV file onto the <strong>Data</strong> panel, or click <em>Load example data</em> to use the built-in dataset. Your CSV must have a header row. The response variable should be named <code>y</code>; predictors can have any name.</p>
+        <h4>2. Choose a model</h4>
+        <p>Select <strong>Linear Model</strong> or <strong>Mixed Effects</strong> to load a pre-written model, or type your own BUGS/JAGS model code in the editor. Supported distributions: <code>dnorm</code>, <code>dgamma</code>, <code>dbeta</code>, <code>dbern</code>, <code>dpois</code>, <code>dbinom</code>, <code>dunif</code>, <code>dlnorm</code>.</p>
+        <h4>3. Configure sampler settings</h4>
+        <ul>
+          <li><strong>Chains</strong> — number of independent MCMC chains (3 is a good default).</li>
+          <li><strong>Samples</strong> — post burn-in samples per chain.</li>
+          <li><strong>Burn-in</strong> — initial iterations discarded.</li>
+          <li><strong>Thinning</strong> — save every n-th sample (1 = keep all).</li>
+        </ul>
+        <h4>4. Run and inspect results</h4>
+        <p>Click <strong>Run</strong>. Watch the live trace plots, then browse the <em>Posteriors</em>, <em>Summary</em>, and <em>PPC</em> tabs once sampling completes. The <strong>Summary</strong> tab flags convergence issues (Rhat &gt; 1.1) in red.</p>
+        <h4>5. Prior predictive check</h4>
+        <p>On the <em>Prior Check</em> tab, click <strong>Run Prior Check</strong> to sample from the prior only (ignoring data) and inspect prior sensitivity.</p>
+        <h4>6. Download samples</h4>
+        <p>Use the <strong>&#8659; Download CSV</strong> button in the header to export all posterior samples.</p>
+        <h4>Tip: click the <strong>?</strong> buttons</h4>
+        <p>Throughout the interface, <strong>?</strong> buttons open educational pop-ups that explain MCMC concepts.</p>
+      </div>
+
+      <!-- About pane -->
+      <div class="info-pane" id="info-pane-about">
+        <h3>About FANGS</h3>
+        <p>FANGS (<strong>Fast Accessible Numeric Gibbs Sampler</strong>) is a browser-based Bayesian inference tool designed for teaching mixed-effects models. It requires no software installation — everything runs client-side in your browser using JavaScript.</p>
+        <h4>Features</h4>
+        <ul>
+          <li>Component-wise Gibbs sampler with conjugate updates where possible</li>
+          <li>Slice sampler fallback for non-conjugate full conditionals</li>
+          <li>Support for linear models, GLMs (Poisson, Binomial), and mixed-effects models</li>
+          <li>BUGS/JAGS model syntax (compatible with NIMBLE)</li>
+          <li>Live trace plots, posterior densities, and posterior predictive checks</li>
+          <li>Educational pop-up system with explanations of MCMC concepts</li>
+          <li>Export posterior samples as CSV</li>
+        </ul>
+        <h4>Authors &amp; links</h4>
+        <p>Developed by <a href="https://www.seascapemodels.org" target="_blank" rel="noopener">seascapemodels.org</a>.</p>
+        <p>Source code: <a href="https://github.com/cbrown5/FANGS" target="_blank" rel="noopener">github.com/cbrown5/FANGS</a></p>
+        <h4>Citation</h4>
+        <p>If you use FANGS in teaching or research, please cite the GitHub repository.</p>
+        <h4>Statistical references</h4>
+        <ul>
+          <li>Gelfand &amp; Smith (1990). Sampling-Based Approaches to Calculating Marginal Densities. <em>JASA</em> 85(410).</li>
+          <li>Neal (2003). Slice Sampling. <em>Annals of Statistics</em> 31(3).</li>
+        </ul>
+      </div>
+
+    </div><!-- /info-modal-body -->
+  </div><!-- /info-modal -->
+</div><!-- /info-modal-overlay -->
 
 <!-- ======================================================== -->
 <!-- Main layout                                              -->
@@ -735,5 +968,70 @@
 </div><!-- /main -->
 
 <script type="module" src="src/app.js"></script>
+<script>
+  // Hamburger menu
+  (function() {
+    const btnMenu  = document.getElementById('btn-menu');
+    const navMenu  = document.getElementById('nav-menu');
+    const overlay  = document.getElementById('info-modal-overlay');
+    const btnClose = document.getElementById('btn-modal-close');
+    const modalTitle = document.getElementById('info-modal-title');
+
+    function openModal(tab) {
+      // Switch to the requested tab
+      document.querySelectorAll('.info-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.info-pane').forEach(p => p.classList.remove('active'));
+      const tabBtn  = document.querySelector(`.info-tab-btn[data-info-tab="${tab}"]`);
+      const tabPane = document.getElementById(`info-pane-${tab}`);
+      if (tabBtn)  tabBtn.classList.add('active');
+      if (tabPane) tabPane.classList.add('active');
+      modalTitle.textContent = tab === 'about' ? 'About FANGS' : 'Instructions';
+      overlay.classList.add('open');
+    }
+
+    function closeMenu() {
+      navMenu.classList.remove('open');
+      btnMenu.setAttribute('aria-expanded', 'false');
+    }
+
+    btnMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = navMenu.classList.toggle('open');
+      btnMenu.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!navMenu.contains(e.target) && e.target !== btnMenu) closeMenu();
+    });
+
+    document.getElementById('menu-instructions').addEventListener('click', () => {
+      closeMenu(); openModal('instructions');
+    });
+    document.getElementById('menu-about').addEventListener('click', () => {
+      closeMenu(); openModal('about');
+    });
+
+    btnClose.addEventListener('click', () => overlay.classList.remove('open'));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { overlay.classList.remove('open'); closeMenu(); }
+    });
+
+    // Info tab switching inside modal
+    document.querySelectorAll('.info-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.infoTab;
+        document.querySelectorAll('.info-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.info-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const pane = document.getElementById(`info-pane-${tab}`);
+        if (pane) pane.classList.add('active');
+        modalTitle.textContent = tab === 'about' ? 'About FANGS' : 'Instructions';
+      });
+    });
+  })();
+</script>
 </body>
 </html>

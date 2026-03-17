@@ -8,9 +8,9 @@
 # Model:
 #   y[i] ~ dnorm(mu[i], tau)
 #   mu[i] <- alpha + beta * x[i]
-#   alpha ~ dnorm(0, 0.001)
-#   beta  ~ dnorm(0, 0.001)
-#   tau   ~ dgamma(0.001, 0.001)
+#   alpha ~ dnorm(0, 0.04)
+#   beta  ~ dnorm(0, 0.04)
+#   tau   ~ dgamma(1, 0.1)
 #
 # Note: dnorm in NIMBLE/JAGS uses precision (1/variance) as the second argument,
 # not standard deviation.  tau = 1/sigma^2.
@@ -134,9 +134,9 @@ linear_code <- nimbleCode({
     y[i] ~ dnorm(mu[i], tau)
     mu[i] <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.001)
-  beta  ~ dnorm(0, 0.001)
-  tau   ~ dgamma(0.001, 0.001)
+  alpha ~ dnorm(0, 0.04)
+  beta  ~ dnorm(0, 0.04)
+  tau   ~ dgamma(1, 0.1)
 })
 
 # ---------------------------------------------------------------------------
