@@ -57,41 +57,37 @@ Reference JSON fixtures are written to `tests/r-reference/results/`.
 
 ## Adding or editing educational popups
 
-Popup content is stored in two places:
+Popup content is authored in [Quarto](https://quarto.org) `.qmd` files and rendered to HTML
+at build time. The rendered HTML is bundled into `src/content/popups-bundle.js` as a fallback
+so popups work even when opened via `file://` without a local server.
 
-- `src/content/popups/<id>.md` — the source Markdown files (edit these)
-- `src/content/popups-bundle.js` — an inline JS bundle used at runtime (regenerate after edits)
-
-The app reads content from the **bundle**, not the `.md` files directly. This means popups work when the app is opened via `file://` without a local server.
+**Prerequisite:** Install [Quarto](https://quarto.org) as a system tool.
 
 ### Editing existing popup text
 
-1. Open the relevant `.md` file in `src/content/popups/` and make your changes.
-2. Copy the updated text into the matching entry in `src/content/popups-bundle.js`
-   (each entry is a template-literal string keyed by popup ID, e.g. `'burn-in': \`...\``).
-3. Save and reload the app — no build step needed.
+1. Open the relevant `.qmd` file in `src/content/popups/` and make your changes.
+   Standard Markdown is supported, plus LaTeX math (`$...$` inline, `$$...$$` display).
+2. Run `npm run build:popups` to re-render and regenerate the bundle.
+3. Reload the app.
 
 ### Adding a new popup
 
-**Step 1 — Write the Markdown**
+**Step 1 — Write the content**
 
-Create a new file in `src/content/popups/`:
+Create a new Quarto file in `src/content/popups/`:
 
 ```
-src/content/popups/my-topic.md
+src/content/popups/my-topic.qmd
 ```
 
-Supported Markdown: headings (`#`, `##`, `###`), bold (`**text**`), italic (`*text*`), inline code (`` `code` ``), unordered lists (`- item`), fenced code blocks (` ``` `), and tables (`| col | col |`).
+**Step 2 — Build**
 
-**Step 2 — Add the content to the bundle**
-
-Open `src/content/popups-bundle.js` and add a new entry to the `POPUP_CONTENT` object:
-
-```js
-'my-topic': `# My Topic
-
-Your Markdown content here.`,
+```bash
+npm run build:popups
 ```
+
+This renders all `.qmd` files to HTML fragments in `src/content/popups/_rendered/` and
+regenerates `src/content/popups-bundle.js`.
 
 **Step 3 — Attach the trigger to an HTML element**
 
@@ -113,26 +109,31 @@ import { attachPopupTrigger } from './ui/popups.js';
 attachPopupTrigger(myElement, 'my-topic');
 ```
 
+**Step 4 — Commit**
+
+Commit the `.qmd` source file and the updated `popups-bundle.js`.
+Do not commit `src/content/popups/_rendered/` (it is git-ignored).
+
 ---
 
 ## Existing popup files
 
 | File | Topic |
 |------|-------|
-| `mcmc.md` | What is MCMC? |
-| `gibbs-sampler.md` | How Gibbs sampling works |
-| `chains.md` | Multiple chains |
-| `burn-in.md` | Burn-in / warm-up |
-| `thinning.md` | Thinning |
-| `trace-plot.md` | Reading trace plots |
-| `rhat.md` | R-hat convergence diagnostic |
-| `ess.md` | Effective sample size |
-| `posterior.md` | Posterior distributions |
-| `prior.md` | Prior distributions |
-| `credible-interval.md` | Credible intervals |
-| `ppc.md` | Posterior predictive checks |
-| `prior-check.md` | Prior predictive checks |
-| `precision.md` | Precision (τ) vs variance |
-| `mixed-effects.md` | Mixed-effects models |
-| `posteriors-tab.md` | Reading the Posteriors tab |
-| `summary-tab.md` | Reading the Summary table |
+| `mcmc.qmd` | What is MCMC? |
+| `gibbs-sampler.qmd` | How Gibbs sampling works |
+| `chains.qmd` | Multiple chains |
+| `burn-in.qmd` | Burn-in / warm-up |
+| `thinning.qmd` | Thinning |
+| `trace-plot.qmd` | Reading trace plots |
+| `rhat.qmd` | R-hat convergence diagnostic |
+| `ess.qmd` | Effective sample size |
+| `posterior.qmd` | Posterior distributions |
+| `prior.qmd` | Prior distributions |
+| `credible-interval.qmd` | Credible intervals |
+| `ppc.qmd` | Posterior predictive checks |
+| `prior-check.qmd` | Prior predictive checks |
+| `precision.qmd` | Precision (τ) vs variance |
+| `mixed-effects.qmd` | Mixed-effects models |
+| `posteriors-tab.qmd` | Reading the Posteriors tab |
+| `summary-tab.qmd` | Reading the Summary table |
