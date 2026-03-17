@@ -6,75 +6,76 @@
 // In server mode, popups.js fetches HTML directly from src/content/popups/_rendered/.
 
 export const POPUP_CONTENT = {
-  'burn-in': `<h1>Burn-in</h1>
+  'burn-in': `<html><head></head><body><h1 id="burn-in">Burn-in</h1>
 <p><strong>Burn-in</strong> (also called <em>warm-up</em>) refers to the early iterations of an MCMC chain that are discarded before analysis.</p>
-<h2>Why discard early samples?</h2>
-<p>MCMC chains start at an arbitrary initial value — typically an overdispersed draw from the prior. It takes some number of iterations for the chain to &quot;forget&quot; where it started and settle into sampling the posterior properly.</p>
+<h2 id="why-discard-early-samples">Why discard early samples?</h2>
+<p>MCMC chains start at an arbitrary initial value — typically an overdispersed draw from the prior. It takes some number of iterations for the chain to “forget” where it started and settle into sampling the posterior properly.</p>
 <p>The early samples are influenced by the starting point rather than the posterior, so they are biased and should not be included in your posterior summaries.</p>
-<h2>Visualising burn-in</h2>
+<h2 id="visualising-burn-in">Visualising burn-in</h2>
 <p>In the trace plot, you will often see an initial period where the chain drifts or jumps before stabilising. The burn-in period covers these early iterations.</p>
-<h2>How many to discard?</h2>
+<h2 id="how-many-to-discard">How many to discard?</h2>
 <ul>
 <li>A common default is <strong>25–50% of total samples</strong> (e.g., 500 out of 2000)</li>
 <li>For well-specified models with good initialisations, burn-in can be short</li>
 <li>For complex or poorly-conditioned models, you may need much more</li>
 </ul>
-<h2>Checking whether burn-in was enough</h2>
+<h2 id="checking-whether-burn-in-was-enough">Checking whether burn-in was enough</h2>
 <ul>
 <li>Trace plots should show no visible trend after burn-in</li>
 <li>R-hat values close to 1.0 suggest the post-burn-in samples are reliable</li>
 <li>If R-hat &gt; 1.1, consider increasing both burn-in and total samples</li>
 </ul>
-<h2>Terminology note</h2>
-<p>Some software (e.g. Stan) uses the term <em>warm-up</em> rather than <em>burn-in</em>. They mean the same thing.</p>`,
-  'chains': `<h1>Multiple Chains</h1>
+<h2 id="terminology-note">Terminology note</h2>
+<p>Some software (e.g.&nbsp;Stan) uses the term <em>warm-up</em> rather than <em>burn-in</em>. They mean the same thing.</p>
+</body></html>`,
+  'chains': `<html><head></head><body><h1 id="multiple-chains">Multiple Chains</h1>
 <p>Running several <strong>independent chains</strong> in parallel is standard MCMC practice and serves two purposes: diagnosing convergence and improving coverage.</p>
-<h2>What is a chain?</h2>
+<p><span class="math display"><em>y</em> = <em>a</em> * <em>x</em> + <em>b</em></span>$</p>
+<h2 id="what-is-a-chain">What is a chain?</h2>
 <p>A single chain is one run of the MCMC algorithm, starting from a random initial point and producing a sequence of parameter values over thousands of iterations.</p>
-<h2>Why run multiple chains?</h2>
+<h2 id="why-run-multiple-chains">Why run multiple chains?</h2>
 <p><strong>1. Convergence diagnosis</strong></p>
 <p>If all chains start in different parts of parameter space but eventually mix together and look similar, that is strong evidence the sampler has found the posterior. The R-hat statistic formalises this comparison.</p>
 <p>If chains look very different from each other, the sampler may be stuck in a local region — a sign that you need more iterations or a better model.</p>
 <p><strong>2. Better exploration</strong></p>
 <p>Different starting points can explore different parts of the posterior. Multiple chains together give a more complete picture than a single long chain.</p>
-<h2>Recommended settings</h2>
+<h2 id="recommended-settings">Recommended settings</h2>
 <ul>
 <li><strong>3 chains</strong> is the standard minimum for computing R-hat</li>
 <li>More chains give more reliable diagnostics but take proportionally longer</li>
 <li>Each chain is initialised from an overdispersed draw from the prior</li>
 </ul>
-<h2>What to look for</h2>
-<p>In the trace plots, chains are shown in different colours. Well-behaved chains should:</p>
-<ul>
-<li>Overlap and intermix with each other</li>
-<li>Show no long-term trends</li>
-<li>Have similar mean and variance</li>
-</ul>`,
-  'credible-interval': `<h1>Credible Intervals</h1>
+<h2 id="what-to-look-for">What to look for</h2>
+<p>In the trace plots, chains are shown in different colours. Well-behaved chains should: - Overlap and intermix with each other - Show no long-term trends - Have similar mean and variance</p>
+</body></html>`,
+  'credible-interval': `<html><head></head><body><h1 id="credible-intervals">Credible Intervals</h1>
 <p>A <strong>credible interval</strong> is the Bayesian analogue of a confidence interval. It is a range of parameter values that contains a specified posterior probability.</p>
-<h2>What the 95% interval means</h2>
+<h2 id="what-the-95-interval-means">What the 95% interval means</h2>
 <p>A <strong>95% credible interval</strong> (also called a <em>posterior interval</em> or <em>Bayesian interval</em>) means:</p>
-<p>&gt; Given the data and model, there is a 95% probability that the true parameter value lies within this range.</p>
+<blockquote>
+<p>Given the data and model, there is a 95% probability that the true parameter value lies within this range.</p>
+</blockquote>
 <p>This is the direct, intuitive interpretation. Unlike frequentist confidence intervals, you <em>can</em> make probability statements about the parameter directly.</p>
-<h2>How it is computed</h2>
+<h2 id="how-it-is-computed">How it is computed</h2>
 <p>FANGS reports the <strong>equal-tailed</strong> interval, defined by the 2.5th and 97.5th percentiles of the posterior samples:</p>
 <ul>
-<li><strong>2.5%</strong> — lower bound (shown in the &quot;2.5%&quot; column)</li>
-<li><strong>97.5%</strong> — upper bound (shown in the &quot;97.5%&quot; column)</li>
+<li><strong>2.5%</strong> — lower bound (shown in the “2.5%” column)</li>
+<li><strong>97.5%</strong> — upper bound (shown in the “97.5%” column)</li>
 </ul>
 <p>The <strong>median</strong> (50th percentile) is also shown as a robust central estimate.</p>
-<h2>Interpreting width</h2>
+<h2 id="interpreting-width">Interpreting width</h2>
 <ul>
 <li><strong>Narrow interval</strong> → high certainty about the parameter</li>
 <li><strong>Wide interval</strong> → high uncertainty; more data would help</li>
 <li><strong>Interval spanning zero</strong> → data are consistent with no effect</li>
 </ul>
-<h2>Comparison to frequentist confidence intervals</h2>
+<h2 id="comparison-to-frequentist-confidence-intervals">Comparison to frequentist confidence intervals</h2>
 <p>A frequentist 95% confidence interval means: if you repeated the experiment many times and computed an interval each time, 95% of those intervals would contain the true value. It does <em>not</em> mean there is a 95% probability the true value lies in <em>this particular</em> interval.</p>
-<p>The credible interval gives you the probabilistic statement directly, which is usually what people actually want.</p>`,
-  'data-formatting': `<h1>Data Formatting</h1>
+<p>The credible interval gives you the probabilistic statement directly, which is usually what people actually want.</p>
+</body></html>`,
+  'data-formatting': `<html><head></head><body><h1 id="data-formatting">Data Formatting</h1>
 <p>FANGS accepts <strong>CSV files</strong> with a header row. The first row must contain column names; each subsequent row is one observation.</p>
-<h2>Required structure</h2>
+<h2 id="required-structure">Required structure</h2>
 <pre><code>y,x,group
 2.1,0.5,1
 3.4,1.2,1
@@ -85,10 +86,10 @@ export const POPUP_CONTENT = {
 <li>Every row must have the same number of fields.</li>
 <li>Missing values are not supported — remove incomplete rows before uploading.</li>
 </ul>
-<h2>Numeric columns</h2>
-<p>Any column whose values are all numbers is treated as a continuous variable and passed directly to the sampler. Use these as-is in your model (e.g. <code>y[i]</code>, <code>x[i]</code>).</p>
-<h2>Categorical columns</h2>
-<p>If a column contains <strong>any non-numeric values</strong> (e.g. <code>&quot;A&quot;</code>, <code>&quot;control&quot;</code>, <code>&quot;site1&quot;</code>), the app automatically converts it to <strong>1-based integer codes</strong> in the order the levels first appear.</p>
+<h2 id="numeric-columns">Numeric columns</h2>
+<p>Any column whose values are all numbers is treated as a continuous variable and passed directly to the sampler. Use these as-is in your model (e.g.&nbsp;<code>y[i]</code>, <code>x[i]</code>).</p>
+<h2 id="categorical-columns">Categorical columns</h2>
+<p>If a column contains <strong>any non-numeric values</strong> (e.g.&nbsp;<code>"A"</code>, <code>"control"</code>, <code>"site1"</code>), the app automatically converts it to <strong>1-based integer codes</strong> in the order the levels first appear.</p>
 <p>For example, a <code>treatment</code> column with values <code>A, B, A, C</code> becomes <code>1, 2, 1, 3</code>.</p>
 <p><strong>You do not need to create a dummy/design matrix yourself.</strong> Reference the integer-coded column directly in your BUGS model:</p>
 <pre><code>for (i in 1:N) {
@@ -99,102 +100,116 @@ for (k in 1:K) {
   alpha[k] ~ dnorm(0, 0.001)
 }</code></pre>
 <p>Here <code>K</code> is the number of treatment levels (set in the Constants panel).</p>
-<h2>Grouping variables for random effects</h2>
+<h2 id="grouping-variables-for-random-effects">Grouping variables for random effects</h2>
 <p>A column named <code>group</code> (integer or auto-encoded) is used for random intercepts:</p>
 <pre><code>mu[i] &lt;- alpha + beta * x[i] + b[group[i]]</code></pre>
 <p>The app infers <code>J</code> (the number of groups) automatically from the unique values in the <code>group</code> column, so you do not need to set it manually.</p>
-<h2>Constants panel</h2>
+<h2 id="constants-panel">Constants panel</h2>
 <p>After loading data, the app scans your model for uppercase scalars like <code>N</code>, <code>J</code>, <code>K</code> used in <code>1:N</code>-style loop bounds:</p>
 <ul>
 <li><strong>N</strong> is always set automatically to the number of rows.</li>
 <li><strong>J</strong> is inferred from the <code>group</code> column if present.</li>
-<li>Other scalars (e.g. <code>K</code> for number of treatment levels) appear as editable inputs — fill these in before running.</li>
+<li>Other scalars (e.g.&nbsp;<code>K</code> for number of treatment levels) appear as editable inputs — fill these in before running.</li>
 </ul>
-<h2>Checking your data</h2>
-<p>Switch to the <strong>Data</strong> tab after uploading to confirm the table looks correct. The app shows original string values for categorical columns so you can verify the mapping.</p>`,
-  'ess': `<h1>Effective Sample Size (ESS)</h1>
+<h2 id="checking-your-data">Checking your data</h2>
+<p>Switch to the <strong>Data</strong> tab after uploading to confirm the table looks correct. The app shows original string values for categorical columns so you can verify the mapping.</p>
+</body></html>`,
+  'ess': `<html><head></head><body><h1 id="effective-sample-size-ess">Effective Sample Size (ESS)</h1>
 <p><strong>Effective sample size (ESS)</strong> measures how many <em>independent</em> samples your MCMC chain is worth, accounting for autocorrelation.</p>
-<h2>Why not just use the raw sample count?</h2>
+<h2 id="why-not-just-use-the-raw-sample-count">Why not just use the raw sample count?</h2>
 <p>MCMC samples are correlated — consecutive draws are similar. A chain of 2000 correlated samples contains less information than 2000 truly independent samples from the posterior.</p>
 <p>ESS adjusts for this correlation:</p>
 <pre><code>ESS = N / (1 + 2 × sum of autocorrelations)</code></pre>
 <p>where <em>N</em> is the raw number of post-burn-in samples.</p>
-<h2>Interpreting ESS</h2>
-<table>
-<thead><tr><th>ESS</th><th>Interpretation</th></tr></thead>
+<h2 id="interpreting-ess">Interpreting ESS</h2>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>ESS</th>
+<th>Interpretation</th>
+</tr>
+</thead>
 <tbody>
-<tr><td>≥ 400</td><td>Good — reliable quantile estimates</td></tr>
-<tr><td>100–400</td><td>Adequate for means, poor for tails</td></tr>
-<tr><td>&lt; 100</td><td>Too low — increase samples or reduce thinning</td></tr>
+<tr class="odd">
+<td>≥ 400</td>
+<td>Good — reliable quantile estimates</td>
+</tr>
+<tr class="even">
+<td>100–400</td>
+<td>Adequate for means, poor for tails</td>
+</tr>
+<tr class="odd">
+<td>&lt; 100</td>
+<td>Too low — increase samples or reduce thinning</td>
+</tr>
 </tbody>
 </table>
 <p>A rule of thumb: you need <strong>ESS ≥ 400</strong> per parameter for reliable 95% credible intervals.</p>
-<h2>ESS &lt; raw sample count</h2>
+<h2 id="ess-raw-sample-count">ESS &lt; raw sample count</h2>
 <p>ESS will always be ≤ N. The ratio ESS / N is the <em>mixing efficiency</em>. A ratio close to 1 means the chain mixes well (low autocorrelation). A ratio close to 0 means the chain moves very slowly.</p>
-<h2>Colour coding in the summary table</h2>
+<h2 id="colour-coding-in-the-summary-table">Colour coding in the summary table</h2>
 <ul>
 <li><strong>Orange</strong> background → ESS &lt; 100 (low effective sample size warning)</li>
 <li>No highlight → ESS ≥ 100 (acceptable)</li>
 </ul>
-<h2>How to increase ESS</h2>
+<h2 id="how-to-increase-ess">How to increase ESS</h2>
 <ul>
 <li><strong>Run more iterations</strong> — the most direct solution</li>
 <li><strong>Reparameterise</strong> — e.g., centring or standardising predictors often improves mixing</li>
 <li><strong>Do not thin</strong> — thinning reduces raw N without helping ESS per iteration</li>
-</ul>`,
-  'gibbs-sampler': `<h1>Gibbs Sampling</h1>
+</ul>
+</body></html>`,
+  'gibbs-sampler': `<html><head></head><body><h1 id="gibbs-sampling">Gibbs Sampling</h1>
 <p>The <strong>Gibbs sampler</strong> is a specific MCMC algorithm that updates one parameter at a time while holding all others fixed.</p>
-<h2>The key idea</h2>
+<h2 id="the-key-idea">The key idea</h2>
 <p>Instead of moving all parameters simultaneously (which is hard), Gibbs sampling cycles through each parameter and draws a new value from its <strong>full conditional distribution</strong> — the distribution of that parameter given the current values of every other parameter and the data.</p>
-<h2>One iteration</h2>
+<h2 id="one-iteration">One iteration</h2>
 <p>For a model with parameters α, β, and τ, one Gibbs iteration looks like:</p>
-<ol>
+<ol type="1">
 <li>Draw new α from <code>p(α | β, τ, data)</code></li>
 <li>Draw new β from <code>p(β | α, τ, data)</code></li>
 <li>Draw new τ from <code>p(τ | α, β, data)</code></li>
 </ol>
 <p>Then repeat.</p>
-<h2>Conjugate updates</h2>
+<h2 id="conjugate-updates">Conjugate updates</h2>
 <p>When the prior and likelihood belong to the same distributional family (a <em>conjugate pair</em>), the full conditional has a known closed form and can be sampled exactly. This is fast and exact.</p>
-<p><strong>Examples used in FANGS:</strong></p>
-<ul>
-<li>Normal likelihood + normal prior → normal full conditional (updates α, β)</li>
-<li>Gamma prior on precision τ + normal likelihood → gamma full conditional</li>
-</ul>
-<h2>Slice sampling fallback</h2>
+<p><strong>Examples used in FANGS:</strong> - Normal likelihood + normal prior → normal full conditional (updates α, β) - Gamma prior on precision τ + normal likelihood → gamma full conditional</p>
+<h2 id="slice-sampling-fallback">Slice sampling fallback</h2>
 <p>When conjugacy does not apply (e.g., logistic regression), FANGS falls back to <strong>slice sampling</strong> — a derivative-free method that still samples from the correct distribution, just less efficiently.</p>
-<h2>Why it works</h2>
-<p>Each update leaves the joint posterior distribution invariant. After many cycles, the chain converges to samples from the true joint posterior.</p>`,
-  'mcmc': `<h1>What is MCMC?</h1>
+<h2 id="why-it-works">Why it works</h2>
+<p>Each update leaves the joint posterior distribution invariant. After many cycles, the chain converges to samples from the true joint posterior.</p>
+</body></html>`,
+  'mcmc': `<html><head></head><body><h1 id="what-is-mcmc">What is MCMC?</h1>
 <p><strong>Markov chain Monte Carlo (MCMC)</strong> is an algorithm for drawing samples from a probability distribution that would otherwise be difficult to compute directly.</p>
-<h2>Why do we need it?</h2>
+<h2 id="why-do-we-need-it">Why do we need it?</h2>
 <p>In Bayesian statistics, the posterior distribution combines your prior beliefs with the data:</p>
 <pre><code>posterior ∝ likelihood × prior</code></pre>
 <p>For most realistic models this cannot be solved analytically — the integral to normalise it is intractable. MCMC sidesteps this by <strong>sampling</strong> from the posterior instead of computing it directly.</p>
-<h2>How it works</h2>
-<ol>
+<h2 id="how-it-works">How it works</h2>
+<ol type="1">
 <li>Start at some initial parameter values</li>
 <li>Propose a move to a nearby point in parameter space</li>
 <li>Accept or reject the move based on the ratio of posterior densities</li>
 <li>Repeat thousands of times</li>
 </ol>
-<p>The resulting chain of accepted values is a <strong>correlated sample</strong> from the posterior. After enough iterations, the chain &quot;forgets&quot; where it started and the samples represent the true posterior distribution.</p>
-<h2>What you get</h2>
+<p>The resulting chain of accepted values is a <strong>correlated sample</strong> from the posterior. After enough iterations, the chain “forgets” where it started and the samples represent the true posterior distribution.</p>
+<h2 id="what-you-get">What you get</h2>
 <p>Rather than a formula, you get a large set of numbers — one per iteration. You can summarise the posterior by computing:</p>
 <ul>
 <li>The <strong>mean</strong> of those numbers → posterior mean</li>
 <li><strong>Quantiles</strong> → credible intervals</li>
 <li><strong>Histograms</strong> → density plots</li>
 </ul>
-<h2>See also</h2>
+<h2 id="see-also">See also</h2>
 <ul>
 <li><em>Trace plots</em> show the raw chain values over iterations</li>
 <li><em>R-hat</em> tells you whether the chain has converged</li>
 <li><em>ESS</em> measures how many independent samples you effectively have</li>
-</ul>`,
-  'mixed-effects': `<h1>Mixed-Effects Models</h1>
+</ul>
+</body></html>`,
+  'mixed-effects': `<html><head></head><body><h1 id="mixed-effects-models">Mixed-Effects Models</h1>
 <p>A <strong>mixed-effects model</strong> (also called a <em>multilevel</em> or <em>hierarchical</em> model) includes both <strong>fixed effects</strong> (population-level parameters) and <strong>random effects</strong> (group-level deviations).</p>
-<h2>When to use them</h2>
+<h2 id="when-to-use-them">When to use them</h2>
 <p>Use a mixed-effects model when your data have a <strong>grouped or nested structure</strong>:</p>
 <ul>
 <li>Students nested within schools</li>
@@ -202,7 +217,7 @@ for (k in 1:K) {
 <li>Plants within plots within sites</li>
 </ul>
 <p>Ignoring this structure underestimates uncertainty and can give misleading inference.</p>
-<h2>The structure</h2>
+<h2 id="the-structure">The structure</h2>
 <pre><code>y[i] ~ dnorm(mu[i], tau)
 mu[i] &lt;- alpha + beta * x[i] + b[group[i]]
 b[j]  ~ dnorm(0, tau.b)</code></pre>
@@ -212,23 +227,24 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <li><strong>b[j]</strong> — random intercept for group j (random effect)</li>
 <li><strong>tau.b</strong> — precision of the random effects (hyperparameter)</li>
 </ul>
-<h2>Fixed vs. random effects</h2>
+<h2 id="fixed-vs.-random-effects">Fixed vs.&nbsp;random effects</h2>
 <p><strong>Fixed effects</strong> (alpha, beta) apply to the whole population. They are estimated directly from data.</p>
 <p><strong>Random effects</strong> (b[j]) are group-specific deviations. They are assumed to come from a distribution with mean 0 and some variance — this is the <em>random effects assumption</em>. The variance is estimated from the data.</p>
-<h2>Partial pooling</h2>
+<h2 id="partial-pooling">Partial pooling</h2>
 <p>Mixed-effects models achieve <strong>partial pooling</strong>: group estimates are shrunk towards the overall mean. Groups with little data are pulled more towards the average; groups with lots of data are pulled less. This reduces overfitting compared to fitting each group separately.</p>
-<h2>The hyperparameter tau.b</h2>
+<h2 id="the-hyperparameter-tau.b">The hyperparameter tau.b</h2>
 <p><code>tau.b</code> controls how much groups are allowed to differ from each other. A posterior value of tau.b near infinity means very little group variation; near zero means groups are very different.</p>
-<h2>Benefits</h2>
+<h2 id="benefits">Benefits</h2>
 <ul>
 <li>Accounts for non-independence in grouped data</li>
 <li>Borrows strength across groups (partial pooling)</li>
 <li>Provides inference on group-level variation</li>
 <li>More reliable predictions for new groups</li>
-</ul>`,
-  'posterior': `<h1>Posterior Distribution</h1>
+</ul>
+</body></html>`,
+  'posterior': `<html><head></head><body><h1 id="posterior-distribution">Posterior Distribution</h1>
 <p>The <strong>posterior distribution</strong> is the central object in Bayesian statistics. It represents your updated belief about a parameter after combining your prior knowledge with the observed data.</p>
-<h2>Bayes' theorem</h2>
+<h2 id="bayes-theorem">Bayes’ theorem</h2>
 <pre><code>p(θ | data) ∝ p(data | θ) × p(θ)
    posterior    likelihood   prior</code></pre>
 <ul>
@@ -236,22 +252,23 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <li><strong>Likelihood</strong> p(data | θ) — how probable the data are for each value of θ</li>
 <li><strong>Posterior</strong> p(θ | data) — your updated belief after seeing the data</li>
 </ul>
-<h2>What the posterior tells you</h2>
+<h2 id="what-the-posterior-tells-you">What the posterior tells you</h2>
 <p>The posterior is a full probability distribution over the parameter, not just a single estimate. From it you can extract:</p>
 <ul>
 <li><strong>Posterior mean</strong> — the average parameter value, weighted by posterior probability</li>
 <li><strong>Posterior median</strong> — the middle value of the distribution</li>
 <li><strong>Credible intervals</strong> — a range containing a specified probability (e.g., 95%)</li>
-<li><strong>Probability statements</strong> — e.g., &quot;the probability that β &gt; 0 is 0.97&quot;</li>
+<li><strong>Probability statements</strong> — e.g., “the probability that β &gt; 0 is 0.97”</li>
 </ul>
-<h2>Posterior vs. frequentist confidence intervals</h2>
+<h2 id="posterior-vs.-frequentist-confidence-intervals">Posterior vs.&nbsp;frequentist confidence intervals</h2>
 <p>A <strong>95% credible interval</strong> directly means: given the data, there is a 95% probability that the true parameter lies in this interval.</p>
 <p>This is the intuitive interpretation that frequentist confidence intervals cannot make — frequentist intervals refer to long-run coverage over hypothetical repeated experiments.</p>
-<h2>Visualising the posterior</h2>
-<p>The density plots in FANGS show the posterior for each parameter as a smooth curve. The x-axis is the parameter value; the y-axis is the posterior density. Taller, narrower curves mean more certainty; flatter, wider curves mean more uncertainty.</p>`,
-  'posteriors-tab': `<h1>Posterior Density Plots</h1>
+<h2 id="visualising-the-posterior">Visualising the posterior</h2>
+<p>The density plots in FANGS show the posterior for each parameter as a smooth curve. The x-axis is the parameter value; the y-axis is the posterior density. Taller, narrower curves mean more certainty; flatter, wider curves mean more uncertainty.</p>
+</body></html>`,
+  'posteriors-tab': `<html><head></head><body><h1 id="posterior-density-plots">Posterior Density Plots</h1>
 <p>The <strong>Posteriors</strong> tab shows a smoothed density plot for each model parameter, estimated from the MCMC samples.</p>
-<h2>What you are looking at</h2>
+<h2 id="what-you-are-looking-at">What you are looking at</h2>
 <p>Each plot shows the <strong>marginal posterior distribution</strong> of one parameter — the distribution of that parameter after averaging over uncertainty in all other parameters.</p>
 <ul>
 <li><strong>x-axis</strong> — parameter value</li>
@@ -259,234 +276,263 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <li><strong>Vertical dashed line</strong> — posterior mean</li>
 <li><strong>Shaded region</strong> — 95% credible interval (2.5th to 97.5th percentile)</li>
 </ul>
-<h2>Reading the shape</h2>
+<h2 id="reading-the-shape">Reading the shape</h2>
 <p><strong>Symmetric, bell-shaped</strong> — typical for well-identified parameters with sufficient data; the posterior mean and median are similar.</p>
 <p><strong>Skewed</strong> — common for variance parameters (τ) or proportions; the mean and median may differ noticeably.</p>
 <p><strong>Multimodal (multiple peaks)</strong> — indicates identifiability problems; different parameter combinations fit the data equally well. This usually signals a model problem.</p>
 <p><strong>Very wide</strong> — the data contain little information about this parameter; the prior dominates.</p>
 <p><strong>Very narrow</strong> — the data strongly constrain this parameter.</p>
-<h2>Multiple chains</h2>
+<h2 id="multiple-chains">Multiple chains</h2>
 <p>If you ran multiple chains, samples from all chains are combined into a single density estimate. Well-converged chains will produce a smooth, consistent density. Poor convergence (R-hat &gt; 1.1) can produce ragged or multimodal densities.</p>
-<h2>Comparing prior and posterior</h2>
-<p>To see how much the data have updated your prior beliefs, compare these plots with the densities in the <strong>Prior Check</strong> tab. Parameters where the posterior is much narrower than the prior are strongly informed by the data.</p>`,
-  'ppc': `<h1>Posterior Predictive Check (PPC)</h1>
+<h2 id="comparing-prior-and-posterior">Comparing prior and posterior</h2>
+<p>To see how much the data have updated your prior beliefs, compare these plots with the densities in the <strong>Prior Check</strong> tab. Parameters where the posterior is much narrower than the prior are strongly informed by the data.</p>
+</body></html>`,
+  'ppc': `<html><head></head><body><h1 id="posterior-predictive-check-ppc">Posterior Predictive Check (PPC)</h1>
 <p>A <strong>posterior predictive check</strong> tests whether your model can reproduce the key features of the observed data.</p>
-<h2>The idea</h2>
+<h2 id="the-idea">The idea</h2>
 <p>After fitting the model, use the posterior samples to simulate new datasets under the model. If the model is a good fit, the simulated data should look similar to the real data.</p>
 <p>Formally:</p>
 <pre><code>p(y_rep | y) = ∫ p(y_rep | θ) p(θ | y) dθ</code></pre>
 <p>For each posterior draw of θ, simulate a new dataset y_rep from the likelihood. The distribution of y_rep is the <strong>posterior predictive distribution</strong>.</p>
-<h2>What the plot shows</h2>
+<h2 id="what-the-plot-shows">What the plot shows</h2>
 <p>The histogram of the <strong>observed</strong> y values is overlaid with the distribution of <strong>simulated</strong> y_rep values from the posterior predictive distribution.</p>
 <ul>
 <li><strong>Good fit</strong>: simulated data closely matches the observed distribution</li>
 <li><strong>Poor fit</strong>: systematic differences reveal model misspecification</li>
 </ul>
-<h2>What to look for</h2>
+<h2 id="what-to-look-for">What to look for</h2>
 <p><strong>Mean</strong>: does the model predict the right average response?</p>
-<p><strong>Spread</strong>: is the model's predicted variance similar to the observed variance?</p>
+<p><strong>Spread</strong>: is the model’s predicted variance similar to the observed variance?</p>
 <p><strong>Shape</strong>: is the overall distributional shape consistent? (e.g., skewness, multimodality)</p>
 <p><strong>Outliers</strong>: are there observed values far outside the predictive distribution?</p>
-<h2>Common problems PPC can reveal</h2>
+<h2 id="common-problems-ppc-can-reveal">Common problems PPC can reveal</h2>
 <ul>
 <li>Wrong distributional family (e.g., assuming normality when data are skewed)</li>
 <li>Overdispersion or underdispersion</li>
 <li>Missing predictors (systematic residual patterns)</li>
 <li>Zero-inflation</li>
 </ul>
-<h2>Important limitation</h2>
-<p>PPCs use the same data for fitting and checking. A model can &quot;overfit&quot; the check by design. PPCs are most useful for detecting obvious failures, not subtle ones.</p>`,
-  'precision': `<h1>Precision (τ) vs. Variance (σ²)</h1>
+<h2 id="important-limitation">Important limitation</h2>
+<p>PPCs use the same data for fitting and checking. A model can “overfit” the check by design. PPCs are most useful for detecting obvious failures, not subtle ones.</p>
+</body></html>`,
+  'precision': `<html><head></head><body><h1 id="precision-τ-vs.-variance-σ²">Precision (τ) vs.&nbsp;Variance (σ²)</h1>
 <p>BUGS/JAGS models parameterise the normal distribution using <strong>precision</strong> (τ, tau) rather than variance (σ²) or standard deviation (σ).</p>
-<h2>The relationship</h2>
+<h2 id="the-relationship">The relationship</h2>
 <pre><code>precision τ = 1 / variance σ²
            σ = 1 / sqrt(τ)</code></pre>
 <p>A <strong>high precision</strong> means observations are tightly clustered around the mean (low variance). A <strong>low precision</strong> means observations are spread out (high variance).</p>
-<h2>Why precision?</h2>
+<h2 id="why-precision">Why precision?</h2>
 <p>The precision parameterisation leads to conjugate updates with normal likelihoods, making Gibbs sampling tractable. It was the convention adopted by BUGS when it was developed in the 1990s, and JAGS/NIMBLE follow the same convention.</p>
-<h2>Common confusion</h2>
+<h2 id="common-confusion">Common confusion</h2>
 <p>If you write <code>dnorm(mu, tau)</code> in BUGS syntax, the second argument is <strong>precision</strong>, not standard deviation or variance. This is different from most other software:</p>
-<table>
-<thead><tr><th>Software</th><th><code>dnorm(mean, ?)</code></th></tr></thead>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Software</th>
+<th><code>dnorm(mean, ?)</code></th>
+</tr>
+</thead>
 <tbody>
-<tr><td>BUGS / JAGS / NIMBLE</td><td>precision τ = 1/σ²</td></tr>
-<tr><td>R <code>dnorm()</code></td><td>standard deviation σ</td></tr>
-<tr><td>Stan</td><td>standard deviation σ</td></tr>
+<tr class="odd">
+<td>BUGS / JAGS / NIMBLE</td>
+<td>precision τ = 1/σ²</td>
+</tr>
+<tr class="even">
+<td>R <code>dnorm()</code></td>
+<td>standard deviation σ</td>
+</tr>
+<tr class="odd">
+<td>Stan</td>
+<td>standard deviation σ</td>
+</tr>
 </tbody>
 </table>
-<h2>Interpreting τ in the summary table</h2>
+<h2 id="interpreting-τ-in-the-summary-table">Interpreting τ in the summary table</h2>
 <p>The posterior for <code>tau</code> is on the precision scale. To convert to a more interpretable scale:</p>
 <ul>
 <li><strong>Posterior SD</strong>: σ = 1/sqrt(τ)</li>
 <li><strong>Posterior variance</strong>: σ² = 1/τ</li>
 </ul>
-<p>For example, if the posterior mean of τ is 4, then σ ≈ 0.5, meaning the model's residual standard deviation is about 0.5.</p>
-<h2>Typical priors on τ</h2>
-<p><code>tau ~ dgamma(0.001, 0.001)</code> is a common vague prior that is nearly flat on the log scale, allowing τ to range from very small to very large values.</p>`,
-  'prior-check': `<h1>Prior Predictive Check</h1>
+<p>For example, if the posterior mean of τ is 4, then σ ≈ 0.5, meaning the model’s residual standard deviation is about 0.5.</p>
+<h2 id="typical-priors-on-τ">Typical priors on τ</h2>
+<p><code>tau ~ dgamma(0.001, 0.001)</code> is a common vague prior that is nearly flat on the log scale, allowing τ to range from very small to very large values.</p>
+</body></html>`,
+  'prior-check': `<html><head></head><body><h1 id="prior-predictive-check">Prior Predictive Check</h1>
 <p>A <strong>prior predictive check</strong> runs the model forward from the priors alone — before seeing any data — to inspect what values of the observable response your priors imply.</p>
-<h2>Why do this?</h2>
+<h2 id="why-do-this">Why do this?</h2>
 <p>Priors on parameters can seem reasonable in isolation but imply unrealistic data patterns when propagated through the model. For example:</p>
 <ul>
 <li>Weakly informative priors on regression coefficients may imply predicted responses in the millions</li>
 <li>A diffuse prior on precision τ may allow implausibly small or large variances</li>
 </ul>
 <p>The prior predictive check makes the implied data scale visible, so you can adjust priors if needed.</p>
-<h2>How it works</h2>
-<ol>
+<h2 id="how-it-works">How it works</h2>
+<ol type="1">
 <li>Draw a set of parameter values from the prior distributions (ignoring data)</li>
 <li>For each draw, simulate a dataset from the likelihood</li>
 <li>Display the distribution of those simulated response values</li>
 </ol>
-<h2>What to look for</h2>
-<p><strong>Are the simulated values on a plausible scale?</strong></p>
-<ul>
-<li>If you are modelling plant heights in cm, prior predictions of −10,000 cm or +50,000 cm suggest overly diffuse priors</li>
-</ul>
-<p><strong>Does the prior distribution cover the observed data range?</strong></p>
-<ul>
-<li>The observed data should not be in the extreme tails of the prior predictive distribution</li>
-</ul>
-<p><strong>Is there strong prior information already?</strong></p>
-<ul>
-<li>Very narrow prior predictive distributions may over-constrain the model before seeing data</li>
-</ul>
-<h2>Adjusting priors</h2>
+<h2 id="what-to-look-for">What to look for</h2>
+<p><strong>Are the simulated values on a plausible scale?</strong> - If you are modelling plant heights in cm, prior predictions of −10,000 cm or +50,000 cm suggest overly diffuse priors</p>
+<p><strong>Does the prior distribution cover the observed data range?</strong> - The observed data should not be in the extreme tails of the prior predictive distribution</p>
+<p><strong>Is there strong prior information already?</strong> - Very narrow prior predictive distributions may over-constrain the model before seeing data</p>
+<h2 id="adjusting-priors">Adjusting priors</h2>
 <p>If the prior predictive check reveals problems, tighten or shift the prior distributions. A common approach is to use <strong>weakly informative priors</strong> — not perfectly flat, but centred on zero with a scale that allows scientifically plausible values.</p>
-<h2>Note</h2>
-<p>This tab runs sampling from the priors only, with no data likelihood. The posterior tabs will show results from the full Bayesian update using your data.</p>`,
-  'prior': `<h1>Prior Distribution</h1>
-<p>A <strong>prior distribution</strong> encodes your belief about a parameter <em>before</em> observing any data. It is one of the two ingredients in Bayes' theorem.</p>
-<h2>What does a prior represent?</h2>
-<p>The prior answers: &quot;What values of this parameter are plausible, before I look at the data?&quot;</p>
-<p>It can represent:</p>
-<ul>
-<li><strong>Previous studies</strong> — use results from earlier experiments</li>
-<li><strong>Domain knowledge</strong> — a regression coefficient for body weight cannot plausibly be 10,000</li>
-<li><strong>Vague uncertainty</strong> — if you have little prior knowledge, use a weakly informative prior</li>
-</ul>
-<h2>Types of priors</h2>
+<h2 id="note">Note</h2>
+<p>This tab runs sampling from the priors only, with no data likelihood. The posterior tabs will show results from the full Bayesian update using your data.</p>
+</body></html>`,
+  'prior': `<html><head></head><body><h1 id="prior-distribution">Prior Distribution</h1>
+<p>A <strong>prior distribution</strong> encodes your belief about a parameter <em>before</em> observing any data. It is one of the two ingredients in Bayes’ theorem.</p>
+<h2 id="what-does-a-prior-represent">What does a prior represent?</h2>
+<p>The prior answers: “What values of this parameter are plausible, before I look at the data?”</p>
+<p>It can represent: - <strong>Previous studies</strong> — use results from earlier experiments - <strong>Domain knowledge</strong> — a regression coefficient for body weight cannot plausibly be 10,000 - <strong>Vague uncertainty</strong> — if you have little prior knowledge, use a weakly informative prior</p>
+<h2 id="types-of-priors">Types of priors</h2>
 <p><strong>Weakly informative (diffuse) priors</strong> Allow a wide range of values, letting the data dominate. Example: <code>dnorm(0, 0.001)</code> in BUGS notation places most prior mass across a very wide range.</p>
 <p><strong>Informative priors</strong> Encode specific knowledge. Useful when data are limited and you have reliable external information.</p>
 <p><strong>Improper priors</strong> Priors that do not integrate to 1 (e.g., uniform on all real numbers). Can be used mathematically but require care — they can sometimes lead to improper posteriors.</p>
-<h2>Common priors in this app</h2>
-<table>
-<thead><tr><th>Parameter</th><th>Prior</th><th>Interpretation</th></tr></thead>
+<h2 id="common-priors-in-this-app">Common priors in this app</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 32%">
+<col style="width: 20%">
+<col style="width: 47%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Prior</th>
+<th>Interpretation</th>
+</tr>
+</thead>
 <tbody>
-<tr><td><code>alpha</code>, <code>beta</code></td><td><code>dnorm(0, 0.001)</code></td><td>Very diffuse — almost any value is plausible</td></tr>
-<tr><td><code>tau</code></td><td><code>dgamma(0.001, 0.001)</code></td><td>Diffuse over positive values; allows very small or large precision</td></tr>
+<tr class="odd">
+<td><code>alpha</code>, <code>beta</code></td>
+<td><code>dnorm(0, 0.001)</code></td>
+<td>Very diffuse — almost any value is plausible</td>
+</tr>
+<tr class="even">
+<td><code>tau</code></td>
+<td><code>dgamma(0.001, 0.001)</code></td>
+<td>Diffuse over positive values; allows very small or large precision</td>
+</tr>
 </tbody>
 </table>
-<h2>Prior sensitivity</h2>
-<p>It is good practice to check that your conclusions do not depend strongly on the prior. The <strong>Prior Check</strong> tab lets you sample from the prior alone to see what values it implies for observable quantities.</p>`,
-  'rhat': `<h1>R-hat (Potential Scale Reduction Factor)</h1>
-<p><strong>R-hat</strong> (written <span class="math inline">\\(\\hat{R}\\)</span>, pronounced &quot;R-hat&quot;) is the standard MCMC convergence diagnostic. It compares variation <em>between</em> chains to variation <em>within</em> chains.</p>
-<h2>The idea</h2>
+<h2 id="prior-sensitivity">Prior sensitivity</h2>
+<p>It is good practice to check that your conclusions do not depend strongly on the prior. The <strong>Prior Check</strong> tab lets you sample from the prior alone to see what values it implies for observable quantities.</p>
+</body></html>`,
+  'rhat': `<html><head></head><body><h1 id="r-hat-potential-scale-reduction-factor">R-hat (Potential Scale Reduction Factor)</h1>
+<p><strong>R-hat</strong> (written <span class="math inline"><em>R̂</em></span>, pronounced “R-hat”) is the standard MCMC convergence diagnostic. It compares variation <em>between</em> chains to variation <em>within</em> chains.</p>
+<h2 id="the-idea">The idea</h2>
 <p>If all chains have converged to the same distribution, within-chain variation and between-chain variation should be similar. R-hat measures their ratio.</p>
 <ul>
 <li><strong>R-hat ≈ 1.00</strong> → chains agree; convergence is likely</li>
 <li><strong>R-hat &gt; 1.1</strong> → chains disagree; do not trust the results yet</li>
 <li><strong>R-hat &gt; 1.5</strong> → serious convergence failure</li>
 </ul>
-<h2>How it is calculated</h2>
+<h2 id="how-it-is-calculated">How it is calculated</h2>
 <p>R-hat is approximately the square root of the ratio:</p>
 <pre><code>R-hat ≈ sqrt( (between-chain variance + within-chain variance) / within-chain variance )</code></pre>
 <p>When chains have fully mixed, this ratio approaches 1.</p>
-<h2>What to do if R-hat &gt; 1.1</h2>
-<ol>
+<h2 id="what-to-do-if-r-hat-1.1">What to do if R-hat &gt; 1.1</h2>
+<ol type="1">
 <li><strong>Run more iterations</strong> — chains may just need more time to mix</li>
 <li><strong>Increase burn-in</strong> — discard more early samples</li>
 <li><strong>Check trace plots</strong> — look for chains stuck in different regions</li>
 <li><strong>Reparameterise</strong> — some models mix better with different parameterisations</li>
 <li><strong>Check the model</strong> — identifiability issues cause non-convergence</li>
 </ol>
-<h2>Colour coding in the summary table</h2>
+<h2 id="colour-coding-in-the-summary-table">Colour coding in the summary table</h2>
 <ul>
 <li><strong>Red</strong> background → R-hat &gt; 1.1 (convergence warning)</li>
 <li>No highlight → R-hat ≤ 1.1 (acceptable)</li>
 </ul>
-<h2>Limitations</h2>
-<p>R-hat requires at least 2 chains. With a single chain it cannot be computed. It also cannot detect multimodality if all chains are stuck in the same mode.</p>`,
-  'summary-tab': `<h1>Posterior Summary Table</h1>
+<h2 id="limitations">Limitations</h2>
+<p>R-hat requires at least 2 chains. With a single chain it cannot be computed. It also cannot detect multimodality if all chains are stuck in the same mode.</p>
+</body></html>`,
+  'summary-tab': `<html><head></head><body><h1 id="posterior-summary-table">Posterior Summary Table</h1>
 <p>The <strong>Summary</strong> tab presents key statistics computed from the MCMC samples for each parameter.</p>
-<h2>Columns</h2>
-<table>
-<thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+<h2 id="columns">Columns</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 47%">
+<col style="width: 52%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
 <tbody>
-<tr><td><strong>Mean</strong></td><td>Posterior mean — the average of all post-burn-in samples</td></tr>
-<tr><td><strong>SD</strong></td><td>Posterior standard deviation — spread of the posterior</td></tr>
-<tr><td><strong>2.5%</strong></td><td>Lower bound of the 95% credible interval</td></tr>
-<tr><td><strong>Median</strong></td><td>Posterior median (50th percentile) — robust central estimate</td></tr>
-<tr><td><strong>97.5%</strong></td><td>Upper bound of the 95% credible interval</td></tr>
-<tr><td><strong>R-hat</strong></td><td>Convergence diagnostic (should be ≤ 1.1)</td></tr>
-<tr><td><strong>ESS</strong></td><td>Effective sample size (should be ≥ 400)</td></tr>
+<tr class="odd">
+<td><strong>Mean</strong></td>
+<td>Posterior mean — the average of all post-burn-in samples</td>
+</tr>
+<tr class="even">
+<td><strong>SD</strong></td>
+<td>Posterior standard deviation — spread of the posterior</td>
+</tr>
+<tr class="odd">
+<td><strong>2.5%</strong></td>
+<td>Lower bound of the 95% credible interval</td>
+</tr>
+<tr class="even">
+<td><strong>Median</strong></td>
+<td>Posterior median (50th percentile) — robust central estimate</td>
+</tr>
+<tr class="odd">
+<td><strong>97.5%</strong></td>
+<td>Upper bound of the 95% credible interval</td>
+</tr>
+<tr class="even">
+<td><strong>R-hat</strong></td>
+<td>Convergence diagnostic (should be ≤ 1.1)</td>
+</tr>
+<tr class="odd">
+<td><strong>ESS</strong></td>
+<td>Effective sample size (should be ≥ 400)</td>
+</tr>
 </tbody>
 </table>
-<h2>Using the summary for inference</h2>
+<h2 id="using-the-summary-for-inference">Using the summary for inference</h2>
 <p><strong>Is an effect present?</strong> Check whether the 95% credible interval includes zero. If the interval is entirely positive or entirely negative, the effect is credibly non-zero.</p>
 <p><strong>How large is the effect?</strong> The posterior mean (or median) gives a point estimate. The credible interval gives the range of plausible values.</p>
 <p><strong>Is the model reliable?</strong> Check R-hat (≤ 1.1) and ESS (≥ 400). Red or orange highlights indicate potential problems.</p>
-<h2>Colour coding</h2>
+<h2 id="colour-coding">Colour coding</h2>
 <ul>
 <li><strong>Red cell</strong> in R-hat column → R-hat &gt; 1.1 (convergence warning — do not interpret results yet)</li>
 <li><strong>Orange cell</strong> in ESS column → ESS &lt; 100 (too few effective samples for reliable tail estimates)</li>
 </ul>
-<h2>Point estimates</h2>
-<p>For symmetric posteriors, the mean and median are similar. For skewed posteriors (e.g., τ, variance components), the <strong>median</strong> is often a more representative point estimate than the mean.</p>`,
-  'thinning': `<h1>Thinning</h1>
+<h2 id="point-estimates">Point estimates</h2>
+<p>For symmetric posteriors, the mean and median are similar. For skewed posteriors (e.g., τ, variance components), the <strong>median</strong> is often a more representative point estimate than the mean.</p>
+</body></html>`,
+  'thinning': `<html><head></head><body><h1 id="thinning">Thinning</h1>
 <p><strong>Thinning</strong> means keeping only every <em>k</em>-th sample from the MCMC chain and discarding the rest.</p>
-<h2>Why thin?</h2>
+<h2 id="why-thin">Why thin?</h2>
 <p>MCMC samples are <strong>correlated</strong> — consecutive samples are similar because each is derived from the previous. Thinning reduces this autocorrelation so that the kept samples are closer to being independent.</p>
-<h2>Example</h2>
+<h2 id="example">Example</h2>
 <p>With thinning = 10 and 2000 samples, only every 10th iteration is kept, giving 200 stored samples from 2000 iterations.</p>
-<h2>Is thinning necessary?</h2>
+<h2 id="is-thinning-necessary">Is thinning necessary?</h2>
 <p><strong>Usually not.</strong> Modern consensus is that thinning wastes information — it is almost always better to keep all samples and accept some correlation. The effective sample size (ESS) already accounts for autocorrelation when summarising uncertainty.</p>
-<p>Thinning is mainly useful when:</p>
-<ul>
-<li><strong>Memory is limited</strong> and you cannot store millions of samples</li>
-<li><strong>Posterior predictive checks</strong> require expensive computations per sample</li>
-</ul>
-<h2>Thinning does not fix poor mixing</h2>
+<p>Thinning is mainly useful when: - <strong>Memory is limited</strong> and you cannot store millions of samples - <strong>Posterior predictive checks</strong> require expensive computations per sample</p>
+<h2 id="thinning-does-not-fix-poor-mixing">Thinning does not fix poor mixing</h2>
 <p>If chains mix poorly (high autocorrelation, R-hat &gt; 1.1), thinning makes the stored samples less correlated but does not improve the underlying chain quality. Fix the chain first — run more iterations or reparameterise the model.</p>
-<h2>Default</h2>
-<p>A thinning interval of <strong>1</strong> (no thinning) is the standard recommendation.</p>`,
-  'trace-plot': `<h1>Reading Trace Plots</h1>
+<h2 id="default">Default</h2>
+<p>A thinning interval of <strong>1</strong> (no thinning) is the standard recommendation.</p>
+</body></html>`,
+  'trace-plot': `<html><head></head><body><h1 id="reading-trace-plots">Reading Trace Plots</h1>
 <p>A <strong>trace plot</strong> shows the sampled parameter value at each MCMC iteration, one line per chain. It is the most important diagnostic tool for checking whether your sampler is working.</p>
-<h2>What a good trace looks like</h2>
-<p>A healthy trace plot looks like a &quot;hairy caterpillar&quot; — a dense, horizontal band of noisy variation with no long-term trend.</p>
-<p><strong>Signs of a good chain:</strong></p>
-<ul>
-<li>Rapidly oscillates up and down (fast mixing)</li>
-<li>All chains overlap each other and cannot be distinguished</li>
-<li>No visible upward or downward drift</li>
-<li>Consistent width throughout</li>
-</ul>
-<h2>Warning signs</h2>
-<p><strong>Slow mixing (high autocorrelation)</strong></p>
-<ul>
-<li>The chain moves slowly, producing smooth wave-like patterns</li>
-<li>Consecutive values are very similar</li>
-<li>Fix: run more iterations, reparameterise, or adjust the sampler</li>
-</ul>
-<p><strong>Stuck chains</strong></p>
-<ul>
-<li>A chain is flat or barely moving for long stretches</li>
-<li>Often indicates a highly constrained parameter or a near-degenerate distribution</li>
-<li>Fix: check the model specification and priors</li>
-</ul>
-<p><strong>Chains not overlapping</strong></p>
-<ul>
-<li>Different chains are exploring different regions</li>
-<li>The chains have not converged to the same distribution</li>
-<li>Fix: increase burn-in, run longer, or reconsider the model</li>
-</ul>
-<p><strong>Drift / trend</strong></p>
-<ul>
-<li>The chain has not yet settled — burn-in may be too short</li>
-<li>Fix: increase burn-in</li>
-</ul>
-<h2>Vertical axis</h2>
+<h2 id="what-a-good-trace-looks-like">What a good trace looks like</h2>
+<p>A healthy trace plot looks like a “hairy caterpillar” — a dense, horizontal band of noisy variation with no long-term trend.</p>
+<p><strong>Signs of a good chain:</strong> - Rapidly oscillates up and down (fast mixing) - All chains overlap each other and cannot be distinguished - No visible upward or downward drift - Consistent width throughout</p>
+<h2 id="warning-signs">Warning signs</h2>
+<p><strong>Slow mixing (high autocorrelation)</strong> - The chain moves slowly, producing smooth wave-like patterns - Consecutive values are very similar - Fix: run more iterations, reparameterise, or adjust the sampler</p>
+<p><strong>Stuck chains</strong> - A chain is flat or barely moving for long stretches - Often indicates a highly constrained parameter or a near-degenerate distribution - Fix: check the model specification and priors</p>
+<p><strong>Chains not overlapping</strong> - Different chains are exploring different regions - The chains have not converged to the same distribution - Fix: increase burn-in, run longer, or reconsider the model</p>
+<p><strong>Drift / trend</strong> - The chain has not yet settled — burn-in may be too short - Fix: increase burn-in</p>
+<h2 id="vertical-axis">Vertical axis</h2>
 <p>The y-axis shows the parameter value on its natural scale. The range reflects the posterior spread — wide traces mean high posterior uncertainty.</p>
-<h2>Burn-in</h2>
-<p>The period before the chain stabilises is the burn-in. It is normal for chains to start far apart and then converge. Only the post-burn-in samples are used for inference.</p>`
+<h2 id="burn-in">Burn-in</h2>
+<p>The period before the chain stabilises is the burn-in. It is normal for chains to start far apart and then converge. Only the post-burn-in samples are used for inference.</p>
+</body></html>`
 };
