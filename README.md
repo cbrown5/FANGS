@@ -55,21 +55,45 @@ Rscript tests/r-reference/binomial-glm.R
 
 Reference JSON fixtures are written to `tests/r-reference/results/`.
 
-## Adding a new educational popup
+## Adding or editing educational popups
 
-Popups are plain Markdown files. No build step is needed.
+Popup content is stored in two places:
 
-**1. Create the Markdown file**
+- `src/content/popups/<id>.md` — the source Markdown files (edit these)
+- `src/content/popups-bundle.js` — an inline JS bundle used at runtime (regenerate after edits)
 
-Add a new file to `src/content/popups/`:
+The app reads content from the **bundle**, not the `.md` files directly. This means popups work when the app is opened via `file://` without a local server.
+
+### Editing existing popup text
+
+1. Open the relevant `.md` file in `src/content/popups/` and make your changes.
+2. Copy the updated text into the matching entry in `src/content/popups-bundle.js`
+   (each entry is a template-literal string keyed by popup ID, e.g. `'burn-in': \`...\``).
+3. Save and reload the app — no build step needed.
+
+### Adding a new popup
+
+**Step 1 — Write the Markdown**
+
+Create a new file in `src/content/popups/`:
 
 ```
 src/content/popups/my-topic.md
 ```
 
-Write normal Markdown. Supported syntax: headings (`#`, `##`, `###`), bold (`**text**`), italic (`*text*`), inline code (`` `code` ``), unordered lists (`- item`), fenced code blocks (` ``` `), and tables (`| col | col |`).
+Supported Markdown: headings (`#`, `##`, `###`), bold (`**text**`), italic (`*text*`), inline code (`` `code` ``), unordered lists (`- item`), fenced code blocks (` ``` `), and tables (`| col | col |`).
 
-**2. Attach the trigger to an HTML element**
+**Step 2 — Add the content to the bundle**
+
+Open `src/content/popups-bundle.js` and add a new entry to the `POPUP_CONTENT` object:
+
+```js
+'my-topic': `# My Topic
+
+Your Markdown content here.`,
+```
+
+**Step 3 — Attach the trigger to an HTML element**
 
 *Option A — static HTML element*
 
@@ -88,8 +112,6 @@ import { attachPopupTrigger } from './ui/popups.js';
 
 attachPopupTrigger(myElement, 'my-topic');
 ```
-
-That's it. The popup will fetch and display `src/content/popups/my-topic.md` when the `?` button is clicked.
 
 ---
 

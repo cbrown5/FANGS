@@ -51,6 +51,25 @@ implementations across parser, samplers, UI, and tests.
 
 ## What Has Been Done (Recent)
 
+### Popup crash fix and trace plot constant x-axis (2026-03-17)
+
+**Popup system rewritten to use inline bundle** (`src/ui/popups.js`, `src/content/popups-bundle.js`)
+The previous implementation fetched `.md` files at runtime via `fetch()`, which crashed the app
+when opened via `file://` and timed out unreliably on some servers. The new approach:
+- All 17 popup Markdown strings are stored inline in `src/content/popups-bundle.js` as a JS object.
+- `popups.js` imports the bundle synchronously — no `fetch()`, no async loading, no timeouts.
+- Popups now work reliably regardless of how the app is served.
+- To update popup text: edit the `.md` source file, then copy the updated text into
+  the matching entry in `popups-bundle.js`. See README for full instructions.
+
+**Trace plot x-axis fixed and rendering batched** (`src/ui/trace-plot.js`, `src/app.js`)
+- X-axis is now fixed from 1 to `nSamples` (set at run start) — the scale no longer shifts
+  as samples arrive, making it easier to visually track sampling progress.
+- Removed the 500-sample sliding window; all samples are stored and drawn.
+- Redraws are batched every 100 new samples per parameter (was per-sample), keeping the UI
+  responsive during long runs.
+- `trace.render()` is called on DONE to flush any final pending samples.
+
 ### Full PPC, UI polish, About/Instructions, weakly-informative priors (2026-03-17)
 
 **Posterior predictive check completed** (`model-graph.js`, `sampler-worker.js`, `app.js`)
@@ -212,11 +231,6 @@ shared dataset: alpha ≈ 2.29, beta ≈ 1.38, tau ≈ 1.94 — consistent with 
 ---
 
 ## What Needs to Be Done Next
-
-### 1. Fixes
-
-- Help buttons still cause crash of app. I've asked to fix this several times but it continues to be an issue. Do a deep dive on the implementation and look at alternative methods for implementing the help pop-ups. For instance the developer could manually render the .md files to .html using quarto render tools. They just do this only when they update the .md files. Then the app works directly off of the .html files and doesn't have to live convert .md files
-- Trace plots. keep x-axis constant (so show 1 to max samples). Plots every sample (including thinned samples), but 100 samples at a time, to speed up the app. 
 
 
 ### 2. Observed vs predicted scatter plot on the PPC tab
