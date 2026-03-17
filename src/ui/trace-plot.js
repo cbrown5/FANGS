@@ -3,12 +3,10 @@
  * Live chain trace plots drawn on HTML5 Canvas elements.
  *
  * One canvas is created per parameter. Each chain is drawn in a distinct
- * colour. The last MAX_POINTS samples per chain are retained in a circular
- * buffer to bound memory use. The Y-axis auto-scales to visible data.
+ * colour. The x-axis is fixed from 1 to maxSamples so the scale stays
+ * constant as sampling progresses. Redraws are batched every 100 new
+ * samples to keep the UI responsive.
  */
-
-/** Maximum samples retained per chain per parameter. */
-const MAX_POINTS = 500;
 
 /** Chain colours (up to 5 chains; cycles if more). */
 const CHAIN_COLORS = ['#2196f3', '#e53935', '#43a047', '#fb8c00', '#8e24aa'];
@@ -16,6 +14,9 @@ const CHAIN_COLORS = ['#2196f3', '#e53935', '#43a047', '#fb8c00', '#8e24aa'];
 /** Canvas dimensions (CSS pixels; HiDPI handled via devicePixelRatio). */
 const CANVAS_HEIGHT = 120;
 const MARGIN = { top: 10, right: 16, bottom: 28, left: 52 };
+
+/** Redraw after this many new samples have accumulated (across all chains). */
+const REDRAW_BATCH = 100;
 
 export class TracePlot {
   /**
@@ -25,10 +26,12 @@ export class TracePlot {
     if (!containerEl) throw new Error('TracePlot: containerEl is required');
     this.container = containerEl;
 
-    /** Map<paramName, { canvas, ctx, chains: Map<chainIdx, number[]>, totalSamples: Map<chainIdx, number> }> */
+    /** Map<paramName, { canvas, ctx, chains: Map<chainIdx, number[]> }> */
     this._params = new Map();
     this._nChains = 0;
+    this._maxSamples = 2000; // fixed x-axis upper bound
     this._dirty = new Set(); // params that need redrawing
+    this._pendingCounts = new Map(); // paramName -> samples since last redraw
     this._rafId = null;
   }
 
@@ -40,21 +43,24 @@ export class TracePlot {
    * (Re-)initialise the component for a new run.
    * @param {string[]} paramNames  - Parameter names (one canvas each)
    * @param {number}   nChains     - Number of chains
+   * @param {number}   [maxSamples=2000] - Total post-burn-in samples expected (fixes x-axis)
    */
-  init(paramNames, nChains) {
+  init(paramNames, nChains, maxSamples = 2000) {
     this.clear();
     this._nChains = nChains;
+    this._maxSamples = Math.max(1, maxSamples);
 
     for (const name of paramNames) {
       const entry = this._createCanvas(name, nChains);
       this._params.set(name, entry);
+      this._pendingCounts.set(name, 0);
       this.container.appendChild(entry.wrapper);
     }
   }
 
   /**
    * Append one new sample for a (parameter, chain) pair.
-   * Schedules a rAF redraw if not already scheduled.
+   * Schedules a redraw after every REDRAW_BATCH new samples for that parameter.
    * @param {string} paramName
    * @param {number} chainIdx   - 0-based
    * @param {number} value
@@ -68,16 +74,16 @@ export class TracePlot {
       chain = [];
       entry.chains.set(chainIdx, chain);
     }
-    entry.totalSamples.set(chainIdx, (entry.totalSamples.get(chainIdx) || 0) + 1);
-
-    // Sliding window: drop the oldest point when at capacity
-    if (chain.length >= MAX_POINTS) {
-      chain.shift();
-    }
     chain.push(value);
 
-    this._dirty.add(paramName);
-    this._scheduleRender();
+    const pending = (this._pendingCounts.get(paramName) || 0) + 1;
+    this._pendingCounts.set(paramName, pending);
+
+    if (pending >= REDRAW_BATCH) {
+      this._pendingCounts.set(paramName, 0);
+      this._dirty.add(paramName);
+      this._scheduleRender();
+    }
   }
 
   /**
@@ -101,6 +107,7 @@ export class TracePlot {
     this.container.innerHTML = '';
     this._params.clear();
     this._dirty.clear();
+    this._pendingCounts.clear();
     this._nChains = 0;
   }
 
@@ -170,15 +177,13 @@ export class TracePlot {
 
     // HiDPI scaling
     const dpr = window.devicePixelRatio || 1;
-    // Width will be measured after insertion; use a default and resize in draw
     canvas.dataset.dpr = dpr;
 
     const ctx = canvas.getContext('2d');
 
     const chains = new Map();
-    const totalSamples = new Map();
 
-    return { wrapper, canvas, ctx, chains, totalSamples };
+    return { wrapper, canvas, ctx, chains };
   }
 
   /**
@@ -211,20 +216,17 @@ export class TracePlot {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    // --- Collect all values for Y-axis range and total iteration count ---
-    let yMin = Infinity, yMax = -Infinity, maxLen = 0, maxTotal = 0;
-    for (const [ci, pts] of chains) {
+    // --- Collect all values for Y-axis range ---
+    let yMin = Infinity, yMax = -Infinity, maxLen = 0;
+    for (const pts of chains.values()) {
       for (const v of pts) {
         if (v < yMin) yMin = v;
         if (v > yMax) yMax = v;
       }
       if (pts.length > maxLen) maxLen = pts.length;
-      const tot = entry.totalSamples.get(ci) || pts.length;
-      if (tot > maxTotal) maxTotal = tot;
     }
 
     if (maxLen === 0) {
-      // Nothing to draw yet
       ctx.fillStyle = '#aaa';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
@@ -238,11 +240,15 @@ export class TracePlot {
     const yLo    = yMin - yPad;
     const yHi    = yMax + yPad;
 
-    // Compute nice tick step
-    const { ticks: yTicks, step: yStep } = _niceTicks(yLo, yHi, 4);
+    // Fixed x-axis: always 1 to maxSamples
+    const xMax = this._maxSamples;
 
-    const xScale = (i) => MARGIN.left + (i / (MAX_POINTS - 1)) * plotW;
+    // Scales
+    const xScale = (sampleIdx) => MARGIN.left + (sampleIdx / (xMax - 1)) * plotW;
     const yScale = (v) => MARGIN.top + plotH - ((v - yLo) / (yHi - yLo)) * plotH;
+
+    // Compute nice tick step for y
+    const { ticks: yTicks, step: yStep } = _niceTicks(yLo, yHi, 4);
 
     // --- Grid lines ---
     ctx.strokeStyle = '#e8edf2';
@@ -267,18 +273,15 @@ export class TracePlot {
       ctx.fillText(_fmt(tv, yStep), MARGIN.left - 4, y);
     }
 
-    // --- X axis labels (actual iteration numbers) ---
+    // --- X axis labels (fixed 1 to maxSamples) ---
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle    = '#666';
-    // The visible window spans from (maxTotal - maxLen + 1) to maxTotal
-    const iterEnd   = maxTotal;
-    const iterStart = Math.max(1, maxTotal - maxLen + 1);
     const nXTicks = 4;
     for (let t = 0; t <= nXTicks; t++) {
       const frac  = t / nXTicks;
       const x     = MARGIN.left + frac * plotW;
-      const label = Math.round(iterStart + frac * (iterEnd - iterStart));
+      const label = Math.round(1 + frac * (xMax - 1));
       ctx.fillText(label, x, MARGIN.top + plotH + 4);
     }
 
@@ -300,11 +303,8 @@ export class TracePlot {
       ctx.globalAlpha = 0.85;
       ctx.beginPath();
 
-      // Map each point left-to-right across the plot area.
-      // When the buffer isn't full, scale within the current number of points.
-      const n = pts.length;
       pts.forEach((v, i) => {
-        const xi = MARGIN.left + (n < 2 ? 0 : (i / (n - 1))) * plotW;
+        const xi = xScale(i);
         const yi = yScale(v);
         if (i === 0) ctx.moveTo(xi, yi);
         else         ctx.lineTo(xi, yi);

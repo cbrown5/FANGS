@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialise trace plot with placeholder param names from model text
     // (real names come from the parser; here we extract a rough set)
     const guessedParams = _guessParams(modelCode);
-    trace.init(guessedParams, cfg.nChains);
+    trace.init(guessedParams, cfg.nChains, cfg.nSamples);
 
     // Switch to trace tab automatically
     tabBtns.forEach(b  => { b.classList.remove('active');  b.setAttribute('aria-selected', 'false'); });
@@ -386,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (msg.type === 'DONE') {
         setProgress(1);
         setStatus('Sampling complete.', 'done');
+        trace.render(); // flush any pending samples not yet drawn
         density.render();
         summary.update(msg.summary);
 
