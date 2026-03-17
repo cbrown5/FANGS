@@ -1181,3 +1181,68 @@ describe('Logit-link Bernoulli GLM: slice sampler end-to-end', () => {
     expect(mean, `beta posterior mean should be positive, got ${mean.toFixed(3)}`).toBeGreaterThan(0);
   }, 120000);
 });
+
+// ---------------------------------------------------------------------------
+// Suite 14: Fixture-based statistical validation — Linear model vs NIMBLE
+//
+// Runs the simple linear regression model against the built-in example dataset
+// and compares posterior means and 95% CIs against the NIMBLE reference JSON.
+// Tolerance: posterior mean within 0.3 SD of NIMBLE reference mean; 95% CIs
+// must overlap.
+//
+// Uses 3 chains × 2000 samples (1000 burn-in) — enough for convergence but
+// fast enough for CI.
+// ---------------------------------------------------------------------------
+
+describe('Linear model: fixture comparison vs NIMBLE reference', () => {
+  const REF_PATH = 'tests/r-reference/results/linear-model-reference.json';
+
+  let ref;
+  let samples;
+
+  beforeAll(async () => {
+    ref = JSON.parse(readFileSync(REF_PATH, 'utf8'));
+
+    const graph = buildGraph(LINEAR_MODEL);
+    samples = await runGibbs(graph, {
+      nChains:  3,
+      nSamples: 2000,
+      burnin:   1000,
+      thin:     1,
+    });
+  }, 120000);
+
+  function mean(arr) {
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+  }
+  function quantile(arr, p) {
+    const s = arr.slice().sort((a, b) => a - b);
+    const i = p * (s.length - 1);
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return s[lo] + (s[hi] - s[lo]) * (i - lo);
+  }
+
+  function checkParam(paramName, toleranceSDs = 0.3) {
+    const all   = samples[paramName].flat();
+    const fm    = mean(all);
+    const rm    = ref[paramName].mean;
+    const rsd   = ref[paramName].sd;
+    const diff  = Math.abs(fm - rm) / rsd;
+
+    expect(diff, `${paramName}: FANGS mean ${fm.toFixed(4)} vs NIMBLE ${rm.toFixed(4)}, diff=${diff.toFixed(3)} SD`)
+      .toBeLessThan(toleranceSDs);
+
+    // 95% CI overlap check
+    const fq2_5  = quantile(all, 0.025);
+    const fq97_5 = quantile(all, 0.975);
+    const rq2_5  = ref[paramName].q2_5;
+    const rq97_5 = ref[paramName].q97_5;
+    const overlaps = fq2_5 < rq97_5 && fq97_5 > rq2_5;
+    expect(overlaps, `${paramName}: 95% CI [${fq2_5.toFixed(3)}, ${fq97_5.toFixed(3)}] vs NIMBLE [${rq2_5.toFixed(3)}, ${rq97_5.toFixed(3)}]`)
+      .toBe(true);
+  }
+
+  it('alpha posterior mean matches NIMBLE within 0.3 SD', () => checkParam('alpha'));
+  it('beta posterior mean matches NIMBLE within 0.3 SD',  () => checkParam('beta'));
+  it('tau posterior mean matches NIMBLE within 0.3 SD',   () => checkParam('tau'));
+});
