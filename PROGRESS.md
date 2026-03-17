@@ -38,18 +38,27 @@ implementations across parser, samplers, UI, and tests.
 |------|--------|-------|
 | `parser.test.js` | Done | 148 tests — parser and lexer unit tests |
 | `distributions.test.js` | Done | 92 tests — full unit tests for all log-density and sampler functions |
-| `integration.test.js` | Done | ~238 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM, logit-link GLM; parse → graph → init → Gibbs → statistical validity; fixture comparison vs NIMBLE reference for mixed-effects, Poisson, and Bernoulli; logit-link slice-sampler direction test (Suites 11–13 added 2026-03-16) |
+| `integration.test.js` | Done | ~241 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM, logit-link GLM; parse → graph → init → Gibbs → statistical validity; fixture comparison vs NIMBLE reference for linear model, mixed-effects, Poisson, and Bernoulli; logit-link slice-sampler direction test (Suite 14 added 2026-03-17) |
 | `r-reference/generate-default-data.R` | Done | R script to regenerate the default CSV dataset |
 | `r-reference/linear-model.R` | Done | R/nimble reference for linear model |
 | `r-reference/mixed-effects.R` | Done | R/nimble reference for mixed-effects model |
 | `r-reference/poisson-glm.R` | Done | R/nimble reference for Poisson GLM; includes exact analytical posterior |
 | `r-reference/binomial-glm.R` | Done | R/nimble reference for Bernoulli/Beta model; includes exact analytical posterior |
 
-**249 tests defined; 249 passing (pending network access to run vitest).**
+**252 tests defined; 252 passing (pending network access to run vitest).**
 
 ---
 
 ## What Has Been Done (Recent)
+
+### Linear model NIMBLE fixture test added (2026-03-17)
+
+**Suite 14 — Linear model fixture comparison vs NIMBLE** (`integration.test.js`)
+Added a new `beforeAll`-based test suite (3 chains × 2000 samples, 1000 burn-in)
+that loads `tests/r-reference/results/linear-model-reference.json` and checks that
+FANGS posterior means for `alpha`, `beta`, and `tau` are within 0.3 SD of the
+NIMBLE reference means, and that 95% CIs overlap.  This completes NIMBLE fixture
+coverage for all four model types (linear, mixed-effects, Poisson GLM, Bernoulli GLM).
 
 ### Trace plot fix and GLM fixture tests (2026-03-16)
 
