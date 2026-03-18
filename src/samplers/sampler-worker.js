@@ -51,6 +51,19 @@ function flushSamples(chainIdx, buffer) {
 }
 
 /**
+ * Parse the model source and build a ModelGraph, shared by both sampling
+ * paths and the summarise path.
+ */
+function buildGraph(modelSource, dataColumns, dataN, dataJ, dataConstants) {
+    const tokens = new Lexer(modelSource).tokenize();
+    const ast = new Parser(tokens).parse();
+    const graphData = { columns: dataColumns, N: dataN, J: dataJ, ...dataConstants };
+    const graph = new ModelGraph(ast, graphData);
+    graph.build();
+    return graph;
+}
+
+/**
  * Entry point — parse the model, build the graph, run all chains, collect
  * samples, and report back to the main thread.
  *
@@ -65,19 +78,7 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
 
     const { nChains, nSamples, burnin, thin } = settings;
 
-    // --- Parse model -------------------------------------------------------
-    const lexer = new Lexer(modelSource);
-    const tokens = lexer.tokenize();
-
-    const parser = new Parser(tokens);
-    const ast = parser.parse();
-
-    // --- Build model graph -------------------------------------------------
-    // Merge dataN/dataJ with any additional scalar constants from the UI panel.
-    // dataConstants takes priority so the panel values are authoritative.
-    const graphData = { columns: dataColumns, N: dataN, J: dataJ, ...dataConstants };
-    const graph = new ModelGraph(ast, graphData);
-    graph.build();
+    const graph = buildGraph(modelSource, dataColumns, dataN, dataJ, dataConstants);
 
     // --- Collect all samples across chains (keyed by paramName) for the
     //     final summary computation. Structure: { paramName: number[][] }
@@ -172,6 +173,109 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
     self.postMessage({ type: 'DONE', summary, predictions });
 }
 
+/**
+ * Run a single chain (identified by `realChainIdx`) and report back
+ * SAMPLES/PROGRESS messages with the real chain index, then send CHAIN_DONE
+ * with the raw samples for that chain.  No summary is computed here — that
+ * is deferred to a separate SUMMARIZE step once all chains have finished.
+ *
+ * @param {string} modelSource
+ * @param {Object} dataColumns
+ * @param {number} dataN
+ * @param {number} dataJ
+ * @param {Object} settings      { nSamples, burnin, thin } (nChains is ignored; always 1)
+ * @param {number} realChainIdx  The chain's global index (0-based).
+ * @param {Object} dataConstants
+ */
+async function startSingleChain(modelSource, dataColumns, dataN, dataJ, settings, realChainIdx, dataConstants = {}) {
+    stopRequested = false;
+
+    const { nSamples, burnin, thin } = settings;
+
+    const graph = buildGraph(modelSource, dataColumns, dataN, dataJ, dataConstants);
+
+    const allSamples = {}; // { paramName: [ chainArray ] }  (only index 0 used)
+    const chainBuffers = {};
+
+    await runGibbs(graph, {
+        nChains: 1,
+        nSamples,
+        burnin,
+        thin,
+
+        onSample(localIdx, sampleIdx, paramValues) {
+            // localIdx is always 0 here; we use realChainIdx for all messaging.
+            if (sampleIdx === 0) {
+                for (const name of Object.keys(paramValues)) {
+                    allSamples[name] = [[]];
+                }
+            }
+
+            if (!chainBuffers[0]) {
+                chainBuffers[0] = makeSampleBuffer(Object.keys(paramValues));
+            }
+            const buffer = chainBuffers[0];
+
+            for (const [name, value] of Object.entries(paramValues)) {
+                buffer[name].push(value);
+                if (allSamples[name]) {
+                    allSamples[name][0].push(value);
+                }
+            }
+
+            const firstValues = Object.values(buffer)[0];
+            if (firstValues && firstValues.length >= BATCH_SIZE) {
+                flushSamples(realChainIdx, buffer);
+            }
+        },
+
+        onProgress(localIdx, iter, total, paramValues) {
+            self.postMessage({
+                type: 'PROGRESS',
+                chainIdx: realChainIdx,
+                iter,
+                total,
+                paramValues,
+            });
+        },
+
+        shouldStop() {
+            return stopRequested;
+        },
+    });
+
+    // Flush remaining buffer.
+    if (chainBuffers[0]) {
+        flushSamples(realChainIdx, chainBuffers[0]);
+    }
+
+    // Build flat chainSamples: { paramName: number[] }
+    const chainSamples = {};
+    for (const [name, chains] of Object.entries(allSamples)) {
+        chainSamples[name] = chains[0];
+    }
+
+    self.postMessage({ type: 'CHAIN_DONE', chainIdx: realChainIdx, chainSamples });
+}
+
+/**
+ * Compute summary statistics and posterior predictive replicates from the
+ * fully aggregated samples (all chains combined), then post DONE.
+ *
+ * @param {Object.<string, number[][]>} allSamples  { paramName: number[][] }
+ * @param {string} modelSource
+ * @param {Object} dataColumns
+ * @param {number} dataN
+ * @param {number} dataJ
+ * @param {Object} dataConstants
+ */
+function runSummarize(allSamples, modelSource, dataColumns, dataN, dataJ, dataConstants = {}) {
+    const graph = buildGraph(modelSource, dataColumns, dataN, dataJ, dataConstants);
+    const summary = summarizeAll(allSamples);
+    const predictions = _generatePredictions(graph, allSamples, 200);
+    self.postMessage({ type: 'DONE', summary, predictions });
+}
+
 // ---------------------------------------------------------------------------
 // Posterior predictive helper
 // ---------------------------------------------------------------------------
@@ -237,6 +341,35 @@ self.onmessage = function onmessage(event) {
 
     if (msg.type === 'STOP') {
         stopRequested = true;
+        return;
+    }
+
+    // Single-chain parallel mode: chainIdx present in START message.
+    if (msg.type === 'START' && msg.chainIdx !== undefined) {
+        const { modelSource, dataColumns, dataN, dataJ, settings, dataConstants, chainIdx } = msg;
+        startSingleChain(
+            modelSource, dataColumns, dataN, dataJ,
+            settings, chainIdx, dataConstants ?? {}
+        ).catch((err) => {
+            self.postMessage({
+                type: 'ERROR',
+                message: err instanceof Error ? err.message : String(err),
+            });
+        });
+        return;
+    }
+
+    // Coordinator summary: fired after all CHAIN_DONE messages arrive.
+    if (msg.type === 'SUMMARIZE') {
+        const { allSamples, modelSource, dataColumns, dataN, dataJ, dataConstants } = msg;
+        try {
+            runSummarize(allSamples, modelSource, dataColumns, dataN, dataJ, dataConstants ?? {});
+        } catch (err) {
+            self.postMessage({
+                type: 'ERROR',
+                message: err instanceof Error ? err.message : String(err),
+            });
+        }
         return;
     }
 

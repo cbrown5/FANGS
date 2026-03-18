@@ -287,7 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnStop    = document.getElementById('btn-stop');
   const btnDownload = document.getElementById('btn-download');
 
-  let samplerWorker = null;
+  let samplerWorker  = null;  // used by prior check path only
+  let samplerWorkers = [];    // one per chain (parallel run path)
+  let summaryWorker  = null;  // post-chain coordinator
   let posteriorSamples = {}; // { paramName: number[] }
 
   btnRun.addEventListener('click', () => {
@@ -356,24 +358,75 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Create Web Worker
-    samplerWorker = new Worker(
-      new URL('./samplers/sampler-worker.js', import.meta.url),
-      { type: 'module' }
-    );
+    // Terminate any leftover workers from a previous run.
+    samplerWorkers.forEach(w => w.terminate());
+    samplerWorkers = [];
+    if (summaryWorker) { summaryWorker.terminate(); summaryWorker = null; }
 
-    samplerWorker.onmessage = (event) => {
-      const msg = event.data;
+    // Capture the data needed later for the SUMMARIZE message (closured below).
+    const capturedModelCode    = modelCode;
+    const capturedDataColumns  = dataColumns;
+    const capturedDataN        = dataN;
+    const capturedDataJ        = dataJ;
+    const capturedDataConstants = getModelConstants();
 
-      if (msg.type === 'PROGRESS') {
-        // Only use chain 0 progress for the overall bar to avoid jumps
-        if (msg.chainIdx === 0) {
-          setProgress(msg.iter / msg.total);
+    // Per-chain progress (0–1); displayed as average across all chains.
+    const nChains = cfg.nChains;
+    const perChainProgress = new Array(nChains).fill(0);
+
+    // collectedSamples accumulates CHAIN_DONE payloads: { paramName: number[][] }
+    const collectedSamples = {};
+    let chainsDone = 0;
+
+    /** Re-enable UI after sampling finishes or errors out. */
+    function _resetUI() {
+      settings.setEnabled(true);
+      btnRun.disabled  = false;
+      btnStop.disabled = true;
+      btn1.disabled = false;
+      btn2.disabled = false;
+    }
+
+    /** Terminate all chain + summary workers and show an error. */
+    function handleWorkerError(message) {
+      samplerWorkers.forEach(w => w.terminate());
+      samplerWorkers = [];
+      if (summaryWorker) { summaryWorker.terminate(); summaryWorker = null; }
+      setStatus(`Error: ${message}`, 'error');
+      editor.showError(1, message);
+      _resetUI();
+    }
+
+    /** Handle messages from the final summary worker. */
+    function handleSummaryMessage(msg) {
+      if (msg.type === 'DONE') {
+        setProgress(1);
+        setStatus('Sampling complete.', 'done');
+        trace.render();
+        density.render();
+        summary.update(msg.summary);
+
+        const yObs = capturedDataColumns.y ? Array.from(capturedDataColumns.y) : [];
+        if (yObs.length > 0) {
+          ppc.update(yObs, msg.predictions?.y ?? []);
         }
 
+        btnDownload.disabled = false;
+        summaryWorker = null;
+        _resetUI();
+      } else if (msg.type === 'ERROR') {
+        handleWorkerError(msg.message);
+      }
+    }
+
+    /** Handle SAMPLES / PROGRESS / CHAIN_DONE / ERROR from a chain worker. */
+    function handleChainMessage(msg) {
+      if (msg.type === 'PROGRESS') {
+        perChainProgress[msg.chainIdx] = msg.iter / msg.total;
+        const avg = perChainProgress.reduce((a, b) => a + b, 0) / nChains;
+        setProgress(avg);
+
       } else if (msg.type === 'SAMPLES') {
-        // Accumulate all-chain samples for download and density plots,
-        // and feed every saved sample into the live trace plot.
         if (!posteriorSamples[msg.paramName]) {
           posteriorSamples[msg.paramName] = [];
         }
@@ -383,73 +436,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         density.setSamples(msg.paramName, posteriorSamples[msg.paramName]);
 
-      } else if (msg.type === 'DONE') {
-        setProgress(1);
-        setStatus('Sampling complete.', 'done');
-        trace.render(); // flush any pending samples not yet drawn
-        density.render();
-        summary.update(msg.summary);
-
-        // PPC: pass observed y and posterior predictive replicates
-        const yObs = dataColumns.y ? Array.from(dataColumns.y) : [];
-        if (yObs.length > 0) {
-          const predicted = msg.predictions?.y ?? [];
-          ppc.update(yObs, predicted);
+      } else if (msg.type === 'CHAIN_DONE') {
+        // Merge this chain's samples into collectedSamples.
+        for (const [paramName, values] of Object.entries(msg.chainSamples)) {
+          if (!collectedSamples[paramName]) {
+            collectedSamples[paramName] = Array.from({ length: nChains }, () => []);
+          }
+          collectedSamples[paramName][msg.chainIdx] = values;
         }
 
-        btnDownload.disabled = false;
-        settings.setEnabled(true);
-        btnRun.disabled  = false;
-        btnStop.disabled = true;
-        btn1.disabled = false;
-        btn2.disabled = false;
-        samplerWorker = null;
+        chainsDone++;
+        if (chainsDone === nChains) {
+          // All chains finished — terminate chain workers, start summary step.
+          samplerWorkers.forEach(w => w.terminate());
+          samplerWorkers = [];
+
+          summaryWorker = new Worker(
+            new URL('./samplers/sampler-worker.js', import.meta.url),
+            { type: 'module' }
+          );
+          summaryWorker.onmessage = (e) => handleSummaryMessage(e.data);
+          summaryWorker.onerror   = (e) => handleWorkerError(e.message);
+          summaryWorker.postMessage({
+            type: 'SUMMARIZE',
+            allSamples:   collectedSamples,
+            modelSource:  capturedModelCode,
+            dataColumns:  capturedDataColumns,
+            dataN:        capturedDataN,
+            dataJ:        capturedDataJ,
+            dataConstants: capturedDataConstants,
+          });
+        }
 
       } else if (msg.type === 'ERROR') {
-        setStatus(`Error: ${msg.message}`, 'error');
-        editor.showError(1, msg.message);
-        settings.setEnabled(true);
-        btnRun.disabled  = false;
-        btnStop.disabled = true;
-        btn1.disabled = false;
-        btn2.disabled = false;
-        samplerWorker = null;
+        handleWorkerError(msg.message);
       }
-    };
+    }
 
-    samplerWorker.onerror = (err) => {
-      setStatus(`Worker error: ${err.message}`, 'error');
-      settings.setEnabled(true);
-      btnRun.disabled  = false;
-      btnStop.disabled = true;
-      btn1.disabled = false;
-      btn2.disabled = false;
-      samplerWorker = null;
-    };
-
-    // Start sampling
-    samplerWorker.postMessage({
-      type: 'START',
-      modelSource: modelCode,
-      dataColumns,
-      dataN,
-      dataJ,
-      dataConstants: getModelConstants(),
-      settings: cfg,
-    });
+    // Spin up one worker per chain.
+    for (let c = 0; c < nChains; c++) {
+      const worker = new Worker(
+        new URL('./samplers/sampler-worker.js', import.meta.url),
+        { type: 'module' }
+      );
+      worker.onmessage = (e) => handleChainMessage(e.data);
+      worker.onerror   = (e) => handleWorkerError(e.message);
+      worker.postMessage({
+        type: 'START',
+        chainIdx: c,
+        modelSource: capturedModelCode,
+        dataColumns: capturedDataColumns,
+        dataN:       capturedDataN,
+        dataJ:       capturedDataJ,
+        dataConstants: capturedDataConstants,
+        settings: { ...cfg, nChains: 1 },
+      });
+      samplerWorkers.push(worker);
+    }
   });
 
   btnStop.addEventListener('click', () => {
-    if (samplerWorker) {
-      samplerWorker.postMessage({ type: 'STOP' });
-      // Give the worker a moment to flush then terminate
-      setTimeout(() => {
-        if (samplerWorker) {
-          samplerWorker.terminate();
-          samplerWorker = null;
-        }
-      }, 500);
-    }
+    // Signal workers to stop cleanly, then force-terminate after a short delay.
+    samplerWorkers.forEach(w => w.postMessage({ type: 'STOP' }));
+    if (summaryWorker) summaryWorker.postMessage({ type: 'STOP' });
+    setTimeout(() => {
+      samplerWorkers.forEach(w => w.terminate());
+      samplerWorkers = [];
+      if (summaryWorker) { summaryWorker.terminate(); summaryWorker = null; }
+    }, 500);
     setStatus('Stopped by user.', '');
     setProgress(0);
     settings.setEnabled(true);
