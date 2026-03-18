@@ -53,6 +53,12 @@ Rscript tests/r-reference/poisson-glm.R
 Rscript tests/r-reference/binomial-glm.R
 ```
 
+Or all at once:
+
+```bash
+Rscript tests/r-reference/{linear-model,mixed-effects,poisson-glm,binomial-glm}.R
+```
+
 Reference JSON fixtures are written to `tests/r-reference/results/`.
 
 ## Adding or editing educational popups
