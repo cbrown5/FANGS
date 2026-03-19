@@ -8,14 +8,14 @@ All core modules are implemented and 252 tests pass.
 
 | File | Notes |
 |------|-------|
-| `app.js` | UI orchestration: editor, data upload, tab switching, run/stop/download, worker wiring, prior predictive check, model constants panel |
+| `app.js` | UI orchestration: editor, data upload, tab switching, run/stop/download, worker wiring, prior predictive check, model constants panel; parallel-chain run spawns one Web Worker per chain plus a final summary worker |
 | `parser/lexer.js` | Tokenises BUGS/JAGS syntax |
 | `parser/parser.js` | AST from token stream |
 | `parser/model-graph.js` | DAG from AST; conjugacy detection (`normal-normal`, `normal-normal-offset`, `gamma-normal`, `beta-binom`, `gamma-Poisson`); parents list handles indexed deps like `b[group[i]]` |
 | `samplers/gibbs.js` | Component-wise Gibbs; conjugate updates + slice fallback; `collectNormalChildResiduals` includes latent stochastic nodes (needed for tau.b) |
 | `samplers/slice.js` | Slice sampler fallback |
 | `samplers/initialize.js` | Overdispersed init from priors; diffuse normal (`tau < 0.01`) capped at SD=3; `normal-normal-offset` nodes start at SD=1 |
-| `samplers/sampler-worker.js` | Web Worker: START/STOP messages; streams SAMPLES/PROGRESS/DONE/ERROR; supports `priorOnly` and `dataConstants` |
+| `samplers/sampler-worker.js` | Web Worker: parallel-chain mode (one worker per chain via START+chainIdx → CHAIN_DONE) + coordinator mode (SUMMARIZE → DONE); legacy single-worker START path retained for prior check; supports `priorOnly` and `dataConstants` |
 | `data/csv-loader.js` | CSV parsing and column preparation |
 | `data/default-data.js` | Built-in dataset matching `data/example.csv` (R seed=42, N=50, 5 groups) |
 | `ui/editor.js` | Model text editor with error display |
@@ -41,6 +41,24 @@ All core modules are implemented and 252 tests pass.
 | `r-reference/*.R` | R/NIMBLE reference scripts; output to `tests/r-reference/results/` |
 
 **252 tests passing.**
+
+---
+
+## Parallel Chains (2026-03-18)
+
+Implemented on branch `claude/parallel-chains-sampler-b6pks`.
+
+Previously all chains ran sequentially in a single Web Worker. Each chain now runs in its own Web Worker, enabling true OS-level parallelism and an ~N-fold wall-clock speedup for N chains on a multi-core machine.
+
+### How it works
+
+1. **`sampler-worker.js`** gained two new modes alongside the original `START` path:
+   - **Single-chain mode** (`START` + `chainIdx`): runs `runGibbs` with `nChains: 1`, remaps the internal chain index to the real index in all SAMPLES/PROGRESS messages, then sends `CHAIN_DONE` with that chain's raw samples.
+   - **Coordinator mode** (`SUMMARIZE`): rebuilds the graph from model source + data, calls `summarizeAll` and `_generatePredictions` across all collected chains, sends the final `DONE` message.
+
+2. **`app.js`** Run button now spins up one Worker per chain simultaneously. Progress bar shows the average across all chains. When all `CHAIN_DONE` messages have arrived, a summary worker is created and sent `SUMMARIZE`. Stop button terminates all chain workers and the summary worker.
+
+3. **Prior-check path** is unchanged — still uses the original single-worker `START` flow.
 
 ---
 
