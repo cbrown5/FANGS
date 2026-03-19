@@ -30,7 +30,6 @@ export const POPUP_CONTENT = {
 </body></html>`,
   'chains': `<html><head></head><body><h1 id="multiple-chains">Multiple Chains</h1>
 <p>Running several <strong>independent chains</strong> in parallel is standard MCMC practice and serves two purposes: diagnosing convergence and improving coverage.</p>
-<p><span class="math display"><em>y</em> = <em>a</em> * <em>x</em> + <em>b</em></span>$</p>
 <h2 id="what-is-a-chain">What is a chain?</h2>
 <p>A single chain is one run of the MCMC algorithm, starting from a random initial point and producing a sequence of parameter values over thousands of iterations.</p>
 <h2 id="why-run-multiple-chains">Why run multiple chains?</h2>
