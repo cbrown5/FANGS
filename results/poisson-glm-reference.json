@@ -1,0 +1,1 @@
+{"model":"poisson-glm","N":8,"n_post_iter":15000,"parameters":{"lambda":{"mean":3.712367,"sd":0.689079,"q2.5":2.486526,"q50":3.668303,"q97.5":5.188597}},"exact":{"lambda":{"posterior_dist":"Gamma(30, 8.1)","mean":3.703704,"sd":0.676201,"q2.5":2.498873,"q97.5":5.141832}}}

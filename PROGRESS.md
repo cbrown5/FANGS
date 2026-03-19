@@ -75,25 +75,19 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 
 ## Next Steps
 
+### 1. Add new models
+
 1. **Add GLM example models** — Poisson and Bernoulli GLM presets in the model selector
-2. **GLM popup content** — new `.qmd` files covering log link, logit link, overdispersion
-3. **Regenerate R fixtures** — R scripts now use weakly-informative priors (`dgamma(1, 0.1)`, `dnorm(0, 0.04)`); re-run all four R reference scripts once R + NIMBLE is available and verify results against JSON fixtures
+2. **Add GLM example data** — Count and 0/1 binary data to test against GLM models
+3. **GLM popup content** — new `.qmd` files covering log link, logit link, overdispersion
+4. **Regenerate R fixtures** — R scripts now use weakly-informative priors (`dgamma(1, 0.1)`, `dnorm(0, 0.04)`); re-run all four R reference scripts once R + NIMBLE is available and verify results against JSON fixtures
 
-### 5. Improve sampling efficiency
-
-- Look for efficiency gains in the sampler
-- One idea is to provide easy access to sampling parameters so human developer can play around with sampling algorithm to improve its performance. 
-- Look at how chains are initialized
-- Look at contraints on what data can be fitted and provide advice on that (e.g. if scale is large will sampling still work efficiently? )
-- Add more tests with different example datasets that are generated with different parameters. 
-
-### 6. Final steps and styling
+### 2. Final steps and styling
 
 - Use vampire colour theme. 
 - Add FANGS hex sticker to top bar (to be provided by user)
 - Make about and intstructions pages .md files so can be easily edited. 
 - Start the paper describing this app. Dual themes of paper: how the app could be used in teaching. How it was created wiht claude code, with lots of testing to ensure code was robust. 
-
 
 ---
 
