@@ -19,20 +19,20 @@ const CANVAS_HEIGHT = 280;
 const MARGIN = { top: 20, right: 20, bottom: 40, left: 56 };
 const KDE_POINTS   = 256;
 const FAN_CURVES   = 50;   // number of replicate KDE curves in the fan
-const OBS_COLOR    = 'rgba(33,150,243,0.55)';
-const OBS_STROKE   = '#1565c0';
-const FAN_COLOR    = 'rgba(239,108,0,0.06)';
-const FAN_STROKE   = 'rgba(239,108,0,0.15)';
-const MEAN_SIM     = 'rgba(239,108,0,0.9)';
-const MEAN_OBS     = '#1a3a5c';
+const OBS_COLOR    = 'rgba(204,17,51,0.55)';
+const OBS_STROKE   = '#cc1133';
+const FAN_COLOR    = 'rgba(180,100,140,0.06)';
+const FAN_STROKE   = 'rgba(180,100,140,0.18)';
+const MEAN_SIM     = 'rgba(255,150,180,0.9)';
+const MEAN_OBS     = '#ff4466';
 
 // Scatter plot constants
 const SCATTER_HEIGHT = 260;
 const SCATTER_MARGIN = { top: 20, right: 20, bottom: 48, left: 56 };
-const POINT_COLOR    = 'rgba(33,150,243,0.75)';
-const POINT_STROKE   = '#1565c0';
-const CI_COLOR       = 'rgba(33,150,243,0.2)';
-const REF_LINE_COLOR = '#888';
+const POINT_COLOR    = 'rgba(204,17,51,0.75)';
+const POINT_STROKE   = '#cc1133';
+const CI_COLOR       = 'rgba(204,17,51,0.2)';
+const REF_LINE_COLOR = '#5a2030';
 
 export class PPCPlot {
   /**
@@ -92,7 +92,7 @@ export class PPCPlot {
     title.textContent = 'Observed vs. Posterior Predictive Distribution';
     title.style.cssText = `
       font-size: 0.8rem;
-      color: #555;
+      color: #c09098;
       margin-bottom: 8px;
       font-style: italic;
     `;
@@ -101,7 +101,7 @@ export class PPCPlot {
 
     // Legend
     const legend = document.createElement('div');
-    legend.style.cssText = 'display:flex; gap:16px; margin-bottom:8px; font-size:0.78rem; color:#444;';
+    legend.style.cssText = 'display:flex; gap:16px; margin-bottom:8px; font-size:0.78rem; color:#c09098;';
     legend.innerHTML = `
       <span style="display:flex;align-items:center;gap:5px;">
         <span style="display:inline-block;width:14px;height:14px;background:${OBS_COLOR};border:1px solid ${OBS_STROKE};border-radius:2px;"></span>
@@ -112,7 +112,7 @@ export class PPCPlot {
         Predicted (mean)
       </span>
       <span style="display:flex;align-items:center;gap:5px;">
-        <span style="display:inline-block;width:24px;height:3px;background:rgba(239,108,0,0.4);border-radius:2px;"></span>
+        <span style="display:inline-block;width:24px;height:3px;background:rgba(180,100,140,0.5);border-radius:2px;"></span>
         Predicted (fan)
       </span>
     `;
@@ -128,21 +128,21 @@ export class PPCPlot {
 
     // --- Scatter plot section ---
     const divider = document.createElement('hr');
-    divider.style.cssText = 'margin: 16px 0 10px 0; border: none; border-top: 1px solid #e0e0e0;';
+    divider.style.cssText = 'margin: 16px 0 10px 0; border: none; border-top: 1px solid #3d0f25;';
     this.container.appendChild(divider);
 
     const scatterTitle = document.createElement('div');
     scatterTitle.textContent = 'Observed vs. Posterior Mean Predicted';
     scatterTitle.style.cssText = `
       font-size: 0.8rem;
-      color: #555;
+      color: #c09098;
       margin-bottom: 8px;
       font-style: italic;
     `;
     this.container.appendChild(scatterTitle);
 
     const scatterLegend = document.createElement('div');
-    scatterLegend.style.cssText = 'display:flex; gap:16px; margin-bottom:8px; font-size:0.78rem; color:#444;';
+    scatterLegend.style.cssText = 'display:flex; gap:16px; margin-bottom:8px; font-size:0.78rem; color:#c09098;';
     scatterLegend.innerHTML = `
       <span style="display:flex;align-items:center;gap:5px;">
         <span style="display:inline-block;width:12px;height:12px;background:${POINT_COLOR};border:1px solid ${POINT_STROKE};border-radius:50%;"></span>
@@ -171,9 +171,9 @@ export class PPCPlot {
     _resizeCanvas(this._canvas, ctx, cssW, cssH);
 
     ctx.clearRect(0, 0, cssW, cssH);
-    ctx.fillStyle = '#f7f9fc';
+    ctx.fillStyle = '#0d0008';
     ctx.fillRect(0, 0, cssW, cssH);
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = '#9a6878';
     ctx.font      = '13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -195,7 +195,7 @@ export class PPCPlot {
     const plotH = H - MARGIN.top  - MARGIN.bottom;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0d0008';
     ctx.fillRect(0, 0, W, H);
 
     // --- Determine x range from obs + pred ---
@@ -332,7 +332,7 @@ export class PPCPlot {
     ctx.setLineDash([]);
 
     // --- Axes ---
-    ctx.strokeStyle = '#aaa';
+    ctx.strokeStyle = '#5a2030';
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(MARGIN.left, MARGIN.top);
@@ -341,7 +341,7 @@ export class PPCPlot {
     ctx.stroke();
 
     // X-axis labels
-    ctx.fillStyle    = '#555';
+    ctx.fillStyle    = '#c09098';
     ctx.font         = '10px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
@@ -358,7 +358,7 @@ export class PPCPlot {
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.font         = '10px sans-serif';
-    ctx.fillStyle    = '#555';
+    ctx.fillStyle    = '#c09098';
     ctx.fillText('Density', 0, 0);
     ctx.restore();
 
@@ -379,9 +379,9 @@ export class PPCPlot {
     _resizeCanvas(this._scatterCanvas, ctx, cssW, cssH);
 
     ctx.clearRect(0, 0, cssW, cssH);
-    ctx.fillStyle = '#f7f9fc';
+    ctx.fillStyle = '#0d0008';
     ctx.fillRect(0, 0, cssW, cssH);
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = '#9a6878';
     ctx.font      = '13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -423,7 +423,7 @@ export class PPCPlot {
     const plotH = H - SCATTER_MARGIN.top  - SCATTER_MARGIN.bottom;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0d0008';
     ctx.fillRect(0, 0, W, H);
 
     // Axis range: cover both observed and predicted
@@ -481,7 +481,7 @@ export class PPCPlot {
     }
 
     // --- Axes ---
-    ctx.strokeStyle = '#aaa';
+    ctx.strokeStyle = '#5a2030';
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(SCATTER_MARGIN.left, SCATTER_MARGIN.top);
@@ -490,7 +490,7 @@ export class PPCPlot {
     ctx.stroke();
 
     // X-axis label
-    ctx.fillStyle    = '#555';
+    ctx.fillStyle    = '#c09098';
     ctx.font         = '11px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'bottom';
@@ -503,12 +503,12 @@ export class PPCPlot {
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.font         = '11px sans-serif';
-    ctx.fillStyle    = '#555';
+    ctx.fillStyle    = '#c09098';
     ctx.fillText('Predicted (posterior mean)', 0, 0);
     ctx.restore();
 
     // X-axis ticks
-    ctx.fillStyle    = '#555';
+    ctx.fillStyle    = '#c09098';
     ctx.font         = '10px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';

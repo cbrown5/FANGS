@@ -11,10 +11,10 @@
 
 const CANVAS_HEIGHT = 150;
 const MARGIN = { top: 16, right: 16, bottom: 32, left: 52 };
-const DENSITY_FILL   = 'rgba(33,150,243,0.18)';
-const DENSITY_STROKE = '#1565c0';
-const CI_FILL        = 'rgba(33,150,243,0.35)';
-const MEAN_COLOR     = '#c62828';
+const DENSITY_FILL   = 'rgba(204,17,51,0.18)';
+const DENSITY_STROKE = '#cc1133';
+const CI_FILL        = 'rgba(204,17,51,0.32)';
+const MEAN_COLOR     = '#ff6688';
 const KDE_POINTS     = 256; // evaluation grid points
 
 export class DensityPlot {
@@ -77,8 +77,8 @@ export class DensityPlot {
       vertical-align: top;
       width: calc(50% - 10px);
       margin: 0 5px 16px;
-      background: #fff;
-      border: 1px solid #d0d7de;
+      background: #0d0008;
+      border: 1px solid #3d0f25;
       border-radius: 6px;
       overflow: hidden;
       box-sizing: border-box;
@@ -89,7 +89,7 @@ export class DensityPlot {
     label.style.cssText = `
       font-size: 0.78rem;
       font-weight: 700;
-      color: #1a3a5c;
+      color: #f0dce8;
       padding: 5px 10px 0;
       font-family: 'Fira Mono', monospace;
     `;
@@ -111,7 +111,7 @@ export class DensityPlot {
 
     if (!samples || samples.length < 2) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#aaa';
+      ctx.fillStyle = '#9a6878';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -135,7 +135,7 @@ export class DensityPlot {
     const plotH = H - MARGIN.top  - MARGIN.bottom;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0d0008';
     ctx.fillRect(0, 0, W, H);
 
     // --- Statistics ---
@@ -200,7 +200,7 @@ export class DensityPlot {
     ctx.setLineDash([]);
 
     // --- Axis ---
-    ctx.strokeStyle = '#aaa';
+    ctx.strokeStyle = '#5a2030';
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(MARGIN.left, MARGIN.top + plotH);
@@ -214,7 +214,7 @@ export class DensityPlot {
     ctx.stroke();
 
     // --- X-axis ticks / labels (nice round numbers) ---
-    ctx.fillStyle    = '#555';
+    ctx.fillStyle    = '#c09098';
     ctx.font         = '10px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
@@ -222,9 +222,9 @@ export class DensityPlot {
     for (const tv of xTicks) {
       const px = xScale(tv);
       if (px < MARGIN.left || px > MARGIN.left + plotW) continue;
-      ctx.fillStyle = '#555';
+      ctx.fillStyle = '#c09098';
       ctx.fillText(_fmt(tv, xStep), px, MARGIN.top + plotH + 4);
-      ctx.strokeStyle = '#ddd';
+      ctx.strokeStyle = 'rgba(255,200,220,0.1)';
       ctx.lineWidth   = 0.5;
       ctx.beginPath();
       ctx.moveTo(px, MARGIN.top);
@@ -233,7 +233,7 @@ export class DensityPlot {
     }
 
     // --- Legend text: mean and 95% CI ---
-    ctx.fillStyle    = '#333';
+    ctx.fillStyle    = '#c09098';
     ctx.font         = '9.5px sans-serif';
     ctx.textAlign    = 'right';
     ctx.textBaseline = 'top';
