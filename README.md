@@ -61,6 +61,8 @@ Rscript tests/r-reference/{linear-model,mixed-effects,poisson-glm,binomial-glm}.
 
 Reference JSON fixtures are written to `tests/r-reference/results/`.
 
+Matching app tests are run with: `npx vitest run tests/integration.test.js`
+
 ## Adding or editing educational popups
 
 Popup content is authored in [Quarto](https://quarto.org) `.qmd` files and rendered to HTML
