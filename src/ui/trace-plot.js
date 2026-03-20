@@ -9,7 +9,7 @@
  */
 
 /** Chain colours (up to 5 chains; cycles if more). */
-const CHAIN_COLORS = ['#2196f3', '#e53935', '#43a047', '#fb8c00', '#8e24aa'];
+const CHAIN_COLORS = ['#ff4466', '#4fc3f7', '#69f060', '#ffb74d', '#ce93d8'];
 
 /** Canvas dimensions (CSS pixels; HiDPI handled via devicePixelRatio). */
 const CANVAS_HEIGHT = 120;
@@ -134,8 +134,8 @@ export class TracePlot {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `
       margin-bottom: 14px;
-      background: #fff;
-      border: 1px solid #d0d7de;
+      background: #0d0008;
+      border: 1px solid #3d0f25;
       border-radius: 6px;
       overflow: hidden;
     `;
@@ -145,7 +145,7 @@ export class TracePlot {
     label.style.cssText = `
       font-size: 0.78rem;
       font-weight: 700;
-      color: #1a3a5c;
+      color: #f0dce8;
       padding: 5px 10px 0;
       font-family: 'Fira Mono', monospace;
     `;
@@ -157,7 +157,7 @@ export class TracePlot {
     for (let c = 0; c < nChains; c++) {
       const swatch = document.createElement('span');
       swatch.style.cssText = `
-        font-size:0.7rem; color:#555;
+        font-size:0.7rem; color:#c09098;
         display:flex; align-items:center; gap:4px;
       `;
       const dot = document.createElement('span');
@@ -213,7 +213,7 @@ export class TracePlot {
 
     // --- Background ---
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0d0008';
     ctx.fillRect(0, 0, W, H);
 
     // --- Collect all values for Y-axis range ---
@@ -227,7 +227,7 @@ export class TracePlot {
     }
 
     if (maxLen === 0) {
-      ctx.fillStyle = '#aaa';
+      ctx.fillStyle = '#9a6878';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Waiting for samples…', W / 2, H / 2);
@@ -251,7 +251,7 @@ export class TracePlot {
     const { ticks: yTicks, step: yStep } = _niceTicks(yLo, yHi, 4);
 
     // --- Grid lines ---
-    ctx.strokeStyle = '#e8edf2';
+    ctx.strokeStyle = 'rgba(255,200,220,0.1)';
     ctx.lineWidth   = 0.5;
     for (const tv of yTicks) {
       const y = yScale(tv);
@@ -263,7 +263,7 @@ export class TracePlot {
     }
 
     // --- Y axis labels ---
-    ctx.fillStyle  = '#666';
+    ctx.fillStyle  = '#c09098';
     ctx.font       = '10px sans-serif';
     ctx.textAlign  = 'right';
     ctx.textBaseline = 'middle';
@@ -276,7 +276,7 @@ export class TracePlot {
     // --- X axis labels (fixed 1 to maxSamples) ---
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillStyle    = '#666';
+    ctx.fillStyle    = '#c09098';
     const nXTicks = 4;
     for (let t = 0; t <= nXTicks; t++) {
       const frac  = t / nXTicks;
@@ -286,7 +286,7 @@ export class TracePlot {
     }
 
     // --- Axis lines ---
-    ctx.strokeStyle = '#aaa';
+    ctx.strokeStyle = '#5a2030';
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(MARGIN.left, MARGIN.top);
