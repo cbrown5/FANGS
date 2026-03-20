@@ -15,7 +15,9 @@ import { DensityPlot }    from './ui/density-plot.js';
 import { SummaryTable }   from './ui/summary-table.js';
 import { PPCPlot }        from './ui/ppc-plot.js';
 import { SamplerSettings} from './ui/settings.js';
-import { defaultCSV, defaultModel1, defaultModel2 } from './data/default-data.js';
+import { defaultCSV, defaultModel1, defaultModel2,
+         glmPoissonCSV, defaultModel3,
+         glmBernoulliCSV, defaultModel4 } from './data/default-data.js';
 import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
 import { renderDataTable } from './ui/data-table.js';
 import { initPopups, attachPopupTrigger } from './ui/popups.js';
@@ -45,18 +47,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // -- Model selector buttons --
   const btn1 = document.getElementById('btn-model-1');
   const btn2 = document.getElementById('btn-model-2');
+  const btn3 = document.getElementById('btn-model-3');
+  const btn4 = document.getElementById('btn-model-4');
+  const modelBtns = [btn1, btn2, btn3, btn4];
+
+  function setActiveModel(activeBtn) {
+    modelBtns.forEach(b => b && b.classList.remove('active'));
+    if (activeBtn) activeBtn.classList.add('active');
+  }
 
   btn1.addEventListener('click', () => {
     editor.setValue(defaultModel1);
-    btn1.classList.add('active');
-    btn2.classList.remove('active');
+    setActiveModel(btn1);
     updateConstantsPanel();
   });
   btn2.addEventListener('click', () => {
     editor.setValue(defaultModel2);
-    btn2.classList.add('active');
-    btn1.classList.remove('active');
+    setActiveModel(btn2);
     updateConstantsPanel();
+  });
+  btn3.addEventListener('click', () => {
+    editor.setValue(defaultModel3);
+    setActiveModel(btn3);
+    loadCSVText(glmPoissonCSV, 'poisson-example.csv');
+  });
+  btn4.addEventListener('click', () => {
+    editor.setValue(defaultModel4);
+    setActiveModel(btn4);
+    loadCSVText(glmBernoulliCSV, 'bernoulli-example.csv');
   });
 
   // Update constants panel whenever the model text changes (debounced)

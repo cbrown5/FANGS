@@ -106,3 +106,147 @@ export const defaultModel2 = `model {
   tau ~ dgamma(1, 0.1)
   tau.b ~ dgamma(1, 0.1)
 }`;
+
+// ---------------------------------------------------------------------------
+// Poisson GLM example dataset
+// ---------------------------------------------------------------------------
+
+/**
+ * Count data for a Poisson GLM example.
+ * N=40 observations with a continuous predictor x and integer count response.
+ * True model: log(lambda_i) = 1.0 + 0.8 * x_i
+ * x ~ N(0, 1), count ~ Poisson(lambda)
+ */
+export const glmPoissonCSV = `id,x,count
+1,-1.22,1
+2,0.36,4
+3,-0.55,2
+4,1.09,7
+5,-0.79,1
+6,0.68,5
+7,1.52,9
+8,-1.38,1
+9,0.11,3
+10,-0.30,2
+11,0.89,6
+12,-0.60,2
+13,1.20,7
+14,0.42,4
+15,-1.01,1
+16,0.61,4
+17,-0.18,2
+18,1.32,8
+19,-0.90,1
+20,0.51,4
+21,-1.50,1
+22,0.79,5
+23,1.61,10
+24,-0.41,2
+25,0.21,3
+26,-0.67,2
+27,1.01,6
+28,-1.11,1
+29,0.32,4
+30,-0.08,3
+31,1.42,8
+32,-1.26,1
+33,0.59,4
+34,-0.50,2
+35,0.92,6
+36,-0.75,1
+37,1.09,7
+38,0.45,4
+39,-0.18,2
+40,0.68,5
+`;
+
+/**
+ * Poisson log-linear GLM.
+ * log(lambda[i]) = alpha + beta * x[i]
+ * Parameters: alpha (log-scale intercept), beta (log-scale slope).
+ */
+export const defaultModel3 = `model {
+  for (i in 1:N) {
+    count[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 0.04)
+  beta ~ dnorm(0, 0.04)
+}`;
+
+// ---------------------------------------------------------------------------
+// Bernoulli GLM example dataset
+// ---------------------------------------------------------------------------
+
+/**
+ * Binary outcome data for a Bernoulli GLM example.
+ * N=50 observations with a continuous predictor x and binary response y (0/1).
+ * True model: logit(p_i) = -0.3 + 1.5 * x_i
+ * x spread from -1.5 to 1.6, y ~ Bernoulli(p)
+ */
+export const glmBernoulliCSV = `id,x,y
+1,-1.50,0
+2,-1.25,0
+3,-1.10,0
+4,-0.95,0
+5,-0.85,0
+6,-0.75,0
+7,-0.65,0
+8,-0.55,0
+9,-0.45,0
+10,-0.35,0
+11,-0.30,0
+12,-0.20,0
+13,-0.15,1
+14,-0.05,0
+15,0.00,0
+16,0.10,1
+17,0.15,1
+18,0.20,0
+19,0.30,1
+20,0.35,1
+21,0.45,1
+22,0.50,1
+23,0.55,0
+24,0.65,1
+25,0.70,1
+26,0.80,1
+27,0.90,1
+28,0.95,1
+29,1.05,1
+30,1.10,1
+31,-1.40,0
+32,-1.00,0
+33,-0.70,0
+34,-0.40,0
+35,-0.10,0
+36,0.05,0
+37,0.25,1
+38,0.60,1
+39,0.85,1
+40,1.20,1
+41,-1.20,0
+42,-0.80,0
+43,-0.50,0
+44,-0.25,0
+45,0.40,1
+46,0.75,1
+47,1.00,1
+48,1.30,1
+49,1.50,1
+50,1.60,1
+`;
+
+/**
+ * Bernoulli logistic regression GLM.
+ * logit(p[i]) = alpha + beta * x[i]
+ * Parameters: alpha (log-odds intercept), beta (log-odds ratio slope).
+ */
+export const defaultModel4 = `model {
+  for (i in 1:N) {
+    y[i] ~ dbern(p[i])
+    logit(p[i]) <- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 0.04)
+  beta ~ dnorm(0, 0.04)
+}`;
