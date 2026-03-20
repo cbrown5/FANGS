@@ -533,5 +533,86 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <p>The y-axis shows the parameter value on its natural scale. The range reflects the posterior spread — wide traces mean high posterior uncertainty.</p>
 <h2 id="burn-in">Burn-in</h2>
 <p>The period before the chain stabilises is the burn-in. It is normal for chains to start far apart and then converge. Only the post-burn-in samples are used for inference.</p>
+</body></html>`,
+
+  'log-link': `<html><head></head><body><h1 id="log-link-poisson-glm">Log Link (Poisson GLM)</h1>
+<p>A <strong>Poisson GLM</strong> models count data (non-negative integers) using a log link function to connect the linear predictor to the Poisson mean.</p>
+<h2 id="the-model">The model</h2>
+<p><span class="math display">$$\text{count}_i \sim \text{Poisson}(\lambda_i)$$</span></p>
+<p><span class="math display">$$\log(\lambda_i) = \alpha + \beta \, x_i$$</span></p>
+<p>The log link ensures that λ<sub>i</sub> &gt; 0 for all values of the linear predictor.</p>
+<h2 id="why-a-log-link">Why a log link?</h2>
+<p>The Poisson distribution requires λ &gt; 0. A direct linear model λ<sub>i</sub> = α + β x<sub>i</sub> could predict negative means. By modelling log(λ) instead, we guarantee positivity: λ = e<sup>α + β x</sup> is always positive.</p>
+<h2 id="interpreting-parameters">Interpreting parameters</h2>
+<ul>
+<li><strong>α (intercept)</strong>: the log mean count when x = 0. On the original scale, the mean count is e<sup>α</sup>.</li>
+<li><strong>β (slope)</strong>: a one-unit increase in x multiplies the expected count by e<sup>β</sup>.</li>
+</ul>
+<p>For example, if β = 0.8, then a one-unit increase in x multiplies the expected count by e<sup>0.8</sup> ≈ 2.2.</p>
+<h2 id="bugs-syntax">BUGS syntax</h2>
+<pre><code>for (i in 1:N) {
+  count[i] ~ dpois(lambda[i])
+  log(lambda[i]) &lt;- alpha + beta * x[i]
+}</code></pre>
+<p>The link function appears on the <strong>left</strong> side of the deterministic assignment. FANGS evaluates λ<sub>i</sub> = exp(α + β x<sub>i</sub>) internally.</p>
+<h2 id="posterior-sampling">Posterior sampling</h2>
+<p>This model is non-conjugate (the log link breaks conjugacy between α/β and the Poisson likelihood), so FANGS uses <strong>slice sampling</strong> for α and β.</p>
+</body></html>`,
+
+  'logit-link': `<html><head></head><body><h1 id="logit-link-bernoulli-glm">Logit Link (Bernoulli GLM)</h1>
+<p>A <strong>Bernoulli GLM</strong> (logistic regression) models binary outcomes (0/1) using a logit link function to connect the linear predictor to the probability of success.</p>
+<h2 id="the-model">The model</h2>
+<p><span class="math display">$$y_i \sim \text{Bernoulli}(p_i)$$</span></p>
+<p><span class="math display">$$\text{logit}(p_i) = \alpha + \beta \, x_i$$</span></p>
+<p>The logit link ensures 0 &lt; p<sub>i</sub> &lt; 1 for all values of the linear predictor.</p>
+<h2 id="the-logit-function">The logit function</h2>
+<p>The logit (log-odds) function is:</p>
+<p><span class="math display">$$\text{logit}(p) = \log\!\left(\frac{p}{1-p}\right)$$</span></p>
+<p>Its inverse is the <strong>logistic</strong> (sigmoid) function:</p>
+<p><span class="math display">$$p = \frac{1}{1 + e^{-(\alpha + \beta x)}}$$</span></p>
+<h2 id="interpreting-parameters">Interpreting parameters</h2>
+<ul>
+<li><strong>α (intercept)</strong>: the log-odds of success when x = 0. The probability at x = 0 is 1/(1 + e<sup>-α</sup>).</li>
+<li><strong>β (slope)</strong>: a one-unit increase in x adds β to the log-odds, multiplying the odds by e<sup>β</sup>.</li>
+</ul>
+<p>For example, if β = 1.5, a one-unit increase in x multiplies the odds of success by e<sup>1.5</sup> ≈ 4.5.</p>
+<h2 id="bugs-syntax">BUGS syntax</h2>
+<pre><code>for (i in 1:N) {
+  y[i] ~ dbern(p[i])
+  logit(p[i]) &lt;- alpha + beta * x[i]
+}</code></pre>
+<p>FANGS evaluates p<sub>i</sub> = invlogit(α + β x<sub>i</sub>) = 1/(1 + e<sup>-(α + β x<sub>i</sub>)</sup>) internally.</p>
+<h2 id="posterior-sampling">Posterior sampling</h2>
+<p>This model is non-conjugate — the logit link means the posterior for α and β does not have a closed form, so FANGS uses <strong>slice sampling</strong>.</p>
+</body></html>`,
+
+  'overdispersion': `<html><head></head><body><h1 id="overdispersion-in-count-data">Overdispersion in Count Data</h1>
+<p><strong>Overdispersion</strong> occurs when count data show more variability than a standard Poisson model predicts.</p>
+<h2 id="what-the-poisson-assumes">What the Poisson assumes</h2>
+<p>The Poisson distribution has a single parameter λ that is simultaneously the mean <strong>and</strong> the variance:</p>
+<p><span class="math display">$$E[y] = \text{Var}[y] = \lambda$$</span></p>
+<p>This is a strong assumption. Real count data often have variance greater than the mean — this is called <strong>overdispersion</strong>.</p>
+<h2 id="signs-of-overdispersion">Signs of overdispersion</h2>
+<ul>
+<li>The posterior predictive distribution is much narrower than the observed data</li>
+<li>Residuals are large and systematic</li>
+<li>Posterior predictive checks (PPC) show the observed data in the tails of the simulated distribution</li>
+</ul>
+<h2 id="common-causes">Common causes</h2>
+<ul>
+<li>Unmodelled heterogeneity (e.g., unmeasured predictors)</li>
+<li>Clustered or grouped data where observations within groups are correlated</li>
+<li>Excess zeros (zero-inflated data)</li>
+</ul>
+<h2 id="solutions-in-a-bayesian-framework">Solutions in a Bayesian framework</h2>
+<p><strong>Random effects</strong>: add observation-level random effects to absorb extra variation:</p>
+<pre><code>for (i in 1:N) {
+  count[i] ~ dpois(lambda[i])
+  log(lambda[i]) &lt;- alpha + beta * x[i] + eps[i]
+  eps[i] ~ dnorm(0, tau.eps)
+}</code></pre>
+<p>This is sometimes called a <strong>Poisson-lognormal</strong> model.</p>
+<h2 id="checking-for-overdispersion">Checking for overdispersion</h2>
+<p>Use the <strong>PPC tab</strong> to compare observed counts with posterior predictive samples. If the observed data are frequently outside the range of simulated data, overdispersion is likely.</p>
 </body></html>`
 };

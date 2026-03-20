@@ -1,0 +1,45 @@
+# Overdispersion in Count Data
+
+**Overdispersion** occurs when count data show more variability than a standard Poisson model predicts.
+
+## What the Poisson assumes
+
+The Poisson distribution has a single parameter $\lambda$ that is simultaneously the mean **and** the variance:
+
+$$E[y] = \text{Var}[y] = \lambda$$
+
+This is a strong assumption. Real count data often have variance greater than the mean — this is called **overdispersion**.
+
+## Signs of overdispersion
+
+- The posterior predictive distribution is much narrower than the observed data
+- Residuals are large and systematic
+- Posterior predictive checks (PPC) show the observed data in the tails of the simulated distribution
+
+## Common causes
+
+- Unmodelled heterogeneity (e.g., unmeasured predictors)
+- Clustered or grouped data where observations within groups are correlated
+- Excess zeros (zero-inflated data)
+
+## Solutions in a Bayesian framework
+
+**Negative binomial model**: replaces the Poisson with a distribution that has a separate dispersion parameter $r$:
+
+$$y_i \sim \text{NegBin}(r, p_i)$$
+
+**Random effects**: add observation-level random effects to absorb extra variation:
+
+```
+for (i in 1:N) {
+  count[i] ~ dpois(lambda[i])
+  log(lambda[i]) <- alpha + beta * x[i] + eps[i]
+  eps[i] ~ dnorm(0, tau.eps)
+}
+```
+
+This is sometimes called a **Poisson-lognormal** model.
+
+## Checking for overdispersion
+
+Use the **PPC tab** to compare observed counts with posterior predictive samples. If the observed data are frequently outside the range of simulated data, overdispersion is likely.

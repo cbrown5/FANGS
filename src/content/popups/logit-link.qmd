@@ -1,0 +1,43 @@
+# Logit Link (Bernoulli GLM)
+
+A **Bernoulli GLM** (logistic regression) models binary outcomes (0/1) using a logit link function to connect the linear predictor to the probability of success.
+
+## The model
+
+$$y_i \sim \text{Bernoulli}(p_i)$$
+
+$$\text{logit}(p_i) = \alpha + \beta \, x_i$$
+
+The logit link ensures $0 < p_i < 1$ for all values of the linear predictor.
+
+## The logit function
+
+The logit (log-odds) function is:
+
+$$\text{logit}(p) = \log\!\left(\frac{p}{1-p}\right)$$
+
+Its inverse is the **logistic** (sigmoid) function:
+
+$$p = \frac{1}{1 + e^{-(\alpha + \beta x)}}$$
+
+## Interpreting parameters
+
+- **$\alpha$** (intercept): the log-odds of success when $x = 0$. The probability at $x=0$ is $1/(1 + e^{-\alpha})$.
+- **$\beta$** (slope): a one-unit increase in $x$ adds $\beta$ to the log-odds, multiplying the odds by $e^\beta$.
+
+For example, if $\beta = 1.5$, a one-unit increase in $x$ multiplies the odds of success by $e^{1.5} \approx 4.5$.
+
+## BUGS syntax
+
+```
+for (i in 1:N) {
+  y[i] ~ dbern(p[i])
+  logit(p[i]) <- alpha + beta * x[i]
+}
+```
+
+FANGS evaluates $p_i = \text{invlogit}(\alpha + \beta x_i) = 1/(1 + e^{-(\alpha + \beta x_i)})$ internally.
+
+## Posterior sampling
+
+This model is non-conjugate — the logit link means the posterior for $\alpha$ and $\beta$ does not have a closed form, so FANGS uses **slice sampling**.
