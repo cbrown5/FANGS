@@ -1,0 +1,37 @@
+# Log Link (Poisson GLM)
+
+A **Poisson GLM** models count data (non-negative integers) using a log link function to connect the linear predictor to the Poisson mean.
+
+## The model
+
+$$\text{count}_i \sim \text{Poisson}(\lambda_i)$$
+
+$$\log(\lambda_i) = \alpha + \beta \, x_i$$
+
+The log link ensures that $\lambda_i > 0$ for all values of the linear predictor.
+
+## Why a log link?
+
+The Poisson distribution requires $\lambda > 0$. A direct linear model $\lambda_i = \alpha + \beta x_i$ could predict negative means. By modelling $\log(\lambda)$ instead, we guarantee positivity: $\lambda = e^{\alpha + \beta x}$ is always positive.
+
+## Interpreting parameters
+
+- **$\alpha$** (intercept): the log mean count when $x = 0$. On the original scale, the mean count is $e^\alpha$.
+- **$\beta$** (slope): a one-unit increase in $x$ multiplies the expected count by $e^\beta$.
+
+For example, if $\beta = 0.8$, then a one-unit increase in $x$ multiplies the expected count by $e^{0.8} \approx 2.2$.
+
+## BUGS syntax
+
+```
+for (i in 1:N) {
+  count[i] ~ dpois(lambda[i])
+  log(lambda[i]) <- alpha + beta * x[i]
+}
+```
+
+The link function appears on the **left** side of the deterministic assignment. FANGS evaluates $\lambda_i = \exp(\alpha + \beta x_i)$ internally.
+
+## Posterior sampling
+
+This model is non-conjugate (the log link breaks conjugacy between $\alpha$/$\beta$ and the Poisson likelihood), so FANGS uses **slice sampling** for $\alpha$ and $\beta$.
