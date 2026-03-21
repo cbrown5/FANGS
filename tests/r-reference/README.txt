@@ -47,13 +47,13 @@ SCRIPTS
 
 linear-model.R
     Fits:  y[i] ~ dnorm(mu[i], tau);  mu[i] <- alpha + beta * x[i]
-    Priors: alpha, beta ~ dnorm(0, 0.001);  tau ~ dgamma(0.001, 0.001)
+    Priors: alpha, beta ~ dnorm(0, 0.04);  tau ~ dgamma(1, 0.1)
     Output: linear-model-reference.json
 
 mixed-effects.R
     Fits:  y[i] ~ dnorm(mu[i], tau);  mu[i] <- alpha + beta * x[i] + b[group[i]]
            b[j] ~ dnorm(0, tau.b)  for j in 1:J
-    Priors: alpha, beta ~ dnorm(0, 0.001);  tau, tau.b ~ dgamma(0.001, 0.001)
+    Priors: alpha, beta ~ dnorm(0, 0.04);  tau, tau.b ~ dgamma(1, 0.1)
     Output: mixed-effects-reference.json
 
 
