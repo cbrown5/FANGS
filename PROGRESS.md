@@ -44,6 +44,50 @@ All core modules are implemented and 252 tests pass.
 
 ---
 
+## UI Polish and Dataset Unification (2026-03-21)
+
+Implemented on branch `claude/continue-progress-md-WPbBB`.
+
+### Summary table dark theme fix (`src/ui/summary-table.js`)
+
+Row backgrounds were light (`#f7f9fc`) which made text invisible against the Dracula
+dark theme. All rows now use dark backgrounds (`#21222c` / `#282a36` alternating)
+with hover state `#2d2f3f`. Warning colours updated to dark-theme variants. Header
+and parameter-name colours updated to match the purple accent (`#bd93f9`).
+
+### Unified default dataset (`src/data/default-data.js`, `data/example.csv`)
+
+Previously, clicking "Poisson GLM" or "Bernoulli GLM" replaced the loaded dataset
+with separate hardcoded CSVs (`glmPoissonCSV`, `glmBernoulliCSV`). This was confusing.
+
+All four example models now use a **single unified dataset** (`defaultCSV`, 50 rows,
+6 columns: `id`, `y`, `x`, `group`, `y_count`, `y_bin`):
+
+- `y_count`: Poisson counts generated from `log(lambda_i) = 1.0 + 0.5 * x_i`
+- `y_bin`: binary outcomes from `logit(p_i) = 1.5 * x_i`
+
+The R script `tests/r-reference/generate-default-data.R` was updated to generate
+all three response columns (requires R; the pre-computed columns are embedded in
+`default-data.js` and `data/example.csv`).
+
+The separate `glmPoissonCSV` and `glmBernoulliCSV` exports were removed. Model 3
+(Poisson GLM) now uses `y_count[i]` and Model 4 (Bernoulli GLM) uses `y_bin[i]`.
+
+### Random slopes example (Model 5)
+
+Added `defaultModel5` to `src/data/default-data.js` — a mixed-effects model with
+both random intercepts `b[j]` and random slopes `c[j]` per group. A fifth model
+selector button "Random Slopes" was added to `index.html` and wired up in `app.js`.
+
+### Integration tests documentation
+
+Created `tests/INTEGRATION_TESTS.md` explaining all 14 test suites, the datasets
+each uses, and the four reference JSON fixtures. Also answers the question about
+dataset coverage: each fixture-based test uses one dataset per model type; the
+inline datasets (N=8) are chosen to have analytically exact posteriors.
+
+---
+
 ## Parallel Chains (2026-03-18)
 
 Implemented on branch `claude/parallel-chains-sampler-b6pks`.
@@ -75,20 +119,7 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 
 ## Next Steps
 
-### 1. Final steps and styling
-
-- Summary table has some rows higlighted white, impossible to see the numbers. Use dark background for all rows
-- Bit unclear which dataset is loaded as when clicking glm examples we see the dataset change to count binary data. instead of loading different datasets, update the r script that generates the linear model data to include a binary and count response. these could be computed using the linear predictor with appropraite link functions. 
-- The bern and poisson datasests seem to be hard coded in. After doing above step, remove those hard coded datasets. 
-- Add an example with Random slopes so user can test to see if the sampler can handle a more complex example
-
-### 2. Unanswered questions
-Create a new document that explains:
-- What integration tests are run 
-- There should be multiple datasets per model type in the tests/r-reference tests, but there appears to be only one dataset per model type? 
-- 
-
-### 3. USER todo
+### USER todo
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper
 - Confirm number of tests is what is said in the paper

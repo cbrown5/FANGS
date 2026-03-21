@@ -130,8 +130,8 @@ export class SummaryTable {
         font-variant-numeric: tabular-nums;
       }
       .fangs-summary-table th {
-        background: #1a3a5c;
-        color: #d0e8f8;
+        background: #1a1b26;
+        color: #bd93f9;
         padding: 7px 10px;
         text-align: right;
         font-weight: 600;
@@ -146,37 +146,41 @@ export class SummaryTable {
       }
       .fangs-summary-table td {
         padding: 6px 10px;
-        border-bottom: 1px solid #e8edf2;
+        border-bottom: 1px solid #44475a;
         text-align: right;
         white-space: nowrap;
+        color: #f8f8f2;
+      }
+      .fangs-summary-table tbody tr {
+        background: #21222c;
       }
       .fangs-summary-table tbody tr:hover {
-        background: #f0f6ff;
+        background: #2d2f3f;
       }
       .fangs-summary-table tbody tr:nth-child(even) {
-        background: #f7f9fc;
+        background: #282a36;
       }
       .fangs-summary-table tbody tr:nth-child(even):hover {
-        background: #e8f0fc;
+        background: #2d2f3f;
       }
       .fangs-param-name {
         text-align: left !important;
         font-family: 'Fira Mono', 'Consolas', monospace;
         font-size: 0.8rem;
         font-weight: 600;
-        color: #1a3a5c;
+        color: #bd93f9;
       }
       .fangs-num {
         font-family: 'Fira Mono', 'Consolas', monospace;
       }
       .fangs-warn-red {
-        background: #ffebee !important;
-        color: #b71c1c;
+        background: #3a1f1f !important;
+        color: #ff5555;
         font-weight: 700;
       }
       .fangs-warn-orange {
-        background: #fff3e0 !important;
-        color: #e65100;
+        background: #2d1e0a !important;
+        color: #ffb86c;
         font-weight: 700;
       }
       .fangs-summary-empty {

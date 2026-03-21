@@ -16,8 +16,7 @@ import { SummaryTable }   from './ui/summary-table.js';
 import { PPCPlot }        from './ui/ppc-plot.js';
 import { SamplerSettings} from './ui/settings.js';
 import { defaultCSV, defaultModel1, defaultModel2,
-         glmPoissonCSV, defaultModel3,
-         glmBernoulliCSV, defaultModel4 } from './data/default-data.js';
+         defaultModel3, defaultModel4, defaultModel5 } from './data/default-data.js';
 import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
 import { renderDataTable } from './ui/data-table.js';
 import { initPopups, attachPopupTrigger } from './ui/popups.js';
@@ -49,7 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn2 = document.getElementById('btn-model-2');
   const btn3 = document.getElementById('btn-model-3');
   const btn4 = document.getElementById('btn-model-4');
-  const modelBtns = [btn1, btn2, btn3, btn4];
+  const btn5 = document.getElementById('btn-model-5');
+  const modelBtns = [btn1, btn2, btn3, btn4, btn5];
 
   function setActiveModel(activeBtn) {
     modelBtns.forEach(b => b && b.classList.remove('active'));
@@ -69,13 +69,20 @@ document.addEventListener('DOMContentLoaded', () => {
   btn3.addEventListener('click', () => {
     editor.setValue(defaultModel3);
     setActiveModel(btn3);
-    loadCSVText(glmPoissonCSV, 'poisson-example.csv');
+    updateConstantsPanel();
   });
   btn4.addEventListener('click', () => {
     editor.setValue(defaultModel4);
     setActiveModel(btn4);
-    loadCSVText(glmBernoulliCSV, 'bernoulli-example.csv');
+    updateConstantsPanel();
   });
+  if (btn5) {
+    btn5.addEventListener('click', () => {
+      editor.setValue(defaultModel5);
+      setActiveModel(btn5);
+      updateConstantsPanel();
+    });
+  }
 
   // Update constants panel whenever the model text changes (debounced)
   {
@@ -335,8 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
     settings.setEnabled(false);
     btnRun.disabled  = true;
     btnStop.disabled = false;
-    btn1.disabled = true;
-    btn2.disabled = true;
+    modelBtns.forEach(b => { if (b) b.disabled = true; });
 
     const cfg = settings.getSettings();
 
@@ -401,8 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
       settings.setEnabled(true);
       btnRun.disabled  = false;
       btnStop.disabled = true;
-      btn1.disabled = false;
-      btn2.disabled = false;
+      modelBtns.forEach(b => { if (b) b.disabled = false; });
     }
 
     /** Terminate all chain + summary workers and show an error. */
@@ -527,8 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
     settings.setEnabled(true);
     btnRun.disabled  = false;
     btnStop.disabled = true;
-    btn1.disabled = false;
-    btn2.disabled = false;
+    modelBtns.forEach(b => { if (b) b.disabled = false; });
   });
 
   // -- Download CSV --
