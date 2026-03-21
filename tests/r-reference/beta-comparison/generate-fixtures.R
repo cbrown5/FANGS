@@ -32,7 +32,7 @@
 #     }
 #     alpha ~ dnorm(0, 0.001)
 #     beta  ~ dnorm(0, 0.001)
-#     tau   ~ dgamma(0.001, 0.001)
+#     tau   ~ dgamma(1, 0.1)
 #   }
 #
 # MIXED (variables: y, x, group, N, J — set J = 5):
@@ -46,8 +46,8 @@
 #     }
 #     alpha ~ dnorm(0, 0.001)
 #     beta  ~ dnorm(0, 0.001)
-#     tau   ~ dgamma(0.001, 0.001)
-#     tau.b ~ dgamma(0.001, 0.001)
+#     tau   ~ dgamma(1, 0.1)
+#     tau.b ~ dgamma(1, 0.1)
 #   }
 #
 # BERNOULLI (variables: y, x, N):
@@ -194,7 +194,7 @@ linear_code <- nimbleCode({
   }
   alpha ~ dnorm(0, 0.001)
   beta  ~ dnorm(0, 0.001)
-  tau   ~ dgamma(0.001, 0.001)
+  tau   ~ dgamma(1, 0.1)
 })
 
 mixed_code <- nimbleCode({
@@ -207,8 +207,8 @@ mixed_code <- nimbleCode({
   }
   alpha ~ dnorm(0, 0.001)
   beta  ~ dnorm(0, 0.001)
-  tau   ~ dgamma(0.001, 0.001)
-  tau.b ~ dgamma(0.001, 0.001)
+  tau   ~ dgamma(1, 0.1)
+  tau.b ~ dgamma(1, 0.1)
 })
 
 bernoulli_code <- nimbleCode({
