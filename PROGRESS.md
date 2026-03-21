@@ -77,11 +77,21 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 
 ### 1. Final steps and styling
 
-- Use dracula colour theme. 
-- Add FANGS hex sticker to top bar from here `assets/FANGS-hex.png`
+- Summary table has some rows higlighted white, impossible to see the numbers. Use dark background for all rows
+- Bit unclear which dataset is loaded as when clicking glm examples we see the dataset change to count binary data. instead of loading different datasets, update the r script that generates the linear model data to include a binary and count response. these could be computed using the linear predictor with appropraite link functions. 
+- The bern and poisson datasests seem to be hard coded in. After doing above step, remove those hard coded datasets. 
+- Add an example with Random slopes so user can test to see if the sampler can handle a more complex example
 
-### 2. USER todo
+### 2. Unanswered questions
+Create a new document that explains:
+- What integration tests are run 
+- There should be multiple datasets per model type in the tests/r-reference tests, but there appears to be only one dataset per model type? 
+- 
+
+### 3. USER todo
 - read the paper draft and suggest updates
+- Confirm the samplers work as explained in the paper
+- Confirm number of tests is what is said in the paper
 - test app performance interactively
 - edit pop-ups and help pages
 
