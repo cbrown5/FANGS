@@ -125,6 +125,7 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 - Confirm number of tests is what is said in the paper
 - test app performance interactively
 - edit pop-ups and help pages
+- Add a writing style and update the help pages. 
 
 ### Claude todo 
 
