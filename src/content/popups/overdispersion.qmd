@@ -28,6 +28,8 @@ This is a strong assumption. Real count data often have variance greater than th
 
 $$y_i \sim \text{NegBin}(r, p_i)$$
 
+Note the negative bionomial is not supported in FANGS. But you can use the **Poisson-lognormal** model as an alternative.
+
 **Random effects**: add observation-level random effects to absorb extra variation:
 
 ```

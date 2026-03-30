@@ -28,6 +28,8 @@ When chains have fully mixed, this ratio approaches 1.
 4. **Reparameterise** — some models mix better with different parameterisations
 5. **Check the model** — identifiability issues cause non-convergence
 
+Often poor convergence is the result of a poor model choice for the dataset. The Folk Theorem of Statistical Computing: "When you have computational problems, often there’s a problem with your model." (Gelman 2008)
+
 ## Colour coding in the summary table
 
 - **Red** background → R-hat > 1.1 (convergence warning)

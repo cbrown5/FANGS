@@ -17,7 +17,7 @@ The **Summary** tab presents key statistics computed from the MCMC samples for e
 ## Using the summary for inference
 
 **Is an effect present?**
-Check whether the 95% credible interval includes zero. If the interval is entirely positive or entirely negative, the effect is credibly non-zero.
+Check whether the 95% credible interval includes zero. If the interval is entirely positive or entirely negative, the effect is credibly non-zero at the 95% probability level.
 
 **How large is the effect?**
 The posterior mean (or median) gives a point estimate. The credible interval gives the range of plausible values.

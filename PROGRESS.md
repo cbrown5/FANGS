@@ -126,6 +126,10 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 - test app performance interactively
 - edit pop-ups and help pages
 
+### Claude todo 
+
+Pop-ups about log-link, logit-link, gibbs sampler, overdispersion, mixed-effects, don't seem to be linked anywhere in the app? 
+
 ---
 
 ## Sampler Performance Optimizations (2026-03-17)
