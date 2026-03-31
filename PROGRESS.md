@@ -120,6 +120,7 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 ## Next Steps
 
 ### USER todo
+- test tests/r-reference/benchmark.R to do time benchmarking. 
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper
 - Confirm number of tests is what is said in the paper
