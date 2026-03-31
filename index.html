@@ -770,9 +770,9 @@
       <div class="section-label">Model</div>
       <div class="model-selector">
         <button class="btn-model active" data-model="1" id="btn-model-1">Linear Model</button>
-        <button class="btn-model" data-model="2" id="btn-model-2">Mixed Effects</button>
-        <button class="btn-model" data-model="3" id="btn-model-3">Poisson GLM</button>
-        <button class="btn-model" data-model="4" id="btn-model-4">Bernoulli GLM</button>
+        <button class="btn-model" data-model="2" id="btn-model-2" data-popup="mixed-effects">Mixed Effects</button>
+        <button class="btn-model" data-model="3" id="btn-model-3" data-popup="log-link">Poisson GLM</button>
+        <button class="btn-model" data-model="4" id="btn-model-4" data-popup="logit-link">Bernoulli GLM</button>
         <button class="btn-model" data-model="5" id="btn-model-5">Random Slopes</button>
       </div>
       <textarea id="model-editor" spellcheck="false" autocorrect="off" autocapitalize="off"
@@ -898,6 +898,7 @@
           <div class="empty-state">
             <span class="empty-icon">&#127919;</span>
             <p>Posterior predictive checks will appear after sampling completes.</p>
+            <p data-popup="overdispersion" style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">Using a count model? Check for overdispersion.</p>
           </div>
         </div>
       </div>

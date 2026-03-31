@@ -44,6 +44,7 @@ export class PPCPlot {
     this._canvas   = null;
     this._ctx      = null;
     this._build();
+    this._attachResizeObserver();
   }
 
   // ------------------------------------------------------------------ //
@@ -80,6 +81,24 @@ export class PPCPlot {
       this._scatterCtx.clearRect(0, 0, this._scatterCanvas.width, this._scatterCanvas.height);
       this._drawScatterEmpty();
     }
+  }
+
+  _redraw() {
+    if (this._observed) {
+      this._draw();
+      this._drawScatter();
+    } else {
+      this._drawEmpty();
+      this._drawScatterEmpty();
+    }
+  }
+
+  _attachResizeObserver() {
+    if (typeof ResizeObserver === 'undefined') return;
+    this._resizeObserver = new ResizeObserver(() => {
+      this._redraw();
+    });
+    this._resizeObserver.observe(this.container);
   }
 
   // ------------------------------------------------------------------ //
@@ -166,7 +185,7 @@ export class PPCPlot {
 
   _drawEmpty() {
     const ctx  = this._ctx;
-    const cssW = this._canvas.clientWidth || 500;
+    const cssW = this._canvas.clientWidth || this.container.clientWidth || 500;
     const cssH = CANVAS_HEIGHT;
     _resizeCanvas(this._canvas, ctx, cssW, cssH);
 
@@ -185,7 +204,7 @@ export class PPCPlot {
     const pred = this._predicted;
 
     const ctx  = this._ctx;
-    const cssW = this._canvas.clientWidth || 500;
+    const cssW = this._canvas.clientWidth || this.container.clientWidth || 500;
     const cssH = CANVAS_HEIGHT;
     _resizeCanvas(this._canvas, ctx, cssW, cssH);
 
@@ -374,7 +393,7 @@ export class PPCPlot {
 
   _drawScatterEmpty() {
     const ctx  = this._scatterCtx;
-    const cssW = this._scatterCanvas.clientWidth || 500;
+    const cssW = this._scatterCanvas.clientWidth || this.container.clientWidth || 500;
     const cssH = SCATTER_HEIGHT;
     _resizeCanvas(this._scatterCanvas, ctx, cssW, cssH);
 
@@ -413,7 +432,7 @@ export class PPCPlot {
     }
 
     const ctx  = this._scatterCtx;
-    const cssW = this._scatterCanvas.clientWidth || 500;
+    const cssW = this._scatterCanvas.clientWidth || this.container.clientWidth || 500;
     const cssH = SCATTER_HEIGHT;
     _resizeCanvas(this._scatterCanvas, ctx, cssW, cssH);
 

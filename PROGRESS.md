@@ -127,10 +127,6 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 - edit pop-ups and help pages
 - Add a writing style and update the help pages. 
 
-### Claude todo 
-
-Pop-ups about log-link, logit-link, gibbs sampler, overdispersion, mixed-effects, don't seem to be linked anywhere in the app? 
-
 ---
 
 ## Sampler Performance Optimizations (2026-03-17)
