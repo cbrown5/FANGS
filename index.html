@@ -677,9 +677,35 @@
     /* Responsive                                                           */
     /* ------------------------------------------------------------------ */
     @media (max-width: 900px) {
-      #main { flex-direction: column; }
-      #left-panel { width: 100%; max-width: 100%; height: auto; overflow-y: visible; }
-      #right-panel { min-height: 60vh; }
+      body { height: auto; min-height: 100vh; overflow: auto; }
+      #main { flex-direction: column; overflow: visible; }
+      #left-panel {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        height: auto;
+        overflow-y: visible;
+      }
+      #right-panel { min-height: 70vh; overflow: visible; }
+      #tab-content { overflow-y: visible; min-height: 60vh; }
+      #data-table-container { max-height: none; }
+    }
+
+    @media (max-width: 600px) {
+      .density-wrapper { width: 100% !important; margin: 0 0 16px !important; }
+    }
+
+    @media (max-width: 480px) {
+      #header { padding: 8px 12px; gap: 8px; }
+      #header img { height: 36px !important; }
+      #header .subtitle { display: none; }
+      #left-panel { padding: 10px 10px 0; }
+      #model-editor { height: 150px; }
+      .settings-grid { grid-template-columns: 1fr; }
+      #tabs { flex-wrap: wrap; padding: 4px 8px 0; }
+      .tab-btn { padding: 6px 10px; font-size: 0.75rem; margin-top: 4px; }
+      .tab-pane { padding: 14px; }
+      .empty-state { height: 180px; }
     }
   </style>
 </head>
