@@ -72,6 +72,7 @@ export class DensityPlot {
 
   _createCanvas(paramName) {
     const wrapper = document.createElement('div');
+    wrapper.className = 'density-wrapper';
     wrapper.style.cssText = `
       display: inline-block;
       vertical-align: top;
