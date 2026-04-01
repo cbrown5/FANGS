@@ -443,7 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         predictions.setData(capturedDataColumns);
-        predictions.setPredictions(msg.predictions?.y ?? []);
+        predictions.setPredictions(
+          msg.predictions?.y ?? [],
+          msg.predictions?.fitted_y ?? null
+        );
 
         btnDownload.disabled = false;
         summaryWorker = null;

@@ -31,6 +31,7 @@ export class PredictionsPlot {
     this.container    = containerEl;
     this._dataColumns = null;
     this._predicted   = null;
+    this._fittedMeans = null;
     this._xVar        = null;
     this._yVar        = 'y';
     this._canvas      = null;
@@ -65,9 +66,13 @@ export class PredictionsPlot {
    *
    * @param {number[][]} predicted  Array of S replicate arrays, each of length N.
    *                                 predicted[s][i] is the prediction for obs i in replicate s.
+   * @param {number[][]|null} fittedMeans  Optional array of S fitted-mean arrays (mu[i], no noise).
+   *                                        When provided, used for the line and CI instead of
+   *                                        the noisy predictive draws, giving smoother curves.
    */
-  setPredictions(predicted) {
-    this._predicted = predicted && predicted.length > 0 ? predicted : null;
+  setPredictions(predicted, fittedMeans = null) {
+    this._predicted   = predicted && predicted.length > 0 ? predicted : null;
+    this._fittedMeans = fittedMeans && fittedMeans.length > 0 ? fittedMeans : null;
     this._render();
   }
 
@@ -75,7 +80,8 @@ export class PredictionsPlot {
    * Clear predictions and blank the canvas.
    */
   clear() {
-    this._predicted = null;
+    this._predicted   = null;
+    this._fittedMeans = null;
     this._drawEmpty();
   }
 
@@ -233,17 +239,24 @@ export class PredictionsPlot {
       return;
     }
 
+    // Use fitted means (mu[i], no observation noise) for line and CI when available;
+    // fall back to noisy posterior predictive draws otherwise.
+    const lineSrc = this._fittedMeans && this._fittedMeans.length > 0
+      ? this._fittedMeans
+      : pred;
+    const nLine = lineSrc.length;
+
     // Per-observation posterior mean, 2.5th and 97.5th percentiles
     const yHat = new Float64Array(n);
     const yLo  = new Float64Array(n);
     const yHi  = new Float64Array(n);
     for (let i = 0; i < n; i++) {
-      const vals = pred.map(rep => rep[i]).sort((a, b) => a - b);
+      const vals = lineSrc.map(rep => rep[i]).sort((a, b) => a - b);
       let sum = 0;
       for (const v of vals) sum += v;
-      yHat[i] = sum / nReps;
-      yLo[i]  = vals[Math.max(0, Math.floor(0.025 * nReps))];
-      yHi[i]  = vals[Math.min(nReps - 1, Math.ceil(0.975 * nReps) - 1)];
+      yHat[i] = sum / nLine;
+      yLo[i]  = vals[Math.max(0, Math.floor(0.025 * nLine))];
+      yHi[i]  = vals[Math.min(nLine - 1, Math.ceil(0.975 * nLine) - 1)];
     }
 
     // Sort indices by x for ribbon/line rendering

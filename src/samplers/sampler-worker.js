@@ -310,8 +310,9 @@ function _generatePredictions(graph, allSamples, maxReps) {
     }
     const selected = pairs.slice(0, maxReps);
 
-    // Generate a y_rep for each selected posterior draw
+    // Generate a y_rep and fitted means for each selected posterior draw
     const result = {};
+    const fitted = {};
     for (const [c, s] of selected) {
         const paramValues = {};
         for (const name of paramNames) {
@@ -327,6 +328,23 @@ function _generatePredictions(graph, allSamples, maxReps) {
             if (!result[varName]) result[varName] = [];
             result[varName].push(values);
         }
+        let fittedRep;
+        try {
+            fittedRep = graph.computeFittedMeans(paramValues);
+        } catch (_) {
+            fittedRep = null;
+        }
+        if (fittedRep) {
+            for (const [varName, values] of Object.entries(fittedRep)) {
+                if (!fitted[varName]) fitted[varName] = [];
+                fitted[varName].push(values);
+            }
+        }
+    }
+
+    // Attach fitted means under "fitted_<varName>" keys
+    for (const [varName, reps] of Object.entries(fitted)) {
+        result[`fitted_${varName}`] = reps;
     }
 
     return result;
