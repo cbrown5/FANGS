@@ -62,3 +62,6 @@ Thumbs.db
 # Quarto build artifacts
 src/content/popups/_rendered/
 src/content/popups/.quarto/
+
+# Documents
+paper/
