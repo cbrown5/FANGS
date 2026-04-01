@@ -14,6 +14,7 @@ import { TracePlot }      from './ui/trace-plot.js';
 import { DensityPlot }    from './ui/density-plot.js';
 import { SummaryTable }   from './ui/summary-table.js';
 import { PPCPlot }        from './ui/ppc-plot.js';
+import { PredictionsPlot } from './ui/predictions-plot.js';
 import { SamplerSettings} from './ui/settings.js';
 import { defaultCSV, defaultModel1, defaultModel2,
          defaultModel3, defaultModel4, defaultModel5 } from './data/default-data.js';
@@ -34,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const trace    = new TracePlot(document.getElementById('trace-container'));
   const density  = new DensityPlot(document.getElementById('density-container'));
   const summary  = new SummaryTable(document.getElementById('summary-container'), attachPopupTrigger);
-  const ppc      = new PPCPlot(document.getElementById('ppc-container'));
+  const ppc         = new PPCPlot(document.getElementById('ppc-container'));
+  const predictions = new PredictionsPlot(document.getElementById('predictions-container'));
   const settings = new SamplerSettings(document.getElementById('settings-panel'));
 
   // -- Initialise educational popups --
@@ -231,6 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dataTableContainer) {
         renderDataTable(dataTableContainer, rows);
       }
+      // Populate predictions x-axis selector with available columns
+      const { columns } = prepareDataColumns(rows);
+      predictions.setData(columns);
       // Refresh constants panel with new data
       updateConstantsPanel();
     } catch (e) {
@@ -290,6 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Trigger density re-render when switching to Posteriors (canvas size may have changed)
       if (btn.dataset.tab === 'posteriors') density.render();
+      // Trigger predictions re-render when switching to Predictions tab
+      if (btn.dataset.tab === 'predictions') predictions._render();
     });
   });
 
@@ -335,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
     trace.clear();
     density.clear();
     summary.clear();
+    predictions.clear();
     posteriorSamples = {};
     setProgress(0);
     setStatus('Starting sampler…', 'running');
@@ -433,6 +441,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (yObs.length > 0) {
           ppc.update(yObs, msg.predictions?.y ?? []);
         }
+
+        predictions.setData(capturedDataColumns);
+        predictions.setPredictions(msg.predictions?.y ?? []);
 
         btnDownload.disabled = false;
         summaryWorker = null;
