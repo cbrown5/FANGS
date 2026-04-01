@@ -68,6 +68,16 @@ export class PredictionsPlot {
    */
   setPredictions(predicted) {
     this._predicted = predicted && predicted.length > 0 ? predicted : null;
+    if (!this._predicted) {
+      console.warn('[PredictionsPlot] setPredictions called with empty/null data — plot will not render.');
+    }
+    this._render();
+  }
+
+  /**
+   * Force a re-render (e.g. when the tab becomes visible).
+   */
+  render() {
     this._render();
   }
 
@@ -213,10 +223,18 @@ export class PredictionsPlot {
       return;
     }
 
+    // If the container isn't laid out yet (tab hidden), defer until next frame.
+    const cssW = this._canvas.clientWidth || this.container.clientWidth;
+    if (!cssW) {
+      requestAnimationFrame(() => this._render());
+      return;
+    }
+
     const yCol = this._dataColumns[this._yVar];
     const xCol = this._dataColumns[this._xVar];
 
     if (!yCol || !xCol) {
+      console.warn(`[PredictionsPlot] Missing column: yVar=${this._yVar}, xVar=${this._xVar}`, Object.keys(this._dataColumns));
       this._drawEmpty();
       return;
     }
@@ -251,7 +269,7 @@ export class PredictionsPlot {
       .sort((a, b) => xObs[a] - xObs[b]);
 
     const ctx  = this._ctx;
-    const cssW = this._canvas.clientWidth || this.container.clientWidth || 500;
+    const cssW = this._canvas.clientWidth || this.container.clientWidth;
     const cssH = CANVAS_HEIGHT;
     _resizeCanvas(this._canvas, ctx, cssW, cssH);
 

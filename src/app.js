@@ -295,8 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Trigger density re-render when switching to Posteriors (canvas size may have changed)
       if (btn.dataset.tab === 'posteriors') density.render();
-      // Trigger predictions re-render when switching to Predictions tab
-      if (btn.dataset.tab === 'predictions') predictions._render();
+      // Trigger predictions re-render after layout settles when tab becomes visible
+      if (btn.dataset.tab === 'predictions') requestAnimationFrame(() => predictions.render());
     });
   });
 
@@ -443,7 +443,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         predictions.setData(capturedDataColumns);
-        predictions.setPredictions(msg.predictions?.y ?? []);
+        // Find predictions for the response variable. Try 'y' first, then
+        // fall back to any key in msg.predictions that matches a data column.
+        const predKeys = Object.keys(msg.predictions ?? {});
+        const dataKeys = Object.keys(capturedDataColumns);
+        const responseKey = predKeys.includes('y') ? 'y'
+          : predKeys.find(k => dataKeys.includes(k)) ?? predKeys[0];
+        const yPred = responseKey ? (msg.predictions[responseKey] ?? []) : [];
+        if (yPred.length === 0) {
+          console.warn('[FANGS] No predictions found in DONE message. Keys:', predKeys);
+        }
+        predictions.setPredictions(yPred);
 
         btnDownload.disabled = false;
         summaryWorker = null;
