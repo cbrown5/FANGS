@@ -20,7 +20,7 @@ import { defaultCSV, defaultModel1, defaultModel2,
          defaultModel3, defaultModel4, defaultModel5 } from './data/default-data.js';
 import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
 import { renderDataTable } from './ui/data-table.js';
-import { initPopups, attachPopupTrigger } from './ui/popups.js';
+import { initPopups, attachPopupTrigger, showErrorModal } from './ui/popups.js';
 
 // ------------------------------------------------------------------ //
 // Bootstrap                                                            //
@@ -327,7 +327,12 @@ document.addEventListener('DOMContentLoaded', () => {
   btnRun.addEventListener('click', () => {
     // Validate: require data
     if (!loadedData) {
-      setStatus('Please load data before running.', 'error');
+      setStatus('No data loaded.', 'error');
+      showErrorModal(
+        'No Data Loaded',
+        'The sampler requires data to run.',
+        'Drag a CSV file onto the upload area, or click it to browse. You can also use the built-in example dataset by clicking "Load Example Data".'
+      );
       return;
     }
 
@@ -335,6 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelCode = editor.getValue().trim();
     if (!modelCode) {
       setStatus('Model editor is empty.', 'error');
+      showErrorModal(
+        'No Model Code',
+        'The model editor is empty.',
+        'Write a BUGS/JAGS model in the editor, or choose one of the example models (Simple Linear, Mixed Effects, Poisson GLM, etc.).'
+      );
       return;
     }
 
@@ -384,6 +394,11 @@ document.addEventListener('DOMContentLoaded', () => {
         : 0;
     } catch (e) {
       setStatus(`Data error: ${e.message}`, 'error');
+      showErrorModal(
+        'Data Error',
+        e.message,
+        'Check that your CSV is correctly formatted: a header row followed by numeric data rows. Column names must match the variable names used in your model.'
+      );
       settings.setEnabled(true);
       btnRun.disabled  = false;
       btnStop.disabled = true;
@@ -419,13 +434,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /** Terminate all chain + summary workers and show an error. */
-    function handleWorkerError(message) {
+    function handleWorkerError(message, errorType = 'Error') {
       samplerWorkers.forEach(w => w.terminate());
       samplerWorkers = [];
       if (summaryWorker) { summaryWorker.terminate(); summaryWorker = null; }
       setStatus(`Error: ${message}`, 'error');
       editor.showError(1, message);
       _resetUI();
+
+      if (errorType === 'LexError' || errorType === 'ParseError') {
+        showErrorModal(
+          'Model Syntax Error',
+          message,
+          'Check your BUGS/JAGS syntax. Common issues: missing brackets, misspelled distribution names (e.g. <code>dnorm</code>, <code>dgamma</code>), or unclosed <code>for</code> loops.'
+        );
+      } else if (errorType === 'ModelGraphError') {
+        showErrorModal(
+          'Model Structure Error',
+          message,
+          'FANGS could not build the model graph. This can happen with unsupported syntax, undeclared variables, or distributions not yet implemented. Check that all variable names in your model match the column names in your data.'
+        );
+      } else {
+        showErrorModal(
+          'Sampler Error',
+          message,
+          'The sampler encountered a problem. This is often caused by numerical instability — try using weakly informative priors (e.g. <code>dgamma(0.001, 0.001)</code> for precision), or check that your data does not contain extreme values or zeros where the model does not expect them.'
+        );
+      }
     }
 
     /** Handle messages from the final summary worker. */
@@ -452,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryWorker = null;
         _resetUI();
       } else if (msg.type === 'ERROR') {
-        handleWorkerError(msg.message);
+        handleWorkerError(msg.message, msg.errorType);
       }
     }
 
@@ -506,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
       } else if (msg.type === 'ERROR') {
-        handleWorkerError(msg.message);
+        handleWorkerError(msg.message, msg.errorType);
       }
     }
 
@@ -578,12 +613,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnPriorCheck) {
     btnPriorCheck.addEventListener('click', () => {
       if (!loadedData) {
-        setStatus('Please load data before running prior check.', 'error');
+        setStatus('No data loaded.', 'error');
+        showErrorModal(
+          'No Data Loaded',
+          'The prior predictive check requires data to determine the model structure.',
+          'Drag a CSV file onto the upload area, or click it to browse. You can also use the built-in example dataset.'
+        );
         return;
       }
       const modelCode = editor.getValue().trim();
       if (!modelCode) {
         setStatus('Model editor is empty.', 'error');
+        showErrorModal(
+          'No Model Code',
+          'The model editor is empty.',
+          'Write a BUGS/JAGS model in the editor, or choose one of the example models.'
+        );
         return;
       }
 
@@ -596,6 +641,11 @@ document.addEventListener('DOMContentLoaded', () => {
         dataJ = columns.group ? new Set(Array.from(columns.group)).size : 0;
       } catch (e) {
         setStatus(`Data error: ${e.message}`, 'error');
+        showErrorModal(
+          'Data Error',
+          e.message,
+          'Check that your CSV is correctly formatted with a header row followed by numeric data rows.'
+        );
         return;
       }
 
@@ -633,12 +683,24 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (msg.type === 'ERROR') {
           setStatus(`Prior check error: ${msg.message}`, 'error');
           samplerWorker = null;
+          const et = msg.errorType ?? 'Error';
+          if (et === 'LexError' || et === 'ParseError') {
+            showErrorModal('Model Syntax Error', msg.message,
+              'Check your BUGS/JAGS syntax. Common issues: missing brackets, misspelled distribution names, or unclosed <code>for</code> loops.');
+          } else if (et === 'ModelGraphError') {
+            showErrorModal('Model Structure Error', msg.message,
+              'FANGS could not build the model graph. Check that variable names match your data columns and that all distributions are supported.');
+          } else {
+            showErrorModal('Prior Check Error', msg.message,
+              'The prior predictive check failed. Check your model priors — very diffuse priors can cause numerical overflow.');
+          }
         }
       };
 
       samplerWorker.onerror = (err) => {
         setStatus(`Worker error: ${err.message}`, 'error');
         samplerWorker = null;
+        showErrorModal('Worker Error', err.message ?? 'An unexpected error occurred in the sampler worker.');
       };
 
       samplerWorker.postMessage({

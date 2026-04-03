@@ -42,6 +42,38 @@ export function initPopups() {
 }
 
 /**
+ * Show a modal error dialog with a title, technical detail, and optional suggestion.
+ * Does not require any popup content files — the HTML is generated inline.
+ *
+ * @param {string} title      - Short human-readable title (e.g. "Model Syntax Error")
+ * @param {string} detail     - Technical error message from the thrown error
+ * @param {string} [suggestion] - Optional fix suggestion shown below the detail
+ */
+export function showErrorModal(title, detail, suggestion = '') {
+  _injectStyles();
+
+  const escapedDetail = detail
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const suggestionHtml = suggestion
+    ? `<p class="fangs-error-suggestion">${suggestion}</p>`
+    : '';
+
+  const html = `
+    <div class="fangs-error-header">
+      <span class="fangs-error-icon">&#9888;</span>
+      <h2>${title}</h2>
+    </div>
+    <pre class="fangs-error-detail">${escapedDetail}</pre>
+    ${suggestionHtml}
+  `;
+
+  _openModal(html, 'error', true);
+}
+
+/**
  * Programmatically attach a "?" trigger button to an existing element.
  * Safe to call multiple times on the same element (idempotent via data attribute).
  *
@@ -126,10 +158,11 @@ async function _showPopup(popupId) {
 /**
  * Create and show the modal overlay.
  *
- * @param {string} html     - HTML content to display
- * @param {string} popupId  - Used for aria-label
+ * @param {string}  html     - HTML content to display
+ * @param {string}  popupId  - Used for aria-label
+ * @param {boolean} [isError] - If true, applies error styling to the dialog
  */
-function _openModal(html, popupId) {
+function _openModal(html, popupId, isError = false) {
   // Remove any existing modal first
   document.getElementById('fangs-popup-modal')?.remove();
 
@@ -138,10 +171,12 @@ function _openModal(html, popupId) {
   overlay.className = 'fangs-popup-overlay';
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-label', 'Educational popup');
+  overlay.setAttribute('aria-label', isError ? 'Error' : 'Educational popup');
+
+  const dialogClass = isError ? 'fangs-popup-dialog fangs-error-dialog' : 'fangs-popup-dialog';
 
   overlay.innerHTML = `
-    <div class="fangs-popup-dialog">
+    <div class="${dialogClass}">
       <button class="fangs-popup-close" aria-label="Close">&times;</button>
       <div class="fangs-popup-body">${html}</div>
     </div>
@@ -386,6 +421,52 @@ function _injectStyles() {
     .fangs-popup-body strong {
       font-weight: 700;
       color: #1a3a5c;
+    }
+
+    /* ---- Error dialog variant ---- */
+    .fangs-error-dialog {
+      border-top: 4px solid #ef5350;
+    }
+    .fangs-error-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .fangs-error-icon {
+      font-size: 1.4rem;
+      color: #ef5350;
+      flex-shrink: 0;
+    }
+    .fangs-error-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #c62828;
+      border: none;
+      padding: 0;
+    }
+    .fangs-error-detail {
+      background: #1a0a0a;
+      color: #ff8a80;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0 0 12px 0;
+    }
+    .fangs-error-suggestion {
+      background: #fff8e1;
+      border-left: 3px solid #ffb300;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: #4a3800;
+      margin: 0;
     }
   `;
   document.head.appendChild(style);

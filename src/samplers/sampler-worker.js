@@ -372,6 +372,7 @@ self.onmessage = function onmessage(event) {
             self.postMessage({
                 type: 'ERROR',
                 message: err instanceof Error ? err.message : String(err),
+                errorType: err instanceof Error ? err.constructor.name : 'Error',
             });
         });
         return;
@@ -386,6 +387,7 @@ self.onmessage = function onmessage(event) {
             self.postMessage({
                 type: 'ERROR',
                 message: err instanceof Error ? err.message : String(err),
+                errorType: err instanceof Error ? err.constructor.name : 'Error',
             });
         }
         return;
@@ -399,6 +401,7 @@ self.onmessage = function onmessage(event) {
                 self.postMessage({
                     type: 'ERROR',
                     message: err instanceof Error ? err.message : String(err),
+                    errorType: err instanceof Error ? err.constructor.name : 'Error',
                 });
             }
         );
