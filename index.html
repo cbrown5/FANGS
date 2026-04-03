@@ -870,6 +870,8 @@
         aria-selected="false" aria-controls="pane-predictions">Predictions</button>
       <button class="tab-btn" role="tab" data-tab="prior-check"
         aria-selected="false" aria-controls="pane-prior-check">Prior Check</button>
+      <button class="tab-btn" role="tab" data-tab="joint"
+        aria-selected="false" aria-controls="pane-joint">Joint</button>
     </nav>
 
     <!-- Tab content -->
@@ -963,6 +965,16 @@
         <div style="margin-top:20px;">
           <div class="pane-title" style="font-size:0.9rem;">Prior Summary</div>
           <div id="prior-summary-container"></div>
+        </div>
+      </div>
+
+      <!-- Joint distribution -->
+      <div class="tab-pane" id="pane-joint" role="tabpanel">
+        <div id="joint-container">
+          <div class="empty-state">
+            <span class="empty-icon">&#128308;</span>
+            <p>Run a model to plot joint parameter distributions.</p>
+          </div>
         </div>
       </div>
 
