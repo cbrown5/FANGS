@@ -129,6 +129,8 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 - Add a writing style and update the help pages. 
 
 ### Claude todo
+- PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
+- remove line/border around ribbon on predictions plot. show just as a shaded ribbon with line for mean. 
 - model is optimized for predictors that are on unit SD scale amd centered. brainstorm options for begginer friendly handling if predictors on any scale. 
 
 
