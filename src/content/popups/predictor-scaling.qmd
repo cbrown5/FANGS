@@ -1,0 +1,40 @@
+# Automatic Predictor Scaling
+
+FANGS automatically standardises continuous predictor variables (like `x`) before running the sampler, then converts all results back to your original data units before display.
+
+## Why is this done?
+
+Bayesian MCMC works best when variables are on a similar scale — roughly centred around zero with a standard deviation near 1. When a predictor has a wide range (e.g., values from 0 to 10,000), two problems can occur:
+
+1. **Slow mixing**: The slope ($\beta$) and intercept ($\alpha$) become strongly correlated in the posterior. Component-wise samplers like Gibbs struggle with correlated parameters, producing chains that mix slowly and need many more samples to converge.
+
+2. **Numerical conditioning**: The conjugate update formula involves summing squared predictor values ($\sum x_i^2$). For large-scale predictors this sum can become very large, potentially causing numerical instability.
+
+Standardising the predictor solves both problems.
+
+## What does standardisation mean?
+
+Each continuous predictor $x$ is transformed to:
+
+$$x_{\text{scaled}} = \frac{x - \bar{x}}{\text{SD}(x)}$$
+
+This gives $x_{\text{scaled}}$ a mean of 0 and a standard deviation of 1. The sampler then works on this scaled version.
+
+## Are my results affected?
+
+No — all results displayed in FANGS (coefficient estimates, credible intervals, trace plots, summary tables) are automatically converted back to your original data units.
+
+The back-transformation is exact:
+
+$$\hat{\beta}_{\text{original}} = \frac{\hat{\beta}_{\text{scaled}}}{\text{SD}(x)}, \qquad \hat{\alpha}_{\text{original}} = \hat{\alpha}_{\text{scaled}} - \hat{\beta}_{\text{scaled}} \cdot \frac{\bar{x}}{\text{SD}(x)}$$
+
+So a slope of 5 in scaled space becomes 0.05 in original space if $\text{SD}(x) = 100$ — exactly the correct interpretation.
+
+## When does scaling apply?
+
+Scaling is applied only to:
+- Continuous numeric columns (not categorical/factor variables)
+- Columns with a standard deviation greater than 2
+- Predictor columns (not the response variable or grouping indices)
+
+If your data is already on a manageable scale, no scaling is applied and the sampler runs exactly as written.

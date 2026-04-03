@@ -615,5 +615,33 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <p>The y-axis shows the parameter value on its natural scale. The range reflects the posterior spread — wide traces mean high posterior uncertainty.</p>
 <h2 id="burn-in">Burn-in</h2>
 <p>The period before the chain stabilises is the burn-in. It is normal for chains to start far apart and then converge. Only the post-burn-in samples are used for inference.</p>
+</body></html>`,
+
+  'predictor-scaling': `<html><head></head><body><h1 id="automatic-predictor-scaling">Automatic Predictor Scaling</h1>
+<p>FANGS automatically standardises continuous predictor variables (like <code>x</code>) before running the sampler, then converts all results back to your original data units before display.</p>
+<h2 id="why-is-this-done">Why is this done?</h2>
+<p>Bayesian MCMC works best when variables are on a similar scale — roughly centred around zero with a standard deviation near 1. When a predictor has a wide range (e.g., values from 0 to 10,000), two problems can occur:</p>
+<ol>
+<li><p><strong>Slow mixing</strong>: The slope (<span class="math inline">β</span>) and intercept (<span class="math inline">α</span>) become strongly correlated in the posterior. Component-wise samplers like Gibbs struggle with correlated parameters, producing chains that mix slowly and need many more samples to converge.</p></li>
+<li><p><strong>Numerical conditioning</strong>: The conjugate update formula involves summing squared predictor values (<span class="math inline">∑ x<sub>i</sub>²</span>). For large-scale predictors this sum can become very large, potentially causing numerical instability.</p></li>
+</ol>
+<p>Standardising the predictor solves both problems.</p>
+<h2 id="what-does-standardisation-mean">What does standardisation mean?</h2>
+<p>Each continuous predictor <span class="math inline">x</span> is transformed to:</p>
+<p class="math display">x<sub>scaled</sub> = (x − x̄) / SD(x)</p>
+<p>This gives <span class="math inline">x<sub>scaled</sub></span> a mean of 0 and a standard deviation of 1. The sampler then works on this scaled version.</p>
+<h2 id="are-my-results-affected">Are my results affected?</h2>
+<p>No — all results displayed in FANGS (coefficient estimates, credible intervals, trace plots, summary tables) are automatically converted back to your original data units.</p>
+<p>The back-transformation is exact:</p>
+<p class="math display">β<sub>original</sub> = β<sub>scaled</sub> / SD(x),  α<sub>original</sub> = α<sub>scaled</sub> − β<sub>scaled</sub> · x̄ / SD(x)</p>
+<p>So a slope of 5 in scaled space becomes 0.05 in original space if SD(x) = 100 — exactly the correct interpretation.</p>
+<h2 id="when-does-scaling-apply">When does scaling apply?</h2>
+<p>Scaling is applied only to:</p>
+<ul>
+<li>Continuous numeric columns (not categorical/factor variables)</li>
+<li>Columns with a standard deviation greater than 2</li>
+<li>Predictor columns (not the response variable or grouping indices)</li>
+</ul>
+<p>If your data is already on a manageable scale, no scaling is applied and the sampler runs exactly as written.</p>
 </body></html>`
 };
