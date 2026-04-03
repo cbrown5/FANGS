@@ -50,6 +50,11 @@ find_project_root <- function() {
 FANGS_ROOT <- find_project_root()
 cat("FANGS project root:", FANGS_ROOT, "\n")
 
+R_DIR <- file.path(FANGS_ROOT, "tests", "r-reference", "R")
+source(file.path(R_DIR, "utils.R"))
+source(file.path(R_DIR, "data.R"))
+source(file.path(R_DIR, "nimble-models.R"))
+
 OUTPUT_DIR <- file.path(FANGS_ROOT, "tests", "r-reference", "results")
 if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)
 
@@ -99,71 +104,11 @@ if (!has_ggplot2) {
 }
 
 # ===========================================================================
-# 3.  Shared helpers
+# 3.  Shared helpers — loaded from R/utils.R, R/data.R, R/nimble-models.R
 # ===========================================================================
 
-#' Approximate effective sample size (Geyer's initial monotone sequence)
-effective_size <- function(x) {
-  n <- length(x)
-  if (n < 4) return(n)
-  acf_vals  <- acf(x, lag.max = min(n - 1, 500), plot = FALSE)$acf[-1]
-  pairwise  <- acf_vals[seq(1, length(acf_vals) - 1, by = 2)] +
-               acf_vals[seq(2, length(acf_vals),     by = 2)]
-  first_neg <- which(pairwise < 0)[1]
-  if (is.na(first_neg)) first_neg <- length(pairwise)
-  rho_sum   <- sum(pairwise[seq_len(first_neg - 1)])
-  n / max(1, 1 + 2 * rho_sum)
-}
-
-#' Summarise a vector of posterior samples into a one-row data.frame
-summarize_chain <- function(vals, param_name) {
-  data.frame(
-    param = param_name,
-    mean  = mean(vals),
-    sd    = sd(vals),
-    q2_5  = unname(quantile(vals, 0.025)),
-    q50   = unname(quantile(vals, 0.50)),
-    q97_5 = unname(quantile(vals, 0.975)),
-    ess   = effective_size(vals),
-    stringsAsFactors = FALSE
-  )
-}
-
 # ===========================================================================
-# 4.  Generate synthetic data at arbitrary N  (same DGP as example.csv)
-# ===========================================================================
-
-#' Generate a data frame with the same DGP as data/example.csv
-#'
-#' DGP:  y_i = 2 + 1.5*x_i + b[group_i] + eps_i
-#'         b_j  ~ N(0, 0.5^2)      j = 1..5
-#'         eps  ~ N(0, 0.7^2)
-#'       y_count_i ~ Poisson(exp(1.0 + 0.5*x_i))
-#'       y_bin_i   ~ Bernoulli(plogis(1.5*x_i))
-#'
-#' @param N     Number of observations
-#' @param seed  Random seed for reproducibility
-generate_data <- function(N, seed = 42) {
-  set.seed(seed)
-  n_groups <- 5
-  group    <- rep(seq_len(n_groups), length.out = N)
-  x        <- rnorm(N)
-  b_group  <- rnorm(n_groups, 0, 0.5)
-  y        <- 2 + 1.5 * x + b_group[group] + rnorm(N, 0, 0.7)
-  y_count  <- rpois(N, exp(1.0 + 0.5 * x))
-  y_bin    <- rbinom(N, 1, plogis(1.5 * x))
-  data.frame(
-    id      = seq_len(N),
-    y       = y,
-    x       = x,
-    group   = group,
-    y_count = y_count,
-    y_bin   = y_bin
-  )
-}
-
-# ===========================================================================
-# 5.  Run FANGS via the Node.js CLI
+# 4.  Run FANGS via the Node.js CLI
 # ===========================================================================
 
 #' Run the FANGS Gibbs sampler via the Node.js CLI and return results
@@ -241,147 +186,22 @@ run_fangs <- function(
 }
 
 # ===========================================================================
-# 6.  Run NIMBLE models
+# 5.  NIMBLE runners — loaded from R/nimble-models.R
+#     run_nimble_linear() and run_nimble_mixed() use default args below.
 # ===========================================================================
 
-#' Helper: compile a NIMBLE model and return compiled objects + compile time
-.nimble_compile_linear <- function(N, y, x) {
-  library(nimble, quietly = TRUE)
-  suppressMessages({
-    model <- nimbleModel(
-      code      = nimbleCode({
-        for (i in 1:N) {
-          y[i]  ~ dnorm(mu[i], tau)
-          mu[i] <- alpha + beta * x[i]
-        }
-        alpha ~ dnorm(0, 0.04)
-        beta  ~ dnorm(0, 0.04)
-        tau   ~ dgamma(1, 0.1)
-      }),
-      constants = list(N = N),
-      data      = list(y = y, x = x),
-      inits     = list(alpha = 0, beta = 0, tau = 1)
-    )
-    compiled_model <- compileNimble(model)
-    mcmc_conf      <- configureMCMC(model, monitors = c("alpha", "beta", "tau"))
-    mcmc           <- buildMCMC(mcmc_conf)
-    compiled_mcmc  <- compileNimble(mcmc, project = model)
-  })
-  list(compiled_mcmc = compiled_mcmc, monitors = c("alpha", "beta", "tau"))
-}
-
-.nimble_compile_mixed <- function(N, J, y, x, group) {
-  library(nimble, quietly = TRUE)
-  suppressMessages({
-    model <- nimbleModel(
-      code      = nimbleCode({
-        for (i in 1:N) {
-          y[i]  ~ dnorm(mu[i], tau)
-          mu[i] <- alpha + beta * x[i] + b[group[i]]
-        }
-        for (j in 1:J) {
-          b[j] ~ dnorm(0, tau.b)
-        }
-        alpha ~ dnorm(0, 0.04)
-        beta  ~ dnorm(0, 0.04)
-        tau   ~ dgamma(1, 0.1)
-        tau.b ~ dgamma(1, 0.1)
-      }),
-      constants = list(N = N, J = J),
-      data      = list(y = y, x = x, group = group),
-      inits     = list(alpha = 0, beta = 0, tau = 1, tau.b = 1, b = rep(0, J))
-    )
-    compiled_model <- compileNimble(model)
-    monitors       <- c("alpha", "beta", "tau", "tau.b", paste0("b[", seq_len(J), "]"))
-    mcmc_conf      <- configureMCMC(model, monitors = monitors)
-    mcmc           <- buildMCMC(mcmc_conf)
-    compiled_mcmc  <- compileNimble(mcmc, project = model)
-  })
-  list(compiled_mcmc = compiled_mcmc, monitors = monitors)
-}
-
-#' Run a pre-compiled NIMBLE MCMC and return a summary data.frame
-.nimble_run <- function(compiled_mcmc, monitors, n_samples, n_chains, burnin, thin,
-                        model_name, N) {
-  t_start <- proc.time()[["elapsed"]]
-  samples_list <- suppressMessages(runMCMC(
-    compiled_mcmc,
-    nchains     = n_chains,
-    niter       = n_samples + burnin,
-    nburnin     = burnin,
-    thin        = thin,
-    setSeed     = TRUE,
-    progressBar = FALSE
-  ))
-  elapsed_mcmc_s <- proc.time()[["elapsed"]] - t_start
-
-  all_samp <- if (is.list(samples_list)) do.call(rbind, samples_list) else samples_list
-
-  # Focus on population-level parameters (skip random effects b[j])
-  pop_params <- intersect(monitors, c("alpha", "beta", "tau", "tau.b"))
-  rows <- lapply(pop_params, function(p) {
-    s <- summarize_chain(all_samp[, p], p)
-    cbind(
-      data.frame(
-        model             = model_name,
-        N_data            = N,
-        n_samples         = n_samples,
-        n_chains          = n_chains,
-        burnin            = burnin,
-        thin              = thin,
-        elapsed_ms        = elapsed_mcmc_s * 1000,  # MCMC-only ms
-        elapsed_wall_s    = elapsed_mcmc_s,
-        engine            = "nimble",
-        stringsAsFactors  = FALSE
-      ),
-      s
-    )
-  })
-  do.call(rbind, rows)
-}
-
-#' Compile and run NIMBLE linear model, returning timing + posterior data.frame
-run_nimble_linear <- function(n_samples, n_chains = N_CHAINS, burnin = BURNIN,
-                              thin = THIN, data_csv = DEFAULT_DATA_CSV) {
+run_nimble_linear_bench <- function(n_samples, data_csv = DEFAULT_DATA_CSV) {
   if (!has_nimble) return(NULL)
-  dat <- read.csv(data_csv)
-  N   <- nrow(dat)
-
-  t_compile_start <- proc.time()[["elapsed"]]
-  obj             <- .nimble_compile_linear(N, dat$y, dat$x)
-  elapsed_compile_s <- proc.time()[["elapsed"]] - t_compile_start
-
-  res <- .nimble_run(obj$compiled_mcmc, obj$monitors,
-                     n_samples, n_chains, burnin, thin, "linear", N)
-
-  # Adjust elapsed_ms / elapsed_wall_s to include compile time
-  res$elapsed_compile_s <- elapsed_compile_s
-  res$elapsed_total_s   <- res$elapsed_wall_s + elapsed_compile_s
-  res
+  run_nimble_linear(n_samples, N_CHAINS, BURNIN, THIN, data_csv)
 }
 
-#' Compile and run NIMBLE mixed-effects model
-run_nimble_mixed <- function(n_samples, n_chains = N_CHAINS, burnin = BURNIN,
-                             thin = THIN, data_csv = DEFAULT_DATA_CSV) {
+run_nimble_mixed_bench <- function(n_samples, data_csv = DEFAULT_DATA_CSV) {
   if (!has_nimble) return(NULL)
-  dat   <- read.csv(data_csv)
-  N     <- nrow(dat)
-  J     <- length(unique(dat$group))
-
-  t_compile_start <- proc.time()[["elapsed"]]
-  obj             <- .nimble_compile_mixed(N, J, dat$y, dat$x, dat$group)
-  elapsed_compile_s <- proc.time()[["elapsed"]] - t_compile_start
-
-  res <- .nimble_run(obj$compiled_mcmc, obj$monitors,
-                     n_samples, n_chains, burnin, thin, "mixed", N)
-
-  res$elapsed_compile_s <- elapsed_compile_s
-  res$elapsed_total_s   <- res$elapsed_wall_s + elapsed_compile_s
-  res
+  run_nimble_mixed(n_samples, N_CHAINS, BURNIN, THIN, data_csv)
 }
 
 # ===========================================================================
-# 7.  Benchmark sweep A: n_samples vs time  (fixed data = example.csv)
+# 6.  Benchmark sweep A: n_samples vs time  (fixed data = example.csv)
 # ===========================================================================
 
 cat("\n========================================================\n")
@@ -433,7 +253,7 @@ for (model_name in MODELS) {
                   model_name, ns))
       flush.console()
 
-      nim_fn  <- if (model_name == "linear") run_nimble_linear else run_nimble_mixed
+      nim_fn  <- if (model_name == "linear") run_nimble_linear_bench else run_nimble_mixed_bench
       nim_res <- tryCatch(
         nim_fn(n_samples = ns),
         error = function(e) { warning(e$message); NULL }
@@ -522,7 +342,7 @@ for (N_obs in N_DATA_GRID) {
       cat(sprintf("  [NIMBLE] model=%-6s  N=%5d  ... ", model_name, N_obs))
       flush.console()
 
-      nim_fn  <- if (model_name == "linear") run_nimble_linear else run_nimble_mixed
+      nim_fn  <- if (model_name == "linear") run_nimble_linear_bench else run_nimble_mixed_bench
       nim_res <- tryCatch(
         nim_fn(n_samples = N_SAMPLES_FIXED, data_csv = tmp_csv),
         error = function(e) { warning(e$message); NULL }
