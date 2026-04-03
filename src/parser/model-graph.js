@@ -725,6 +725,33 @@ export class ModelGraph {
   }
 
   /**
+   * Compute fitted (expected) values for each observed node, marginalising over
+   * random effects by setting all array-indexed latent stochastic nodes to 0.
+   *
+   * This gives smooth population-average predictions for the Predictions tab:
+   * e.g. for a mixed-effects model `mu[i] = alpha + beta*x[i] + b[group[i]]`,
+   * the marginal prediction sets all `b[j] = 0`, yielding `alpha + beta*x[i]`.
+   *
+   * For models without indexed latent parameters (e.g. simple linear regression)
+   * this is identical to `computeFittedMeans`.
+   *
+   * @param {object} paramValues - Map of param name → current value
+   * @returns {Object.<string, number[]>} Map of base variable name → array of
+   *   marginal fitted means in observation order
+   */
+  computeMarginalFittedMeans(paramValues) {
+    this._requireBuilt();
+    // Zero out all array-indexed latent stochastic nodes (random effects).
+    const marginalValues = { ...paramValues };
+    for (const [name, node] of this.nodes) {
+      if (node.type === 'stochastic' && !node.observed && name.includes('[')) {
+        marginalValues[name] = 0;
+      }
+    }
+    return this.computeFittedMeans(marginalValues);
+  }
+
+  /**
    * Compute log prior for a single parameter at a given value.
    *
    * @param {string} paramName

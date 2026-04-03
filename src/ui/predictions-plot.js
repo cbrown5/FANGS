@@ -50,9 +50,11 @@ export class PredictionsPlot {
    * Populates the x-axis selector and redraws (empty) if no predictions yet.
    *
    * @param {Object.<string, Float64Array|number[]>} dataColumns
+   * @param {string} [responseVar='y']  Name of the response variable to plot on y-axis.
    */
-  setData(dataColumns) {
+  setData(dataColumns, responseVar = 'y') {
     this._dataColumns = dataColumns;
+    this._yVar = responseVar;
     this._populateSelector();
     if (this._predicted) {
       this._render();
