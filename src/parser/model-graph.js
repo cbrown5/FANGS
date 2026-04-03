@@ -87,6 +87,21 @@ const RANDOM_SAMPLER = {
   dlnorm: (meanlog, preclog)   => rlnorm(meanlog, preclog),
 };
 
+/**
+ * Map from BUGS distribution name → function returning the distribution mean.
+ * Used to compute fitted/expected values without sampling noise.
+ */
+const DIST_MEAN = {
+  dnorm:  (mu, _tau)           => mu,
+  dgamma: (shape, rate)        => shape / rate,
+  dbeta:  (a, b)               => a / (a + b),
+  dbinom: (p, n)               => p * n,
+  dbern:  (p)                  => p,
+  dpois:  (lambda)             => lambda,
+  dunif:  (lower, upper)       => (lower + upper) / 2,
+  dlnorm: (meanlog, preclog)   => Math.exp(meanlog + 0.5 / preclog),
+};
+
 // ---------------------------------------------------------------------------
 // Expression evaluator (pure, no side-effects)
 // ---------------------------------------------------------------------------
@@ -664,6 +679,46 @@ export class ModelGraph {
       const base = baseName(node.name);
       if (!result[base]) result[base] = [];
       result[base].push(yRep);
+    }
+
+    return result;
+  }
+
+  /**
+   * Compute the fitted (expected) value for each observed node without sampling noise.
+   *
+   * Returns the distribution mean (e.g. mu for dnorm, lambda for dpois) for each
+   * observed node given the provided parameter values.
+   *
+   * @param {object} paramValues - Map of param name → current value
+   * @returns {Object.<string, number[]>} Map of base variable name → array of
+   *   fitted means in observation order (e.g. { y: [2.1, 3.4, ...] })
+   */
+  computeFittedMeans(paramValues) {
+    this._requireBuilt();
+    const allValues = this._mergeValues(paramValues);
+    const result = {};
+
+    for (const node of this.nodes.values()) {
+      if (node.type !== 'observed') continue;
+      const distName = node.distribution?.name;
+      if (!distName) continue;
+
+      let params;
+      try {
+        params = node.distribution.paramExprs.map(expr =>
+          evaluateExpr(expr, allValues, this._dataColumns)
+        );
+      } catch (_) {
+        continue;
+      }
+
+      const meanFn = DIST_MEAN[distName];
+      const meanVal = meanFn ? meanFn(...params) : params[0];
+
+      const base = baseName(node.name);
+      if (!result[base]) result[base] = [];
+      result[base].push(meanVal);
     }
 
     return result;
