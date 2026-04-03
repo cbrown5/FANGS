@@ -172,9 +172,12 @@ The dashboard has:
    - **Posteriors**: Density plots for each parameter
    - **Summary**: Table with mean, SD, quantiles (2.5%, 50%, 97.5%), Rhat, ESS
    - **PPC**: Posterior predictive check plot (observed vs. simulated data)
+   - **Predictions**: x-y plot with observed data and posterior mean and 95% CIs regression line 
    - **Prior Check**: Run model forward from priors only (no data likelihood)
+   - **Joint parameter distribution**: Plot of joint posterior samples for two selected parameters (scatterplot)
 3. **Download button**: Export parameter samples as CSV
 4. **Pop-up system**: Educational tooltips/modals that can be enabled for teaching
+5. **Error and warning pop-ups**: Inform users of syntax errors, or UX issues such as not loading the data
 
 ## Pop-up system
 
