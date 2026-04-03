@@ -127,6 +127,8 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 - test app performance interactively
 - edit pop-ups and help pages
 - Add a writing style and update the help pages. 
+- nimble tests covering conjugate and non conjugate dists
+- tests with x on different scales, mv X
 
 ### Claude todo
 - PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
