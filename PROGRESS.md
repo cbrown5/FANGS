@@ -129,10 +129,7 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 - Add a writing style and update the help pages. 
 
 ### Claude todo
-- Add informative error messgaes as pop-ups. First review the UX for where error messages would be most useful. Then create and implement pop-ups. Suggestions to start: warn if user tries to run model without any data, error message if code fails to parse, error message if code parses but graph building fails (e.g. unsupported syntax), error message if sampler throws (e.g. due to numerical instability). ✓ DONE
-- Predicted curve of y on x looks blocky when using the mixed effects model (adding random effect for each group into the prediction for eahc point? it should be conditional prediction of x, fixing the random effect to its mean of 0). ✓ DONE — marginal fitted means now used
-- Prediction plot doesn't show for poisson and binomial GLMs.Is that because the response variable isn't called y? Need a solution. e.g. user chooses response variable? Or FANGS auto-identifies the response variable. ✓ DONE — response variable auto-detected from predictions keys
--Add a new tab that allows plotting samples for two parameters against each other. So can look for correlatoins among parameters. User picks which two parameters. 
+- model is optimized for predictors that are on unit SD scale amd centered. brainstorm options for begginer friendly handling if predictors on any scale. 
 
 
 ## Future improvements
