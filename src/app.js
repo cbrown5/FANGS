@@ -21,6 +21,7 @@ import { defaultCSV, defaultModel1, defaultModel2,
 import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
 import { renderDataTable } from './ui/data-table.js';
 import { initPopups, attachPopupTrigger, showErrorModal } from './ui/popups.js';
+import { ScatterPlot }    from './ui/scatter-plot.js';
 
 // ------------------------------------------------------------------ //
 // Bootstrap                                                            //
@@ -38,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ppc         = new PPCPlot(document.getElementById('ppc-container'));
   const predictions = new PredictionsPlot(document.getElementById('predictions-container'));
   const settings = new SamplerSettings(document.getElementById('settings-panel'));
+  const scatter  = new ScatterPlot(document.getElementById('joint-container'));
 
   // -- Initialise educational popups --
   initPopups();
@@ -297,6 +299,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btn.dataset.tab === 'posteriors') density.render();
       // Trigger predictions re-render when switching to Predictions tab
       if (btn.dataset.tab === 'predictions') predictions._render();
+      // Trigger scatter re-render when switching to Joint tab
+      if (btn.dataset.tab === 'joint') scatter.render();
     });
   });
 
@@ -353,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     density.clear();
     summary.clear();
     predictions.clear();
+    scatter.clear();
     posteriorSamples = {};
     setProgress(0);
     setStatus('Starting sampler…', 'running');
@@ -486,6 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
           predObj[responseVar] ?? [],
           predObj[`marginal_fitted_${responseVar}`] ?? predObj[`fitted_${responseVar}`] ?? null
         );
+
+        scatter.setSamplesMap(posteriorSamples);
 
         btnDownload.disabled = false;
         summaryWorker = null;
