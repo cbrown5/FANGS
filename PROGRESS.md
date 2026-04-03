@@ -128,6 +128,16 @@ Previously all chains ran sequentially in a single Web Worker. Each chain now ru
 - edit pop-ups and help pages
 - Add a writing style and update the help pages. 
 
+### Claude todo
+- Add informative error messgaes as pop-ups. First review the UX for where error messages would be most useful. Then create and implement pop-ups. Suggestions to start: warn if user tries to run model without any data, error message if code fails to parse, error message if code parses but graph building fails (e.g. unsupported syntax), error message if sampler throws (e.g. due to numerical instability).
+- Predicted curve of y on x looks blocky when using the mixed effects model (adding random effect for each group into the prediction for eahc point? it should be conditional prediction of x, fixing the random effect to its mean of 0).
+- Prediction plot doesn't show for poisson and binomial GLMs.Is that because the response variable isn't called y? Need a solution. e.g. user chooses response variable? Or FANGS auto-identifies the response variable. 
+-Add a new tab that allows plotting samples for two parameters against each other. So can look for correlatoins among parameters. User picks which two parameters. 
+
+
+## Future improvements
+Review code and UX of the shiny stan package to get ideas for plots to add and how to present results. 
+
 ---
 
 ## Sampler Performance Optimizations (2026-03-17)
