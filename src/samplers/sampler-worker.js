@@ -310,9 +310,10 @@ function _generatePredictions(graph, allSamples, maxReps) {
     }
     const selected = pairs.slice(0, maxReps);
 
-    // Generate a y_rep and fitted means for each selected posterior draw
+    // Generate a y_rep, fitted means, and marginal fitted means for each selected posterior draw
     const result = {};
     const fitted = {};
+    const marginalFitted = {};
     for (const [c, s] of selected) {
         const paramValues = {};
         for (const name of paramNames) {
@@ -340,11 +341,28 @@ function _generatePredictions(graph, allSamples, maxReps) {
                 fitted[varName].push(values);
             }
         }
+        // Marginal fitted means: random effects zeroed out → smooth prediction line
+        let marginalRep;
+        try {
+            marginalRep = graph.computeMarginalFittedMeans(paramValues);
+        } catch (_) {
+            marginalRep = null;
+        }
+        if (marginalRep) {
+            for (const [varName, values] of Object.entries(marginalRep)) {
+                if (!marginalFitted[varName]) marginalFitted[varName] = [];
+                marginalFitted[varName].push(values);
+            }
+        }
     }
 
     // Attach fitted means under "fitted_<varName>" keys
     for (const [varName, reps] of Object.entries(fitted)) {
         result[`fitted_${varName}`] = reps;
+    }
+    // Attach marginal fitted means under "marginal_fitted_<varName>" keys
+    for (const [varName, reps] of Object.entries(marginalFitted)) {
+        result[`marginal_fitted_${varName}`] = reps;
     }
 
     return result;

@@ -477,10 +477,14 @@ document.addEventListener('DOMContentLoaded', () => {
           ppc.update(yObs, msg.predictions?.y ?? []);
         }
 
-        predictions.setData(capturedDataColumns);
+        // Auto-detect the response variable from prediction keys (first non-fitted_ key).
+        const predObj = msg.predictions ?? {};
+        const responseVar = Object.keys(predObj).find(k => !k.startsWith('fitted_') && !k.startsWith('marginal_')) ?? 'y';
+
+        predictions.setData(capturedDataColumns, responseVar);
         predictions.setPredictions(
-          msg.predictions?.y ?? [],
-          msg.predictions?.fitted_y ?? null
+          predObj[responseVar] ?? [],
+          predObj[`marginal_fitted_${responseVar}`] ?? predObj[`fitted_${responseVar}`] ?? null
         );
 
         btnDownload.disabled = false;
