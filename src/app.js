@@ -19,6 +19,7 @@ import { SamplerSettings} from './ui/settings.js';
 import { defaultCSV, defaultModel1, defaultModel2,
          defaultModel3, defaultModel4, defaultModel5 } from './data/default-data.js';
 import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
+import { detectScalableColumns, applyColumnScaling, backTransformSamples } from './data/predictor-scaling.js';
 import { renderDataTable } from './ui/data-table.js';
 import { initPopups, attachPopupTrigger, showErrorModal } from './ui/popups.js';
 import { ScatterPlot }    from './ui/scatter-plot.js';
@@ -386,17 +387,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tracePane) tracePane.classList.add('active');
 
     // Parse the CSV data
-    let dataColumns, dataN, dataJ;
+    let dataColumns, dataN, dataJ, originalDataColumns, scalingParams;
     try {
       const parsedRows = parseCSV(loadedData);
       if (parsedRows.length === 0) throw new Error('Dataset is empty');
-      const { columns } = prepareDataColumns(parsedRows);
+      const { columns, factorMaps } = prepareDataColumns(parsedRows);
       dataN = parsedRows.length;
-      dataColumns = columns;
+      originalDataColumns = columns;
       // Count unique group levels if a 'group' column is present
       dataJ = columns.group
         ? new Set(Array.from(columns.group)).size
         : 0;
+      // Auto-scale continuous predictors for better Gibbs mixing.
+      // Workers receive scaled columns; original columns are kept for
+      // back-transforming posteriors and for the final summary/PPC display.
+      scalingParams = detectScalableColumns(columns, factorMaps, modelCode);
+      dataColumns = applyColumnScaling(columns, scalingParams);
+
+      // Show or hide the scaling info note.
+      const scalingNote = document.getElementById('scaling-note');
+      if (scalingNote) {
+        scalingNote.style.display =
+          Object.keys(scalingParams).length > 0 ? '' : 'none';
+        if (Object.keys(scalingParams).length > 0) {
+          // Re-attach popup trigger since it may have been re-inserted.
+          const btn = scalingNote.querySelector('[data-popup]');
+          if (btn) attachPopupTrigger(btn, 'predictor-scaling');
+        }
+      }
     } catch (e) {
       setStatus(`Data error: ${e.message}`, 'error');
       showErrorModal(
@@ -416,11 +434,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (summaryWorker) { summaryWorker.terminate(); summaryWorker = null; }
 
     // Capture the data needed later for the SUMMARIZE message (closured below).
-    const capturedModelCode    = modelCode;
-    const capturedDataColumns  = dataColumns;
-    const capturedDataN        = dataN;
-    const capturedDataJ        = dataJ;
-    const capturedDataConstants = getModelConstants();
+    const capturedModelCode           = modelCode;
+    const capturedOriginalDataColumns = originalDataColumns; // unscaled — for SUMMARIZE + PPC
+    const capturedScalingParams       = scalingParams;       // for back-transforming posteriors
+    const capturedDataN               = dataN;
+    const capturedDataJ               = dataJ;
+    const capturedDataConstants       = getModelConstants();
 
     // Per-chain progress (0–1); displayed as average across all chains.
     const nChains = cfg.nChains;
@@ -477,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
         density.render();
         summary.update(msg.summary);
 
-        const yObs = capturedDataColumns.y ? Array.from(capturedDataColumns.y) : [];
+        const yObs = capturedOriginalDataColumns.y ? Array.from(capturedOriginalDataColumns.y) : [];
         if (yObs.length > 0) {
           ppc.update(yObs, msg.predictions?.y ?? []);
         }
@@ -486,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const predObj = msg.predictions ?? {};
         const responseVar = Object.keys(predObj).find(k => !k.startsWith('fitted_') && !k.startsWith('marginal_')) ?? 'y';
 
-        predictions.setData(capturedDataColumns, responseVar);
+        predictions.setData(capturedOriginalDataColumns, responseVar);
         predictions.setPredictions(
           predObj[responseVar] ?? [],
           predObj[`marginal_fitted_${responseVar}`] ?? predObj[`fitted_${responseVar}`] ?? null
@@ -534,6 +553,31 @@ document.addEventListener('DOMContentLoaded', () => {
           samplerWorkers.forEach(w => w.terminate());
           samplerWorkers = [];
 
+          // Back-transform posterior samples from scaled space to original data
+          // units, one chain at a time so the intercept correction is aligned
+          // with the correct slope samples.
+          const transformedCollectedSamples = {};
+          for (let c = 0; c < nChains; c++) {
+            const chainFlat = {};
+            for (const [name, chainArrays] of Object.entries(collectedSamples)) {
+              chainFlat[name] = chainArrays[c] ?? [];
+            }
+            const btChain = backTransformSamples(chainFlat, capturedScalingParams, capturedModelCode);
+            for (const [name, vals] of Object.entries(btChain)) {
+              if (!transformedCollectedSamples[name]) {
+                transformedCollectedSamples[name] = Array.from({ length: nChains }, () => []);
+              }
+              transformedCollectedSamples[name][c] = vals;
+            }
+          }
+
+          // Rebuild posteriorSamples (used by scatter + download) with
+          // original-unit values and refresh density plots.
+          for (const [name, chainArrays] of Object.entries(transformedCollectedSamples)) {
+            posteriorSamples[name] = chainArrays.flat();
+            density.setSamples(name, posteriorSamples[name]);
+          }
+
           summaryWorker = new Worker(
             new URL('./samplers/sampler-worker.js', import.meta.url),
             { type: 'module' }
@@ -542,11 +586,11 @@ document.addEventListener('DOMContentLoaded', () => {
           summaryWorker.onerror   = (e) => handleWorkerError(e.message);
           summaryWorker.postMessage({
             type: 'SUMMARIZE',
-            allSamples:   collectedSamples,
-            modelSource:  capturedModelCode,
-            dataColumns:  capturedDataColumns,
-            dataN:        capturedDataN,
-            dataJ:        capturedDataJ,
+            allSamples:    transformedCollectedSamples, // original-unit samples
+            modelSource:   capturedModelCode,
+            dataColumns:   capturedOriginalDataColumns, // original (unscaled) columns
+            dataN:         capturedDataN,
+            dataJ:         capturedDataJ,
             dataConstants: capturedDataConstants,
           });
         }
@@ -568,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
         type: 'START',
         chainIdx: c,
         modelSource: capturedModelCode,
-        dataColumns: capturedDataColumns,
+        dataColumns: dataColumns,          // scaled — worker samples in scaled space
         dataN:       capturedDataN,
         dataJ:       capturedDataJ,
         dataConstants: capturedDataConstants,
