@@ -37,12 +37,12 @@ describe('detectScalableColumns', () => {
   const modelSource = `
     model {
       for (i in 1:N) {
-        y[i] ~ dnorm(mu[i], tau)
+        y[i] ~ dnorm(mu[i], sigma)
         mu[i] <- alpha + beta * x[i]
       }
-      alpha ~ dnorm(0, 0.001)
-      beta  ~ dnorm(0, 0.001)
-      tau   ~ dgamma(0.001, 0.001)
+      alpha ~ dnorm(0, 5)
+      beta  ~ dnorm(0, 5)
+      sigma ~ dunif(0, 100)
     }
   `;
 
@@ -114,12 +114,12 @@ describe('detectScalableColumns', () => {
     const interactionModel = `
       model {
         for (i in 1:N) {
-          y[i] ~ dnorm(mu[i], tau)
+          y[i] ~ dnorm(mu[i], sigma)
           mu[i] <- alpha + beta * x1[i] * x2[i]
         }
-        alpha ~ dnorm(0, 0.001)
-        beta  ~ dnorm(0, 0.001)
-        tau   ~ dgamma(0.001, 0.001)
+        alpha ~ dnorm(0, 5)
+        beta  ~ dnorm(0, 5)
+        sigma ~ dunif(0, 100)
       }
     `;
     const columns = {
@@ -253,7 +253,7 @@ describe('backTransformSamples', () => {
   const samples = {
     alpha: alpha_s_vals,
     beta: beta_s_vals,
-    tau: [0.1, 0.11, 0.09, 0.105],
+    sigma: [0.1, 0.11, 0.09, 0.105],
   };
 
   const scalingParams = { x: { mean: mean_x, sd: sd_x } };
@@ -261,12 +261,12 @@ describe('backTransformSamples', () => {
   const modelSource = `
     model {
       for (i in 1:N) {
-        y[i] ~ dnorm(mu[i], tau)
+        y[i] ~ dnorm(mu[i], sigma)
         mu[i] <- alpha + beta * x[i]
       }
-      alpha ~ dnorm(0, 0.001)
-      beta  ~ dnorm(0, 0.001)
-      tau   ~ dgamma(0.001, 0.001)
+      alpha ~ dnorm(0, 5)
+      beta  ~ dnorm(0, 5)
+      sigma ~ dunif(0, 100)
     }
   `;
 
@@ -285,10 +285,10 @@ describe('backTransformSamples', () => {
     }
   });
 
-  it('leaves tau unchanged', () => {
+  it('leaves sigma unchanged', () => {
     const bt = backTransformSamples(samples, scalingParams, modelSource);
-    for (let i = 0; i < samples.tau.length; i++) {
-      expect(bt.tau[i]).toBe(samples.tau[i]);
+    for (let i = 0; i < samples.sigma.length; i++) {
+      expect(bt.sigma[i]).toBe(samples.sigma[i]);
     }
   });
 
@@ -311,13 +311,13 @@ describe('backTransformSamples', () => {
     const multiModel = `
       model {
         for (i in 1:N) {
-          y[i] ~ dnorm(mu[i], tau)
+          y[i] ~ dnorm(mu[i], sigma)
           mu[i] <- alpha + beta1 * x1[i] + beta2 * x2[i]
         }
-        alpha  ~ dnorm(0, 0.001)
-        beta1  ~ dnorm(0, 0.001)
-        beta2  ~ dnorm(0, 0.001)
-        tau    ~ dgamma(0.001, 0.001)
+        alpha  ~ dnorm(0, 5)
+        beta1  ~ dnorm(0, 5)
+        beta2  ~ dnorm(0, 5)
+        sigma  ~ dunif(0, 100)
       }
     `;
     const multiParams = {
@@ -328,7 +328,7 @@ describe('backTransformSamples', () => {
       alpha:  [10.0],  // alpha_s
       beta1:  [2.5],   // beta1_s; orig = 2.5 / 50 = 0.05
       beta2:  [6.0],   // beta2_s; orig = 6.0 / 200 = 0.03
-      tau:    [0.1],
+      sigma:  [0.1],
     };
     // alpha correction: 2.5 * 100 / 50 + 6.0 * 500 / 200 = 5 + 15 = 20
     // alpha_orig = 10 - 20 = -10
@@ -340,7 +340,7 @@ describe('backTransformSamples', () => {
   });
 
   it('handles missing parameters gracefully (no throw)', () => {
-    const sparseSamples = { tau: [0.1] }; // no alpha or beta
+    const sparseSamples = { sigma: [0.1] }; // no alpha or beta
     expect(() =>
       backTransformSamples(sparseSamples, scalingParams, modelSource)
     ).not.toThrow();

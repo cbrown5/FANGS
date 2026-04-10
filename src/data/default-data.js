@@ -15,6 +15,10 @@
  *
  * OLS sanity check: alpha ≈ 2.29, beta ≈ 1.38 (close to true values after
  * accounting for absorbed group effects in the simple linear model).
+ *
+ * Note: FANGS uses SD parameterisation for dnorm. Priors on regression
+ * coefficients use dnorm(mean, sigma) where sigma is the SD (here SD=5,
+ * giving a weakly informative prior). Variance components use dunif(0, 100).
  */
 
 // ---------------------------------------------------------------------------
@@ -80,35 +84,35 @@ export const defaultCSV = `id,y,x,group,y_count,y_bin
 
 /**
  * Simple linear regression with a continuous predictor x.
- * Parameters: alpha (intercept), beta (slope), tau (precision = 1/sigma^2).
+ * Parameters: alpha (intercept), beta (slope), sigma (residual SD).
  */
 export const defaultModel1 = `model {
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], tau)
+    y[i] ~ dnorm(mu[i], sigma)
     mu[i] <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta ~ dnorm(0, 0.04)
-  tau ~ dgamma(1, 0.1)
+  alpha ~ dnorm(0, 5)
+  beta ~ dnorm(0, 5)
+  sigma ~ dunif(0, 100)
 }`;
 
 /**
  * Mixed-effects linear model with group-level random intercepts b[j].
- * Parameters: alpha, beta, tau (residual precision), tau.b (group precision).
+ * Parameters: alpha, beta, sigma (residual SD), sigma.b (group SD).
  * Requires constants N (number of observations) and J (number of groups).
  */
 export const defaultModel2 = `model {
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], tau)
+    y[i] ~ dnorm(mu[i], sigma)
     mu[i] <- alpha + beta * x[i] + b[group[i]]
   }
   for (j in 1:J) {
-    b[j] ~ dnorm(0, tau.b)
+    b[j] ~ dnorm(0, sigma.b)
   }
-  alpha ~ dnorm(0, 0.04)
-  beta ~ dnorm(0, 0.04)
-  tau ~ dgamma(1, 0.1)
-  tau.b ~ dgamma(1, 0.1)
+  alpha ~ dnorm(0, 5)
+  beta ~ dnorm(0, 5)
+  sigma ~ dunif(0, 100)
+  sigma.b ~ dunif(0, 100)
 }`;
 
 /**
@@ -122,8 +126,8 @@ export const defaultModel3 = `model {
     y_count[i] ~ dpois(lambda[i])
     log(lambda[i]) <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta ~ dnorm(0, 0.04)
+  alpha ~ dnorm(0, 5)
+  beta ~ dnorm(0, 5)
 }`;
 
 /**
@@ -137,28 +141,28 @@ export const defaultModel4 = `model {
     y_bin[i] ~ dbern(p[i])
     logit(p[i]) <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta ~ dnorm(0, 0.04)
+  alpha ~ dnorm(0, 5)
+  beta ~ dnorm(0, 5)
 }`;
 
 /**
  * Mixed-effects model with both random intercepts AND random slopes per group.
  * Each group j gets its own intercept b[j] and slope c[j].
- * Parameters: alpha, beta, tau, tau.b (intercept precision), tau.c (slope precision).
+ * Parameters: alpha, beta, sigma (residual SD), sigma.b (intercept SD), sigma.c (slope SD).
  * Requires constants N and J.
  */
 export const defaultModel5 = `model {
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], tau)
+    y[i] ~ dnorm(mu[i], sigma)
     mu[i] <- alpha + beta * x[i] + b[group[i]] + c[group[i]] * x[i]
   }
   for (j in 1:J) {
-    b[j] ~ dnorm(0, tau.b)
-    c[j] ~ dnorm(0, tau.c)
+    b[j] ~ dnorm(0, sigma.b)
+    c[j] ~ dnorm(0, sigma.c)
   }
-  alpha ~ dnorm(0, 0.04)
-  beta ~ dnorm(0, 0.04)
-  tau ~ dgamma(1, 0.1)
-  tau.b ~ dgamma(1, 0.1)
-  tau.c ~ dgamma(1, 0.1)
+  alpha ~ dnorm(0, 5)
+  beta ~ dnorm(0, 5)
+  sigma ~ dunif(0, 100)
+  sigma.b ~ dunif(0, 100)
+  sigma.c ~ dunif(0, 100)
 }`;

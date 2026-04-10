@@ -150,10 +150,6 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
       paramValues[paramName] = conjugateNormalNormalOffset(node, graph, paramValues);
       return;
 
-    case 'gamma-normal':
-      paramValues[paramName] = conjugateGammaOnPrecision(node, graph, paramValues);
-      return;
-
     case 'beta-binom':
       paramValues[paramName] = conjugateBetaBinom(node, graph, paramValues);
       return;
@@ -222,8 +218,10 @@ export function conjugateNormalNormal(node, graph, paramValues) {
   const priorArgs = node.distribution.paramExprs.map((e) =>
     graph.evaluateExpr(e, paramValues)
   );
-  const mu0  = priorArgs[0];
-  const tau0 = Math.max(priorArgs[1], 1e-10);
+  const mu0    = priorArgs[0];
+  // Prior second arg is sigma (SD), convert to precision for the update formula.
+  const sigma0 = Math.max(priorArgs[1], 1e-10);
+  const tau0   = 1 / (sigma0 * sigma0);
 
   // Collect child observations and their precision.
   const { sumY, n, tauLik } = collectNormalChildren(node, graph, paramValues);
@@ -231,7 +229,7 @@ export function conjugateNormalNormal(node, graph, paramValues) {
   const tauN = tau0 + n * tauLik;
   const muN  = (tau0 * mu0 + tauLik * sumY) / tauN;
 
-  return dist.rnorm(muN, tauN);
+  return dist.rnorm(muN, 1 / Math.sqrt(tauN));
 }
 
 /**
@@ -258,8 +256,10 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
   const priorArgs = node.distribution.paramExprs.map((e) =>
     graph.evaluateExpr(e, paramValues)
   );
-  const mu0  = priorArgs[0];
-  const tau0 = Math.max(priorArgs[1], 1e-10);
+  const mu0    = priorArgs[0];
+  // Prior second arg is sigma (SD), convert to precision for the update formula.
+  const sigma0 = Math.max(priorArgs[1], 1e-10);
+  const tau0   = 1 / (sigma0 * sigma0);
 
   const theta   = paramValues[node.name];
   const eps     = Math.max(Math.abs(theta) * 1e-5, 1e-7);
@@ -279,10 +279,12 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
 
-    tauLik = Math.max(
+    // Second argument is sigma (SD); convert to precision for conjugate update.
+    const sigmaLik = Math.max(
       graph.evaluateExpr(child.distribution.paramExprs[1], paramValues),
       1e-10
     );
+    tauLik = 1 / (sigmaLik * sigmaLik);
 
     // Coefficient c[i] = ∂mu[i]/∂θ via central differences.
     // Mutate paramValues in-place (safe: graph.evaluateExpr calls _mergeValues
@@ -308,7 +310,7 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
   const tauN = tau0 + tauLik * sumWtSq;
   const muN  = (tau0 * mu0 + tauLik * sumWtResid) / tauN;
 
-  return dist.rnorm(muN, tauN);
+  return dist.rnorm(muN, 1 / Math.sqrt(tauN));
 }
 
 /**
@@ -364,35 +366,6 @@ function extractSingleNodeRef(expr) {
   return null;
 }
 
-/**
- * Conjugate Gamma update for a precision (tau) parameter.
- *
- * Assumes:
- *   Prior:      tau ~ Gamma(a0, b0)             [shape, rate]
- *   Likelihood: y_i ~ Normal(mu_i, tau)  for n observations
- *
- * Posterior:
- *   tau | data ~ Gamma(a0 + n/2, b0 + sum((y_i - mu_i)^2) / 2)
- *
- * @param {Object} node - Stochastic node for tau.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues - Current values.
- * @returns {number} Posterior draw.
- */
-export function conjugateGammaOnPrecision(node, graph, paramValues) {
-  const priorArgs = node.distribution.paramExprs.map((e) =>
-    graph.evaluateExpr(e, paramValues)
-  );
-  const a0 = Math.max(priorArgs[0], 1e-10);
-  const b0 = Math.max(priorArgs[1], 1e-10);
-
-  const { sumSqResid, n } = collectNormalChildResiduals(node, graph, paramValues);
-
-  const aN = a0 + n / 2;
-  const bN = b0 + sumSqResid / 2;
-
-  return dist.rgamma(aN, Math.max(bN, 1e-10));
-}
 
 /**
  * Conjugate Beta update for a probability parameter.
@@ -518,11 +491,12 @@ function collectNormalChildren(node, graph, paramValues) {
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
 
-    // Precision is the second argument.
-    tauLik = Math.max(
+    // Second argument is sigma (SD); convert to precision for conjugate update.
+    const sigma = Math.max(
       graph.evaluateExpr(child.distribution.paramExprs[1], paramValues),
       1e-10
     );
+    tauLik = 1 / (sigma * sigma);
     sumY += y;
     n++;
   }
@@ -530,50 +504,6 @@ function collectNormalChildren(node, graph, paramValues) {
   return { sumY, n, tauLik };
 }
 
-/**
- * Collect sum of squared residuals from Normal-likelihood children of a
- * precision (tau) node.
- *
- * @param {Object} node
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues
- * @returns {{ sumSqResid: number, n: number }}
- */
-function collectNormalChildResiduals(node, graph, paramValues) {
-  let sumSqResid = 0;
-  let n          = 0;
-
-  // Use precomputed children list (O(children)) rather than scanning all nodes.
-  for (const childName of node.children) {
-    const child = graph.nodes.get(childName);
-    if (!child) continue;
-    // Include both observed nodes (e.g. y[i] ~ dnorm(mu[i], tau)) AND
-    // unobserved stochastic nodes (e.g. b[j] ~ dnorm(0, tau.b)).
-    if (child.type !== 'observed' && child.type !== 'stochastic') continue;
-    if (child.distribution?.name !== 'dnorm') continue;
-
-    // Tau (precision) is the second argument — check it references our node.
-    if (!distributionUsesParam(child, node.name, 1)) continue;
-
-    // Get the current value: observed nodes have a fixed value; latent
-    // stochastic nodes have their current sampled value in paramValues.
-    let y;
-    if (child.observed) {
-      y = resolveObservedValue(child, paramValues);
-    } else {
-      y = paramValues[child.name];
-      if (y === undefined || y === null) continue;
-    }
-    if (y === null || y === undefined) continue;
-
-    // Mean is the first argument.
-    const mu = graph.evaluateExpr(child.distribution.paramExprs[0], paramValues);
-    sumSqResid += (y - mu) ** 2;
-    n++;
-  }
-
-  return { sumSqResid, n };
-}
 
 /**
  * Recursively check whether an expression AST node references a given variable name.
@@ -689,9 +619,9 @@ function computeSliceWidth(node, paramValues, graph) {
 
     switch (node.distribution.name) {
       case 'dnorm': {
-        // SD = 1 / sqrt(tau)
-        const tau = Math.max(args[1], 1e-10);
-        return Math.min(Math.max(1 / Math.sqrt(tau), 0.01), 100);
+        // Second arg is sigma (SD) directly
+        const sigma = Math.max(args[1], 1e-10);
+        return Math.min(Math.max(sigma, 0.01), 100);
       }
       case 'dgamma': {
         // Prior SD = sqrt(shape) / rate

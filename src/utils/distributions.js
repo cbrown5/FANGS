@@ -1,10 +1,13 @@
 /**
  * distributions.js - Probability distribution log-densities and random samplers
  *
- * Parameterizations follow JAGS/NIMBLE conventions:
- *   - dnorm / rnorm  use precision τ = 1/σ²  (not variance, not SD)
+ * Parameterizations:
+ *   - dnorm / rnorm  use standard deviation σ  (not precision, not variance)
  *   - dgamma / rgamma use shape and rate  (rate = 1/scale)
  *   - dlnorm / rlnorm use meanlog and preclog (precision on log scale)
+ *
+ * Note: FANGS uses SD parameterisation for dnorm, unlike JAGS/NIMBLE which use
+ * precision τ = 1/σ². Users write `y ~ dnorm(mu, sigma)` where sigma is the SD.
  *
  * All log-density functions return -Infinity for out-of-support inputs rather
  * than throwing, matching standard statistical software behaviour.
@@ -97,33 +100,34 @@ export function invLogit(x) {
 }
 
 // ---------------------------------------------------------------------------
-// Normal distribution  (JAGS parameterization: mean, precision)
+// Normal distribution  (SD parameterization: mean, standard deviation)
 // ---------------------------------------------------------------------------
 
 /**
- * Log density of Normal(mean, precision).
- * JAGS/NIMBLE use precision τ = 1/σ², so σ² = 1/τ.
+ * Log density of Normal(mean, sigma) where sigma is the standard deviation.
+ *
+ * Note: FANGS uses SD parameterisation, unlike JAGS/NIMBLE which use precision.
+ * Write `y ~ dnorm(mu, sigma)` where sigma > 0 is the SD.
  *
  * @param {number} x
  * @param {number} mu - Mean
- * @param {number} tau - Precision (must be > 0)
+ * @param {number} sigma - Standard deviation (must be > 0)
  * @returns {number} Log density
  */
-export function dnorm(x, mu, tau) {
-  if (tau <= 0) return -Infinity;
-  // log density = 0.5*log(tau) - 0.5*log(2π) - 0.5*tau*(x-mu)²
-  return 0.5 * Math.log(tau) - 0.5 * LOG_2PI - 0.5 * tau * (x - mu) ** 2;
+export function dnorm(x, mu, sigma) {
+  if (sigma <= 0) return -Infinity;
+  // log density = -log(sigma) - 0.5*log(2π) - 0.5*((x-mu)/sigma)²
+  return -Math.log(sigma) - 0.5 * LOG_2PI - 0.5 * ((x - mu) / sigma) ** 2;
 }
 
 /**
- * Draw from Normal(mean, precision) using the Box-Muller transform.
+ * Draw from Normal(mean, sigma) using the Box-Muller transform.
  *
  * @param {number} mu - Mean
- * @param {number} tau - Precision (must be > 0)
+ * @param {number} sigma - Standard deviation (must be > 0)
  * @returns {number}
  */
-export function rnorm(mu, tau) {
-  const sigma = 1 / Math.sqrt(tau);
+export function rnorm(mu, sigma) {
   // Box-Muller
   const u1 = Math.random();
   const u2 = Math.random();
@@ -419,5 +423,5 @@ export function dlnorm(x, meanlog, preclog) {
  * @returns {number}
  */
 export function rlnorm(meanlog, preclog) {
-  return Math.exp(rnorm(meanlog, preclog));
+  return Math.exp(rnorm(meanlog, 1 / Math.sqrt(preclog)));
 }

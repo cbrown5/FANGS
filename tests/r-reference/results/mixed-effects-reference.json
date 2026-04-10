@@ -43,6 +43,30 @@
     "n_eff": 11136.5025,
     "n_samples": 30000
   },
+  "sigma": {
+    "mean": 0.680,
+    "sd": 0.069,
+    "q2_5": 0.5571,
+    "q25": 0.6300,
+    "q50": 0.6738,
+    "q75": 0.7235,
+    "q97_5": 0.8380,
+    "n_eff": 24061.8846,
+    "n_samples": 30000,
+    "_note": "Derived from tau entries: sigma = 1/sqrt(tau). Mean/SD via delta method."
+  },
+  "sigma.b": {
+    "mean": 0.321,
+    "sd": 0.122,
+    "q2_5": 0.1596,
+    "q25": 0.2370,
+    "q50": 0.3001,
+    "q75": 0.3870,
+    "q97_5": 0.6716,
+    "n_eff": 11136.5025,
+    "n_samples": 30000,
+    "_note": "Derived from tau.b entries: sigma.b = 1/sqrt(tau.b). Mean/SD via log-normal approximation."
+  },
   "b[1]": {
     "mean": 0.2774,
     "sd": 0.2337,

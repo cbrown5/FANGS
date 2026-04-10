@@ -32,6 +32,18 @@
     "n_eff": 27703.5227,
     "n_samples": 30000
   },
+  "sigma": {
+    "mean": 0.716,
+    "sd": 0.071,
+    "q2_5": 0.5904,
+    "q25": 0.6640,
+    "q50": 0.7111,
+    "q75": 0.7631,
+    "q97_5": 0.8797,
+    "n_eff": 27703.5227,
+    "n_samples": 30000,
+    "_note": "Derived from tau entries: sigma = 1/sqrt(tau). Mean/SD via delta method."
+  },
   "__meta__": {
     "model": "simple linear regression",
     "n_chains": 3,

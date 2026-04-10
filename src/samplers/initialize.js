@@ -93,24 +93,24 @@ export function drawFromPrior(node, paramValues, graph) {
 
   switch (distName) {
     case 'dnorm': {
-      // dnorm(mu, tau) — overdisperse by halving precision.
-      // For very diffuse priors (tau < 0.01, SD > 10), cap the initialization
+      // dnorm(mu, sigma) — overdisperse by multiplying SD by sqrt(2) (doubles variance).
+      // For very diffuse priors (sigma > 10), cap the initialization
       // spread at SD=3 to avoid starting far from the likelihood mass.
       // For hierarchical random effect nodes (normal-normal-offset), use a
       // tighter initialization (SD=1) to avoid cascading overdispersion.
-      const [mu, tau] = args;
+      const [mu, sigma] = args;
       if (node.conjugateType === 'normal-normal-offset') {
         // Random effect or linear predictor: start near the prior mean
-        // with modest spread (tau=1 → SD=1), overdispersed relative to
+        // with modest spread (SD=1), overdispersed relative to
         // the typical narrow posterior but recoverable quickly.
         return rnorm(mu, 1);
       }
-      if (tau < 0.01) {
+      if (sigma > 10) {
         // Very diffuse prior: start within ±3 of the prior mean
-        return rnorm(mu, 1 / 9);  // tau=1/9 → SD=3
+        return rnorm(mu, 3);
       }
-      const tauOD = Math.max(tau / 2, 1e-6);
-      return rnorm(mu, tauOD);
+      const sigmaOD = Math.max(sigma * Math.sqrt(2), 1e-6);
+      return rnorm(mu, sigmaOD);
     }
 
     case 'dgamma': {
@@ -138,9 +138,16 @@ export function drawFromPrior(node, paramValues, graph) {
     }
 
     case 'dunif': {
-      // dunif(lower, upper) — draw uniformly over the full range.
+      // dunif(lower, upper) — for very wide priors (common for SD parameters like
+      // sigma ~ dunif(0, 100)), starting uniformly over the full range gives extreme
+      // initial values that cause very slow mixing. Cap the effective range so
+      // initialization stays within a plausible region.
       const [lower, upper] = args;
-      return runif(lower, upper);
+      const range = upper - lower;
+      const effectiveUpper = range > 20
+        ? lower + Math.min(range * 0.1, 10)  // start in bottom 10% or at most 10 units
+        : upper;
+      return runif(lower, effectiveUpper);
     }
 
     case 'dlnorm': {

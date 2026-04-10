@@ -51,8 +51,8 @@ function isDataArray(v) {
  * Each function receives (x, ...params) where params are already-evaluated
  * numeric values.
  *
- * JAGS/NIMBLE argument orders:
- *   dnorm(mean, precision)
+ * FANGS argument orders:
+ *   dnorm(mean, sigma)   — sigma is SD (not precision); differs from JAGS/NIMBLE
  *   dgamma(shape, rate)
  *   dbeta(a, b)
  *   dbinom(prob, size)   — note: JAGS order is dbinom(p, n) not dbinom(n, p)
@@ -62,7 +62,7 @@ function isDataArray(v) {
  *   dlnorm(meanlog, preclog)
  */
 const LOG_DENSITY = {
-  dnorm:  (x, mu, tau)       => dnorm(x, mu, tau),
+  dnorm:  (x, mu, sigma)     => dnorm(x, mu, sigma),
   dgamma: (x, shape, rate)   => dgamma(x, shape, rate),
   dbeta:  (x, a, b)          => dbeta(x, a, b),
   dbinom: (x, p, n)          => dbinom(x, n, p),   // JAGS: dbinom(p, n)
@@ -77,7 +77,7 @@ const LOG_DENSITY = {
  * Each function receives (...params) in BUGS argument order and returns a draw.
  */
 const RANDOM_SAMPLER = {
-  dnorm:  (mu, tau)            => rnorm(mu, tau),
+  dnorm:  (mu, sigma)          => rnorm(mu, sigma),
   dgamma: (shape, rate)        => rgamma(shape, rate),
   dbeta:  (a, b)               => rbeta(a, b),
   dbinom: (p, n)               => rbinom(n, p),   // JAGS: dbinom(p, n)
@@ -92,7 +92,7 @@ const RANDOM_SAMPLER = {
  * Used to compute fitted/expected values without sampling noise.
  */
 const DIST_MEAN = {
-  dnorm:  (mu, _tau)           => mu,
+  dnorm:  (mu, _sigma)         => mu,
   dgamma: (shape, rate)        => shape / rate,
   dbeta:  (a, b)               => a / (a + b),
   dbinom: (p, n)               => p * n,
@@ -477,17 +477,9 @@ function detectConjugateType(node, nodeMap) {
 
   if (isGammaPrior) {
     if (descDists.has('dpois')) return 'gamma-poisson';
-    if (descDists.has('dnorm')) {
-      // Gamma prior → precision for Normal descendants → gamma-normal
-      // Check that this node appears (directly) in the second (precision) parameter
-      // of at least one dnorm descendant.
-      const appearsAsPrecision = [...descStochastic].some(c => {
-        if (c.distribution?.name !== 'dnorm') return false;
-        const paramNodes = c.distribution?.paramNodes ?? [];
-        return paramNodes.length >= 2 && paramNodes[1] === node.name;
-      });
-      if (appearsAsPrecision) return 'gamma-normal';
-    }
+    // Note: gamma-normal conjugacy is NOT used because FANGS dnorm uses SD (sigma),
+    // not precision (tau). A Gamma prior on sigma is not conjugate with a Normal
+    // likelihood. The sigma parameter falls through to slice sampling instead.
     return null;
   }
 

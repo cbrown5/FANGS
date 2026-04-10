@@ -2,8 +2,8 @@
  * distributions.test.js - Unit tests for FANGS probability distribution
  * log-density functions and random samplers.
  *
- * Parameterizations follow JAGS/NIMBLE conventions:
- *   - dnorm / rnorm use precision τ = 1/σ²
+ * Parameterizations:
+ *   - dnorm / rnorm use standard deviation σ  (not precision)
  *   - dgamma / rgamma use shape and rate (rate = 1/scale)
  *   - dlnorm / rlnorm use meanlog and preclog (precision on log scale)
  *
@@ -46,9 +46,9 @@ function sampleVariance(arr) {
 
 // ─── Normal distribution ─────────────────────────────────────────────────────
 
-describe('dnorm (Normal log-density, JAGS precision parameterization)', () => {
+describe('dnorm (Normal log-density, SD parameterization)', () => {
   it('dnorm(0, 0, 1) ≈ -0.9189 [= -0.5*log(2π)]', () => {
-    // tau=1 means σ²=1
+    // sigma=1 means SD=1
     const expected = -0.5 * Math.log(2 * Math.PI);
     expect(dnorm(0, 0, 1)).toBeCloseTo(expected, 8);
   });
@@ -57,41 +57,41 @@ describe('dnorm (Normal log-density, JAGS precision parameterization)', () => {
     expect(dnorm(1, 0, 1)).toBeCloseTo(dnorm(-1, 0, 1), 10);
   });
 
-  it('dnorm at the mean is the maximum log-density for given tau', () => {
+  it('dnorm at the mean is the maximum log-density for given sigma', () => {
     const logDensityAtMean = dnorm(5, 5, 2);
     const logDensityOff    = dnorm(6, 5, 2);
     expect(logDensityAtMean).toBeGreaterThan(logDensityOff);
   });
 
-  it('log density matches manual formula: 0.5*log(tau) - 0.5*log(2π) - 0.5*tau*(x-mu)²', () => {
-    const x = 1.5, mu = 0.5, tau = 2;
-    const manual = 0.5 * Math.log(tau) - 0.5 * Math.log(2 * Math.PI) - 0.5 * tau * (x - mu) ** 2;
-    expect(dnorm(x, mu, tau)).toBeCloseTo(manual, 10);
+  it('log density matches manual formula: -log(sigma) - 0.5*log(2π) - 0.5*((x-mu)/sigma)²', () => {
+    const x = 1.5, mu = 0.5, sigma = 2;
+    const manual = -Math.log(sigma) - 0.5 * Math.log(2 * Math.PI) - 0.5 * ((x - mu) / sigma) ** 2;
+    expect(dnorm(x, mu, sigma)).toBeCloseTo(manual, 10);
   });
 
-  it('returns -Infinity for tau <= 0', () => {
+  it('returns -Infinity for sigma <= 0', () => {
     expect(dnorm(0, 0, 0)).toBe(-Infinity);
     expect(dnorm(0, 0, -1)).toBe(-Infinity);
   });
 
-  it('higher precision gives tighter distribution (lower density away from mean)', () => {
-    // Far from mean, higher precision should give lower log-density
-    expect(dnorm(5, 0, 10)).toBeLessThan(dnorm(5, 0, 0.1));
+  it('smaller SD gives tighter distribution (lower density away from mean)', () => {
+    // Far from mean, smaller sigma (tighter) should give lower log-density
+    expect(dnorm(5, 0, 0.1)).toBeLessThan(dnorm(5, 0, 10));
   });
 });
 
 describe('rnorm (Normal sampler)', () => {
   it('samples have mean ≈ mu', () => {
-    const mu = 3, tau = 1;
-    const samples = Array.from({ length: N_SAMPLES }, () => rnorm(mu, tau));
+    const mu = 3, sigma = 1;
+    const samples = Array.from({ length: N_SAMPLES }, () => rnorm(mu, sigma));
     expect(sampleMean(samples)).toBeCloseTo(mu, 0); // within MEAN_TOL
     expect(Math.abs(sampleMean(samples) - mu)).toBeLessThan(MEAN_TOL * 3);
   });
 
-  it('samples have variance ≈ 1/tau', () => {
-    const mu = 0, tau = 4; // sigma² = 0.25
-    const samples = Array.from({ length: N_SAMPLES }, () => rnorm(mu, tau));
-    const expectedVar = 1 / tau;
+  it('samples have variance ≈ sigma²', () => {
+    const mu = 0, sigma = 0.5; // sigma² = 0.25
+    const samples = Array.from({ length: N_SAMPLES }, () => rnorm(mu, sigma));
+    const expectedVar = sigma * sigma;
     expect(Math.abs(sampleVariance(samples) - expectedVar)).toBeLessThan(VAR_TOL);
   });
 

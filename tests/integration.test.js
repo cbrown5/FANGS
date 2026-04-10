@@ -9,7 +9,7 @@
  * in CI; statistical accuracy is verified only to a loose tolerance.
  *
  * True DGP values for the example dataset:
- *   alpha ≈ 2.0,  beta ≈ 1.5,  sigma ≈ 0.7  (tau ≈ 1/0.49 ≈ 2.04)
+ *   alpha ≈ 2.0,  beta ≈ 1.5,  sigma ≈ 0.7
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -183,9 +183,9 @@ describe('Pipeline: parse and build graph', () => {
   it('parser AST contains the expected distribution names', () => {
     const ast  = parseModel(LINEAR_MODEL);
     const src  = JSON.stringify(ast);
-    // dnorm for y[i] and alpha and beta; dgamma for tau
+    // dnorm for y[i] and alpha and beta; dunif for sigma
     expect(src).toContain('dnorm');
-    expect(src).toContain('dgamma');
+    expect(src).toContain('dunif');
   });
 
   it('ModelGraph builds without throwing', () => {
@@ -199,7 +199,7 @@ describe('Pipeline: parse and build graph', () => {
     // The linear model has three unobserved stochastic nodes.
     expect(params).toContain('alpha');
     expect(params).toContain('beta');
-    expect(params).toContain('tau');
+    expect(params).toContain('sigma');
 
     // y[i] and mu[i] nodes should NOT appear as free parameters.
     for (const p of params) {
@@ -220,14 +220,14 @@ describe('Pipeline: parse and build graph', () => {
 
   it('ModelGraph logPosterior returns a finite number at reasonable initial values', () => {
     const graph = buildGraph(LINEAR_MODEL);
-    const lp = graph.logPosterior({ alpha: 2, beta: 1.5, tau: 2 });
+    const lp = graph.logPosterior({ alpha: 2, beta: 1.5, sigma: 0.7 });
     expect(isFinite(lp)).toBe(true);
     expect(lp).toBeLessThan(0); // log-posterior is always ≤ 0 up to normalisation
   });
 
-  it('ModelGraph logPosterior is -Infinity when tau is negative', () => {
+  it('ModelGraph logPosterior is -Infinity when sigma is negative', () => {
     const graph = buildGraph(LINEAR_MODEL);
-    const lp = graph.logPosterior({ alpha: 2, beta: 1.5, tau: -1 });
+    const lp = graph.logPosterior({ alpha: 2, beta: 1.5, sigma: -1 });
     expect(lp).toBe(-Infinity);
   });
 });
@@ -268,12 +268,12 @@ describe('Pipeline: chain initialization', () => {
     }
   });
 
-  it('tau initial values are positive (gamma-distributed prior)', () => {
+  it('sigma initial values are positive (uniform prior on [0, 100])', () => {
     const graph  = buildGraph(LINEAR_MODEL);
     const chains = initializeChains(graph, 10);
 
     for (const chain of chains) {
-      expect(chain.tau).toBeGreaterThan(0);
+      expect(chain.sigma).toBeGreaterThan(0);
     }
   });
 
@@ -390,7 +390,7 @@ describe('Pipeline: short sampler run (structure checks)', () => {
     }
   }, 30000);
 
-  it('tau samples are always positive', async () => {
+  it('sigma samples are always positive', async () => {
     const graph   = buildGraph(LINEAR_MODEL);
     const samples = await runGibbs(graph, {
       nChains:  2,
@@ -399,8 +399,8 @@ describe('Pipeline: short sampler run (structure checks)', () => {
       thin:     1,
     });
 
-    expect(samples).toHaveProperty('tau');
-    for (const chain of samples.tau) {
+    expect(samples).toHaveProperty('sigma');
+    for (const chain of samples.sigma) {
       for (const v of chain) {
         expect(v).toBeGreaterThan(0);
       }
@@ -415,7 +415,7 @@ describe('Pipeline: short sampler run (structure checks)', () => {
 describe('Pipeline: posterior means in ballpark of true DGP (100 iterations)', () => {
   /**
    * True DGP values for the built-in example dataset:
-   *   alpha ≈ 2.0,  beta ≈ 1.5,  sigma ≈ 0.7  → tau ≈ 1/0.49 ≈ 2.04
+   *   alpha ≈ 2.0,  beta ≈ 1.5,  sigma ≈ 0.7
    *
    * We use a very short run (100 post-burn-in samples, 2 chains) so the suite
    * stays fast.  Tolerance is ±2 SD of the prior-predictive distribution,
@@ -466,14 +466,14 @@ describe('Pipeline: posterior means in ballpark of true DGP (100 iterations)', (
   );
 
   it(
-    'posterior mean of tau is positive and in plausible range (≈2.04)',
+    'posterior mean of sigma is positive and in plausible range (≈0.7)',
     async () => {
-      const s      = await getSamples();
-      const allTau = s.tau.flat();
-      const mean   = allTau.reduce((a, b) => a + b, 0) / allTau.length;
-      // True tau = 1/0.49 ≈ 2.04; very wide tolerance for short run.
+      const s        = await getSamples();
+      const allSigma = s.sigma.flat();
+      const mean     = allSigma.reduce((a, b) => a + b, 0) / allSigma.length;
+      // True sigma ≈ 0.7; very wide tolerance for short run.
       expect(mean).toBeGreaterThan(0.1);
-      expect(mean).toBeLessThan(20);
+      expect(mean).toBeLessThan(5);
     },
     30000
   );
@@ -515,7 +515,7 @@ describe('updateParameter: single-step updates', () => {
 
   it('updateParameter changes the parameter value', () => {
     const graph       = buildGraph(LINEAR_MODEL);
-    const paramValues = { alpha: 2, beta: 1.5, tau: 2 };
+    const paramValues = { alpha: 2, beta: 1.5, sigma: 0.7 };
     const before      = paramValues.alpha;
 
     // Run 10 updates; at least one should differ (vanishingly unlikely not to).
@@ -531,28 +531,28 @@ describe('updateParameter: single-step updates', () => {
     expect(changed).toBe(true);
   });
 
-  it('updateParameter keeps tau positive after update', () => {
+  it('updateParameter keeps sigma positive after update', () => {
     const graph       = buildGraph(LINEAR_MODEL);
-    const paramValues = { alpha: 2, beta: 1.5, tau: 2 };
+    const paramValues = { alpha: 2, beta: 1.5, sigma: 0.7 };
 
     for (let i = 0; i < 20; i++) {
-      updateParameter('tau', graph, paramValues);
-      expect(paramValues.tau).toBeGreaterThan(0);
+      updateParameter('sigma', graph, paramValues);
+      expect(paramValues.sigma).toBeGreaterThan(0);
     }
   });
 
   it('updateParameter produces finite values', () => {
     const graph       = buildGraph(LINEAR_MODEL);
-    const paramValues = { alpha: 2, beta: 1.5, tau: 2 };
+    const paramValues = { alpha: 2, beta: 1.5, sigma: 0.7 };
 
     for (let i = 0; i < 20; i++) {
       updateParameter('alpha', graph, paramValues);
       updateParameter('beta',  graph, paramValues);
-      updateParameter('tau',   graph, paramValues);
+      updateParameter('sigma', graph, paramValues);
 
       expect(isFinite(paramValues.alpha)).toBe(true);
       expect(isFinite(paramValues.beta)).toBe(true);
-      expect(isFinite(paramValues.tau)).toBe(true);
+      expect(isFinite(paramValues.sigma)).toBe(true);
     }
   });
 });
@@ -574,8 +574,8 @@ describe('Mixed-effects model: graph construction', () => {
     // Scalar parameters
     expect(params).toContain('alpha');
     expect(params).toContain('beta');
-    expect(params).toContain('tau');
-    expect(params).toContain('tau.b');
+    expect(params).toContain('sigma');
+    expect(params).toContain('sigma.b');
 
     // Random effects b[1]...b[5]
     for (let j = 1; j <= 5; j++) {
@@ -601,7 +601,7 @@ describe('Mixed-effects model: graph construction', () => {
   it('logPosterior returns a finite value at reasonable starting point', () => {
     const graph = buildMixedGraph();
     const pv = {
-      alpha: 2, beta: 1.5, tau: 2, 'tau.b': 4,
+      alpha: 2, beta: 1.5, sigma: 0.7, 'sigma.b': 0.5,
       'b[1]': 0, 'b[2]': 0, 'b[3]': 0, 'b[4]': 0, 'b[5]': 0,
     };
     const lp = graph.logPosterior(pv);
@@ -630,7 +630,7 @@ describe('Mixed-effects model: sampler run', () => {
     }
   }, 60000);
 
-  it('tau and tau.b samples are always positive', async () => {
+  it('sigma and sigma.b samples are always positive', async () => {
     const graph   = buildMixedGraph();
     const samples = await runGibbs(graph, {
       nChains:  1,
@@ -639,10 +639,10 @@ describe('Mixed-effects model: sampler run', () => {
       thin:     1,
     });
 
-    for (const v of samples['tau'][0]) {
+    for (const v of samples['sigma'][0]) {
       expect(v).toBeGreaterThan(0);
     }
-    for (const v of samples['tau.b'][0]) {
+    for (const v of samples['sigma.b'][0]) {
       expect(v).toBeGreaterThan(0);
     }
   }, 60000);
@@ -859,7 +859,7 @@ describe('Float64Array data columns (real app code path)', () => {
 
   it('logPosterior returns a finite number with Float64Array columns', () => {
     const graph = buildGraphWithTypedArrays(LINEAR_MODEL);
-    const lp = graph.logPosterior({ alpha: 2, beta: 1.5, tau: 2 });
+    const lp = graph.logPosterior({ alpha: 2, beta: 1.5, sigma: 0.7 });
     expect(isFinite(lp)).toBe(true);
     expect(lp).toBeLessThan(0);
   });
@@ -868,7 +868,7 @@ describe('Float64Array data columns (real app code path)', () => {
     // Build both variants and check log-posterior agrees to floating-point precision.
     const graphTyped = buildGraphWithTypedArrays(LINEAR_MODEL);
     const graphPlain = buildGraph(LINEAR_MODEL);
-    const pv = { alpha: 2, beta: 1.5, tau: 2 };
+    const pv = { alpha: 2, beta: 1.5, sigma: 0.7 };
     expect(graphTyped.logPosterior(pv)).toBeCloseTo(graphPlain.logPosterior(pv), 6);
   });
 
@@ -906,7 +906,7 @@ describe('Float64Array data columns (real app code path)', () => {
     expect(observedCount).toBe(50);
 
     const pv = {
-      alpha: 2, beta: 1.5, tau: 2, 'tau.b': 4,
+      alpha: 2, beta: 1.5, sigma: 0.7, 'sigma.b': 0.5,
       'b[1]': 0, 'b[2]': 0, 'b[3]': 0, 'b[4]': 0, 'b[5]': 0,
     };
     const lp = graph.logPosterior(pv);
@@ -974,12 +974,12 @@ describe('Mixed-effects model: fixture comparison vs NIMBLE reference', () => {
       .toBe(true);
   }
 
-  it('alpha posterior mean matches NIMBLE within 0.3 SD', () => checkParam('alpha'));
-  it('beta posterior mean matches NIMBLE within 0.3 SD',  () => checkParam('beta'));
-  it('tau posterior mean matches NIMBLE within 0.3 SD',   () => checkParam('tau'));
+  it('alpha posterior mean matches NIMBLE within 0.3 SD',   () => checkParam('alpha'));
+  it('beta posterior mean matches NIMBLE within 0.3 SD',    () => checkParam('beta'));
+  it('sigma posterior mean matches NIMBLE within 0.5 SD',   () => checkParam('sigma', 0.5));
 
-  // tau.b has a very wide posterior (heavy right tail) — use a looser tolerance
-  it('tau.b posterior mean matches NIMBLE within 1 SD',   () => checkParam('tau.b', 1.0));
+  // sigma.b has a very wide posterior (heavy right tail) — use a looser tolerance
+  it('sigma.b posterior mean matches NIMBLE within 1 SD',   () => checkParam('sigma.b', 1.0));
 
   it('b[1] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[1]', 0.5));
   it('b[2] posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('b[2]', 0.5));
@@ -1132,8 +1132,8 @@ const LOGIT_MODEL = `model {
     y[i] ~ dbern(p[i])
     logit(p[i]) <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta  ~ dnorm(0, 0.04)
+  alpha ~ dnorm(0, 5)
+  beta  ~ dnorm(0, 5)
 }`;
 
 describe('Logit-link Bernoulli GLM: slice sampler end-to-end', () => {
@@ -1242,7 +1242,7 @@ describe('Linear model: fixture comparison vs NIMBLE reference', () => {
       .toBe(true);
   }
 
-  it('alpha posterior mean matches NIMBLE within 0.3 SD', () => checkParam('alpha'));
-  it('beta posterior mean matches NIMBLE within 0.3 SD',  () => checkParam('beta'));
-  it('tau posterior mean matches NIMBLE within 0.3 SD',   () => checkParam('tau'));
+  it('alpha posterior mean matches NIMBLE within 0.3 SD',  () => checkParam('alpha'));
+  it('beta posterior mean matches NIMBLE within 0.3 SD',   () => checkParam('beta'));
+  it('sigma posterior mean matches NIMBLE within 0.5 SD',  () => checkParam('sigma', 0.5));
 });
