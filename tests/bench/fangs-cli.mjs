@@ -28,10 +28,14 @@
  *   --response-col  CSV column to use as response y        [y]
  *                   (auto-mapped: poisson→y_count, bernoulli→y_bin if y absent)
  *   --output        Path to write posterior summaries CSV  [required]
+ *   --raw-samples   If set, write one row per iteration instead of summaries
  *
- * Output CSV columns:
+ * Output CSV columns (summary mode):
  *   model, N_data, n_samples, n_chains, burnin, thin, elapsed_ms,
  *   param, mean, sd, q2_5, q50, q97_5, rhat, ess
+ *
+ * Output CSV columns (--raw-samples mode):
+ *   chain, iteration, <param1>, <param2>, ...
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -173,6 +177,7 @@ async function main() {
   const dataArg     = args['data']         ?? 'data/example.csv';
   const outputPath  = args['output'];
   const responseCol = args['response-col'] ?? 'y';
+  const rawSamples  = 'raw-samples' in args;
 
   if (!outputPath) {
     process.stderr.write('Error: --output is required\n');
@@ -273,35 +278,52 @@ async function main() {
 
   const elapsed_ms = performance.now() - t0;
 
-  // --- Compute summaries ---
-  const outputRows = [];
+  // --- Compute summaries or raw samples ---
   const paramNames = Object.keys(samples);
+  let outputRows;
 
-  for (const param of paramNames) {
-    const chains = samples[param]; // chains[chainIdx][sampleIdx]
-    const all    = chains.flat();
+  if (rawSamples) {
+    // One row per (chain, iteration)
+    outputRows = [];
+    const nChainsFitted = samples[paramNames[0]].length;
+    const nIter         = samples[paramNames[0]][0].length;
+    for (let c = 0; c < nChainsFitted; c++) {
+      for (let s = 0; s < nIter; s++) {
+        const row = { chain: c + 1, iteration: s + 1 };
+        for (const param of paramNames) {
+          row[param] = samples[param][c][s];
+        }
+        outputRows.push(row);
+      }
+    }
+  } else {
+    outputRows = [];
+    for (const param of paramNames) {
+      const chains = samples[param]; // chains[chainIdx][sampleIdx]
+      const all    = chains.flat();
 
-    const stats   = summarize(all);
-    const rhatVal = chains.length >= 2 ? rhat(chains) : NaN;
-    const essVal  = essMultiChain(chains);
+      const stats   = summarize(all);
+      const rhatVal = chains.length >= 2 ? rhat(chains) : NaN;
+      const essVal  = essMultiChain(chains);
 
-    outputRows.push({
-      model:       modelArg,
-      N_data:      N,
-      n_samples:   nSamples,
-      n_chains:    nChains,
-      burnin,
-      thin,
-      elapsed_ms:  elapsed_ms.toFixed(2),
-      param,
-      mean:        stats.mean.toFixed(6),
-      sd:          stats.sd.toFixed(6),
-      q2_5:        stats.q2_5.toFixed(6),
-      q50:         stats.q50.toFixed(6),
-      q97_5:       stats.q97_5.toFixed(6),
-      rhat:        isFinite(rhatVal) ? rhatVal.toFixed(4) : 'NA',
-      ess:         isFinite(essVal)  ? essVal.toFixed(1)  : 'NA',
-    });
+      outputRows.push({
+        model:       modelArg,
+        N_data:      N,
+        n_samples:   nSamples,
+        n_chains:    nChains,
+        burnin,
+        thin,
+        elapsed_ms:  elapsed_ms.toFixed(2),
+        param,
+        mean:        stats.mean.toFixed(6),
+        sd:          stats.sd.toFixed(6),
+        q2_5:        stats.q2_5.toFixed(6),
+        q50:         stats.q50.toFixed(6),
+        q97_5:       stats.q97_5.toFixed(6),
+        rhat:        isFinite(rhatVal) ? rhatVal.toFixed(4) : 'NA',
+        ess:         isFinite(essVal)  ? essVal.toFixed(1)  : 'NA',
+      });
+    }
   }
 
   writeCSV(outputRows, outputPath);

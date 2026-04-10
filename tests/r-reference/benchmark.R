@@ -111,79 +111,7 @@ if (!has_ggplot2) {
 # 4.  Run FANGS via the Node.js CLI
 # ===========================================================================
 
-#' Run the FANGS Gibbs sampler via the Node.js CLI and return results
-#'
-#' @param model       Model name: "linear", "mixed", "poisson", "bernoulli"
-#' @param n_samples   Post-burn-in samples per chain
-#' @param n_chains    Number of parallel chains
-#' @param burnin      Burn-in iterations (discarded)
-#' @param thin        Thinning interval
-#' @param data_csv    Path to the input data CSV
-#' @return  data.frame with posterior summaries + timing columns, or NULL on failure
-run_fangs <- function(
-    model,
-    n_samples,
-    n_chains  = N_CHAINS,
-    burnin    = BURNIN,
-    thin      = THIN,
-    data_csv  = DEFAULT_DATA_CSV
-) {
-  cli_path <- file.path(FANGS_ROOT, "tests", "bench", "fangs-cli.mjs")
-  if (!file.exists(cli_path)) {
-    stop("FANGS CLI not found at: ", cli_path, "\n",
-         "Expected: tests/bench/fangs-cli.mjs")
-  }
 
-  out_csv <- tempfile(fileext = ".csv")
-  on.exit(unlink(out_csv), add = TRUE)
-
-  args <- c(
-    cli_path,
-    "--model",       model,
-    "--n-samples",   as.character(n_samples),
-    "--chains",      as.character(n_chains),
-    "--burnin",      as.character(burnin),
-    "--thin",        as.character(thin),
-    "--data",        normalizePath(data_csv, mustWork = FALSE),
-    "--output",      out_csv
-  )
-
-  # Capture stderr to parse the FANGS_ELAPSED_MS line
-  stderr_tmp <- tempfile()
-  on.exit(unlink(stderr_tmp), add = TRUE)
-
-  t_wall_start <- proc.time()[["elapsed"]]
-  exit_status  <- system2(
-    "node", args = args,
-    stdout = TRUE, stderr = stderr_tmp
-  )
-  t_wall_end <- proc.time()[["elapsed"]]
-
-  wall_s <- t_wall_end - t_wall_start
-
-  # Parse elapsed_ms reported from inside Node.js (excludes startup overhead)
-  elapsed_ms_js <- NA_real_
-  if (file.exists(stderr_tmp)) {
-    stderr_lines <- readLines(stderr_tmp, warn = FALSE)
-    m <- regmatches(stderr_lines,
-                    regexpr("(?<=FANGS_ELAPSED_MS:)[0-9.]+", stderr_lines, perl = TRUE))
-    if (length(m) > 0 && nchar(m[1]) > 0) elapsed_ms_js <- as.numeric(m[1])
-  }
-
-  if (!file.exists(out_csv) || file.info(out_csv)$size == 0) {
-    warning(sprintf(
-      "FANGS CLI returned no output for model=%s n_samples=%d\n",
-      model, n_samples
-    ))
-    return(NULL)
-  }
-
-  res <- read.csv(out_csv, stringsAsFactors = FALSE)
-  res$elapsed_ms      <- elapsed_ms_js          # sampler time (from JS)
-  res$elapsed_wall_s  <- wall_s                  # wall time including startup
-  res$engine          <- "fangs"
-  res
-}
 
 # ===========================================================================
 # 5.  NIMBLE runners — loaded from R/nimble-models.R
