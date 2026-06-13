@@ -56,26 +56,26 @@ const PROJECT_ROOT = resolve(__dirname, '..', '..');
 const BUILTIN_MODELS = {
   linear: `model {
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], tau)
+    y[i] ~ dnorm(mu[i], sigma)
     mu[i] <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta  ~ dnorm(0, 0.04)
-  tau   ~ dgamma(1, 0.1)
+  alpha ~ dnorm(0, 5)
+  beta  ~ dnorm(0, 5)
+  sigma ~ dunif(0, 100)
 }`,
 
   mixed: `model {
   for (i in 1:N) {
-    y[i]  ~ dnorm(mu[i], tau)
+    y[i]  ~ dnorm(mu[i], sigma)
     mu[i] <- alpha + beta * x[i] + b[group[i]]
   }
   for (j in 1:J) {
-    b[j] ~ dnorm(0, tau.b)
+    b[j] ~ dnorm(0, sigma.b)
   }
-  alpha ~ dnorm(0, 0.04)
-  beta  ~ dnorm(0, 0.04)
-  tau   ~ dgamma(1, 0.1)
-  tau.b ~ dgamma(1, 0.1)
+  alpha ~ dnorm(0, 5)
+  beta  ~ dnorm(0, 5)
+  sigma ~ dunif(0, 100)
+  sigma.b ~ dunif(0, 100)
 }`,
 
   poisson: `model {
@@ -83,8 +83,8 @@ const BUILTIN_MODELS = {
     y[i] ~ dpois(lambda[i])
     log(lambda[i]) <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta  ~ dnorm(0, 0.04)
+  alpha ~ dnorm(0, 5)
+  beta  ~ dnorm(0, 5)
 }`,
 
   bernoulli: `model {
@@ -92,8 +92,8 @@ const BUILTIN_MODELS = {
     y[i] ~ dbern(p[i])
     logit(p[i]) <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta  ~ dnorm(0, 0.04)
+  alpha ~ dnorm(0, 5)
+  beta  ~ dnorm(0, 5)
 }`,
 };
 

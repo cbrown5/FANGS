@@ -68,7 +68,7 @@ export function initializeChains(graph, nChains) {
  * Draw a single overdispersed initial value for a parameter from its prior.
  *
  * Overdispersion strategy by distribution:
- *   - dnorm  : use half the precision (wider spread)
+ *   - dnorm  : inflate the SD (wider spread)
  *   - dgamma : use half the shape (flatter / heavier-tailed)
  *   - dbeta  : use half of both shape parameters (flatter)
  *   - dunif  : draw uniformly over the full support
@@ -93,24 +93,24 @@ export function drawFromPrior(node, paramValues, graph) {
 
   switch (distName) {
     case 'dnorm': {
-      // dnorm(mu, tau) — overdisperse by halving precision.
-      // For very diffuse priors (tau < 0.01, SD > 10), cap the initialization
-      // spread at SD=3 to avoid starting far from the likelihood mass.
+      // dnorm(mu, sigma) — overdisperse by inflating the SD (×√2 doubles variance).
+      // For very diffuse priors (sigma > 10), cap the initialization spread at
+      // SD=3 to avoid starting far from the likelihood mass.
       // For hierarchical random effect nodes (normal-normal-offset), use a
       // tighter initialization (SD=1) to avoid cascading overdispersion.
-      const [mu, tau] = args;
+      const [mu, sigma] = args;
       if (node.conjugateType === 'normal-normal-offset') {
         // Random effect or linear predictor: start near the prior mean
-        // with modest spread (tau=1 → SD=1), overdispersed relative to
-        // the typical narrow posterior but recoverable quickly.
+        // with modest spread (SD=1), overdispersed relative to the typical
+        // narrow posterior but recoverable quickly.
         return rnorm(mu, 1);
       }
-      if (tau < 0.01) {
+      if (sigma > 10) {
         // Very diffuse prior: start within ±3 of the prior mean
-        return rnorm(mu, 1 / 9);  // tau=1/9 → SD=3
+        return rnorm(mu, 3);
       }
-      const tauOD = Math.max(tau / 2, 1e-6);
-      return rnorm(mu, tauOD);
+      const sigmaOD = Math.min(sigma * Math.sqrt(2), 1e6);
+      return rnorm(mu, sigmaOD);
     }
 
     case 'dgamma': {
@@ -166,8 +166,8 @@ export function drawFromPrior(node, paramValues, graph) {
     }
 
     default: {
-      // Unknown distribution — fall back to a wide normal centered at 0.
-      return rnorm(0, 0.01);
+      // Unknown distribution — fall back to a wide normal centered at 0 (SD=10).
+      return rnorm(0, 10);
     }
   }
 }

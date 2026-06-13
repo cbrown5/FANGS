@@ -191,7 +191,7 @@ export function parseBetaColumnMap(modelSource, scaledCols) {
 /**
  * Convert posterior samples from the scaled space back to original data units.
  *
- * Given model `y ~ dnorm(alpha_s + beta_s * x_scaled, tau)` where
+ * Given model `y ~ dnorm(alpha_s + beta_s * x_scaled, sigma)` where
  * `x_scaled = (x − mean_x) / sd_x`, the back-transform is:
  *
  *   beta_orig  = beta_s / sd_x
@@ -204,7 +204,7 @@ export function parseBetaColumnMap(modelSource, scaledCols) {
  * For array slope parameters (e.g. random slopes `c[1]`, `c[2]`, …) each
  * element is divided by sd_x independently.
  *
- * tau is precision on y and does not change.
+ * sigma is the residual SD on y and does not change.
  * Random-effect intercepts (b[j]) are y-space offsets and do not change.
  *
  * @param {Object.<string, number[]>} samples      - Raw (scaled-space) samples.
@@ -372,8 +372,8 @@ function _isGroupingIndex(col) {
  *
  * We scan only the RHS of `<-` assignments (after the arrow) that also
  * contain a reference to a scaled predictor column.  This avoids picking up
- * parameters that happen to share a line in a for-loop body (e.g. `tau` in
- * `y[i] ~ dnorm(mu[i], tau)` on the same line as `mu[i] <- alpha + beta*x[i]`).
+ * parameters that happen to share a line in a for-loop body (e.g. `sigma` in
+ * `y[i] ~ dnorm(mu[i], sigma)` on the same line as `mu[i] <- alpha + beta*x[i]`).
  */
 function _findInterceptNames(modelSource, betaMap, scaledCols) {
   const src = modelSource.replace(/#[^\n]*/g, '');

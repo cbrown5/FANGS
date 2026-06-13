@@ -15,15 +15,16 @@ Ignoring this structure underestimates uncertainty and can give misleading infer
 ## The structure
 
 ```
-y[i] ~ dnorm(mu[i], tau)
+y[i] ~ dnorm(mu[i], sigma)
 mu[i] <- alpha + beta * x[i] + b[group[i]]
-b[j]  ~ dnorm(0, tau.b)
+b[j]  ~ dnorm(0, sigma.b)
 ```
 
 - **alpha** — overall intercept (fixed effect)
 - **beta** — slope for x (fixed effect)
 - **b[j]** — random intercept for group j (random effect)
-- **tau.b** — precision of the random effects (hyperparameter)
+- **sigma** — residual standard deviation
+- **sigma.b** — standard deviation of the random effects (hyperparameter)
 
 ## Fixed vs. random effects
 
@@ -35,9 +36,9 @@ b[j]  ~ dnorm(0, tau.b)
 
 Mixed-effects models achieve **partial pooling**: group estimates are shrunk towards the overall mean. Groups with little data are pulled more towards the average; groups with lots of data are pulled less. This reduces overfitting compared to fitting each group separately.
 
-## The hyperparameter tau.b
+## The hyperparameter sigma.b
 
-`tau.b` controls how much groups are allowed to differ from each other. A posterior value of tau.b near infinity means very little group variation; near zero means groups are very different.
+`sigma.b` controls how much groups are allowed to differ from each other. A posterior value of sigma.b near zero means very little group variation; a large value means groups are very different.
 
 ## Benefits
 

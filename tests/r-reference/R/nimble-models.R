@@ -99,8 +99,17 @@ nimble_run <- function(compiled_mcmc, monitors, n_samples, n_chains, burnin, thi
 
   all_samp <- if (is.list(samples_list)) do.call(rbind, samples_list) else samples_list
 
+  # NIMBLE fits on the precision scale; FANGS uses the SD scale. Derive
+  # sigma = 1/sqrt(tau) (and sigma.b) so summaries match the FANGS parameter names.
+  if ("tau" %in% colnames(all_samp)) {
+    all_samp <- cbind(all_samp, sigma = 1 / sqrt(all_samp[, "tau"]))
+  }
+  if ("tau.b" %in% colnames(all_samp)) {
+    all_samp <- cbind(all_samp, "sigma.b" = 1 / sqrt(all_samp[, "tau.b"]))
+  }
+
   # Focus on population-level parameters (skip random effects b[j])
-  pop_params <- intersect(monitors, c("alpha", "beta", "tau", "tau.b"))
+  pop_params <- intersect(colnames(all_samp), c("alpha", "beta", "sigma", "sigma.b"))
   rows <- lapply(pop_params, function(p) {
     s <- summarize_chain(all_samp[, p], p)
     cbind(

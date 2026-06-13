@@ -122,10 +122,10 @@ export async function runGibbs(graph, settings) {
  *
  * Strategy (in order of preference):
  *   1. Conjugate normal-normal update (if `node.conjugateType === 'normal-normal'`)
- *   2. Conjugate gamma-on-precision update (if `node.conjugateType === 'gamma-precision'`)
- *   3. Conjugate beta-binom update (if `node.conjugateType === 'beta-binom'`)
- *   4. Conjugate gamma-Poisson update (if `node.conjugateType === 'gamma-poisson'`)
- *   5. Slice sampling fallback
+ *   2. Conjugate beta-binom update (if `node.conjugateType === 'beta-binom'`)
+ *   3. Conjugate gamma-Poisson update (if `node.conjugateType === 'gamma-poisson'`)
+ *   4. Slice sampling fallback (includes SD parameters of normals, which have
+ *      no conjugate update under FANGS's SD parameterisation)
  *
  * @param {string} paramName - Name of the parameter to update.
  * @param {import('../parser/model-graph.js').ModelGraph} graph
@@ -150,10 +150,6 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
       paramValues[paramName] = conjugateNormalNormalOffset(node, graph, paramValues);
       return;
 
-    case 'gamma-normal':
-      paramValues[paramName] = conjugateGammaOnPrecision(node, graph, paramValues);
-      return;
-
     case 'beta-binom':
       paramValues[paramName] = conjugateBetaBinom(node, graph, paramValues);
       return;
@@ -168,7 +164,7 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
 
   // Fall back to slice sampling.
   // Determine support bounds for constrained parameters.
-  const { lower, upper } = getParameterBounds(node);
+  const { lower, upper } = getParameterBounds(node, graph, paramValues);
 
   const currentValue = paramValues[paramName];
 
@@ -200,13 +196,15 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
  * Conjugate normal-normal posterior update.
  *
  * Assumes:
- *   Prior:      theta ~ Normal(mu0, tau0)      [tau0 = precision]
- *   Likelihood: y_i  ~ Normal(theta, tau_lik)  for each child observation
+ *   Prior:      theta ~ Normal(mu0, sigma0)     [sigma0 = SD; tau0 = 1/sigma0²]
+ *   Likelihood: y_i  ~ Normal(theta, sigma_lik) for each child observation
  *
- * Posterior:
+ * The conjugate arithmetic is carried out in precision space, so both the
+ * prior SD and the likelihood SD are converted to precision first
+ * (tau = 1/sigma²). Posterior:
  *   tau_n = tau0 + n * tau_lik
  *   mu_n  = (tau0 * mu0 + tau_lik * sum(y_i)) / tau_n
- *   theta | data ~ Normal(mu_n, tau_n)
+ *   theta | data ~ Normal(mu_n, tau_n)  →  drawn as rnorm(mu_n, 1/sqrt(tau_n))
  *
  * In the mixed-effects case `theta` may enter as a linear offset inside mu_i
  * rather than directly as the mean. This implementation handles the simple
@@ -222,16 +220,18 @@ export function conjugateNormalNormal(node, graph, paramValues) {
   const priorArgs = node.distribution.paramExprs.map((e) =>
     graph.evaluateExpr(e, paramValues)
   );
-  const mu0  = priorArgs[0];
-  const tau0 = Math.max(priorArgs[1], 1e-10);
+  const mu0    = priorArgs[0];
+  const sigma0 = Math.max(priorArgs[1], 1e-10);
+  const tau0   = 1 / (sigma0 * sigma0); // prior precision
 
-  // Collect child observations and their precision.
+  // Collect child observations and their likelihood precision (converted from SD).
   const { sumY, n, tauLik } = collectNormalChildren(node, graph, paramValues);
 
   const tauN = tau0 + n * tauLik;
   const muN  = (tau0 * mu0 + tauLik * sumY) / tauN;
 
-  return dist.rnorm(muN, tauN);
+  // rnorm now takes SD, so convert posterior precision → SD for the draw.
+  return dist.rnorm(muN, 1 / Math.sqrt(tauN));
 }
 
 /**
@@ -242,11 +242,11 @@ export function conjugateNormalNormal(node, graph, paramValues) {
  * parameters (beta with coefficient x[i]), using numerical differentiation
  * to determine the per-observation coefficient c[i] = ∂mu[i]/∂θ.
  *
- * Full conditional for θ ~ dnorm(mu0, tau0):
+ * Full conditional for θ ~ dnorm(mu0, sigma0)  [sigma0 = SD; tau0 = 1/sigma0²]:
  *   c[i]    = ∂mu[i]/∂θ  (computed by numerical perturbation)
  *   sumWtResid = Σ c[i] * (y[i] - mu_without[i])
  *   sumWtSq    = Σ c[i]^2
- *   tau_n   = tau0 + tau * sumWtSq
+ *   tau_n   = tau0 + tau * sumWtSq      (tau = 1/sigma_lik², the likelihood precision)
  *   mu_n    = (tau0 * mu0 + tau * sumWtResid) / tau_n
  *
  * @param {Object} node - Stochastic node for θ.
@@ -258,8 +258,9 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
   const priorArgs = node.distribution.paramExprs.map((e) =>
     graph.evaluateExpr(e, paramValues)
   );
-  const mu0  = priorArgs[0];
-  const tau0 = Math.max(priorArgs[1], 1e-10);
+  const mu0    = priorArgs[0];
+  const sigma0 = Math.max(priorArgs[1], 1e-10);
+  const tau0   = 1 / (sigma0 * sigma0); // prior precision
 
   const theta   = paramValues[node.name];
   const eps     = Math.max(Math.abs(theta) * 1e-5, 1e-7);
@@ -279,10 +280,12 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
 
-    tauLik = Math.max(
+    // Child's second dnorm arg is now the SD; convert to precision.
+    const sigmaLik = Math.max(
       graph.evaluateExpr(child.distribution.paramExprs[1], paramValues),
       1e-10
     );
+    tauLik = 1 / (sigmaLik * sigmaLik);
 
     // Coefficient c[i] = ∂mu[i]/∂θ via central differences.
     // Mutate paramValues in-place (safe: graph.evaluateExpr calls _mergeValues
@@ -308,7 +311,8 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
   const tauN = tau0 + tauLik * sumWtSq;
   const muN  = (tau0 * mu0 + tauLik * sumWtResid) / tauN;
 
-  return dist.rnorm(muN, tauN);
+  // rnorm now takes SD, so convert posterior precision → SD for the draw.
+  return dist.rnorm(muN, 1 / Math.sqrt(tauN));
 }
 
 /**
@@ -362,36 +366,6 @@ function extractSingleNodeRef(expr) {
     }
   }
   return null;
-}
-
-/**
- * Conjugate Gamma update for a precision (tau) parameter.
- *
- * Assumes:
- *   Prior:      tau ~ Gamma(a0, b0)             [shape, rate]
- *   Likelihood: y_i ~ Normal(mu_i, tau)  for n observations
- *
- * Posterior:
- *   tau | data ~ Gamma(a0 + n/2, b0 + sum((y_i - mu_i)^2) / 2)
- *
- * @param {Object} node - Stochastic node for tau.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues - Current values.
- * @returns {number} Posterior draw.
- */
-export function conjugateGammaOnPrecision(node, graph, paramValues) {
-  const priorArgs = node.distribution.paramExprs.map((e) =>
-    graph.evaluateExpr(e, paramValues)
-  );
-  const a0 = Math.max(priorArgs[0], 1e-10);
-  const b0 = Math.max(priorArgs[1], 1e-10);
-
-  const { sumSqResid, n } = collectNormalChildResiduals(node, graph, paramValues);
-
-  const aN = a0 + n / 2;
-  const bN = b0 + sumSqResid / 2;
-
-  return dist.rgamma(aN, Math.max(bN, 1e-10));
 }
 
 /**
@@ -518,61 +492,17 @@ function collectNormalChildren(node, graph, paramValues) {
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
 
-    // Precision is the second argument.
-    tauLik = Math.max(
+    // The second dnorm argument is now the SD; convert to precision.
+    const sigmaLik = Math.max(
       graph.evaluateExpr(child.distribution.paramExprs[1], paramValues),
       1e-10
     );
+    tauLik = 1 / (sigmaLik * sigmaLik);
     sumY += y;
     n++;
   }
 
   return { sumY, n, tauLik };
-}
-
-/**
- * Collect sum of squared residuals from Normal-likelihood children of a
- * precision (tau) node.
- *
- * @param {Object} node
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues
- * @returns {{ sumSqResid: number, n: number }}
- */
-function collectNormalChildResiduals(node, graph, paramValues) {
-  let sumSqResid = 0;
-  let n          = 0;
-
-  // Use precomputed children list (O(children)) rather than scanning all nodes.
-  for (const childName of node.children) {
-    const child = graph.nodes.get(childName);
-    if (!child) continue;
-    // Include both observed nodes (e.g. y[i] ~ dnorm(mu[i], tau)) AND
-    // unobserved stochastic nodes (e.g. b[j] ~ dnorm(0, tau.b)).
-    if (child.type !== 'observed' && child.type !== 'stochastic') continue;
-    if (child.distribution?.name !== 'dnorm') continue;
-
-    // Tau (precision) is the second argument — check it references our node.
-    if (!distributionUsesParam(child, node.name, 1)) continue;
-
-    // Get the current value: observed nodes have a fixed value; latent
-    // stochastic nodes have their current sampled value in paramValues.
-    let y;
-    if (child.observed) {
-      y = resolveObservedValue(child, paramValues);
-    } else {
-      y = paramValues[child.name];
-      if (y === undefined || y === null) continue;
-    }
-    if (y === null || y === undefined) continue;
-
-    // Mean is the first argument.
-    const mu = graph.evaluateExpr(child.distribution.paramExprs[0], paramValues);
-    sumSqResid += (y - mu) ** 2;
-    n++;
-  }
-
-  return { sumSqResid, n };
 }
 
 /**
@@ -634,9 +564,11 @@ function resolveObservedValue(node, paramValues) {
  * Determine hard support bounds for a parameter based on its distribution.
  *
  * @param {Object} node
+ * @param {import('../parser/model-graph.js').ModelGraph} [graph]
+ * @param {Object} [paramValues] - current values, used to evaluate dunif bounds
  * @returns {{ lower: number, upper: number }}
  */
-function getParameterBounds(node) {
+function getParameterBounds(node, graph, paramValues) {
   if (!node.distribution) return { lower: -Infinity, upper: Infinity };
 
   switch (node.distribution.name) {
@@ -656,8 +588,18 @@ function getParameterBounds(node) {
       return { lower: 1e-10, upper: Infinity };
 
     case 'dunif': {
-      // We don't have paramValues here to evaluate; use loose defaults.
-      // The log density itself will return -Infinity outside [lower,upper].
+      // Evaluate the uniform bounds so the slice sampler stays in support
+      // (important for sigma ~ dunif(0, 100): keeps the SD strictly positive).
+      if (graph && paramValues) {
+        try {
+          const lo = graph.evaluateExpr(node.distribution.paramExprs[0], paramValues);
+          const hi = graph.evaluateExpr(node.distribution.paramExprs[1], paramValues);
+          if (isFinite(lo) && isFinite(hi) && lo < hi) {
+            return { lower: lo, upper: hi };
+          }
+        } catch (_) { /* fall through to loose defaults */ }
+      }
+      // The log density itself returns -Infinity outside [lower, upper].
       return { lower: -Infinity, upper: Infinity };
     }
 
@@ -689,9 +631,9 @@ function computeSliceWidth(node, paramValues, graph) {
 
     switch (node.distribution.name) {
       case 'dnorm': {
-        // SD = 1 / sqrt(tau)
-        const tau = Math.max(args[1], 1e-10);
-        return Math.min(Math.max(1 / Math.sqrt(tau), 0.01), 100);
+        // Second arg is the SD directly.
+        const sigma = Math.max(args[1], 1e-10);
+        return Math.min(Math.max(sigma, 0.01), 100);
       }
       case 'dgamma': {
         // Prior SD = sqrt(shape) / rate

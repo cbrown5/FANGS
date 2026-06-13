@@ -141,7 +141,7 @@ Do not commit `src/content/popups/_rendered/` (it is git-ignored).
 | `credible-interval.qmd` | Credible intervals |
 | `ppc.qmd` | Posterior predictive checks |
 | `prior-check.qmd` | Prior predictive checks |
-| `precision.qmd` | Precision (τ) vs variance |
+| `precision.qmd` | Standard deviation (σ) parameterisation |
 | `mixed-effects.qmd` | Mixed-effects models |
 | `posteriors-tab.qmd` | Reading the Posteriors tab |
 | `summary-tab.qmd` | Reading the Summary table |

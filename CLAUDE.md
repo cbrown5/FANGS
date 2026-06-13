@@ -13,7 +13,7 @@ FANGS (Fast Accessible Numeric Gibbs Sampler) is a browser-based Bayesian infere
 
 ### Sampler Strategy
 - Implement a **component-wise Gibbs sampler** as the default
-- Use **conjugate samplers** where possible (normal-normal, gamma-normal, beta-binomial, gamma-Poisson)
+- Use **conjugate samplers** where possible (normal-normal, beta-binomial, gamma-Poisson). Note: FANGS parameterises `dnorm` by standard deviation, so the normal SD has no conjugate update and is slice-sampled.
 - Fall back to **slice sampling** for non-conjugate full conditionals
 - User does not need to choose samplers — the engine auto-selects based on the model graph
 - Support multiple chains with independent initialization
@@ -21,11 +21,11 @@ FANGS (Fast Accessible Numeric Gibbs Sampler) is a browser-based Bayesian infere
 ### Model Syntax (BUGS/JAGS dialect)
 The parser must handle the following BUGS language constructs:
 - `model { ... }` block wrapper
-- Stochastic nodes: `y[i] ~ dnorm(mu[i], tau)`
+- Stochastic nodes: `y[i] ~ dnorm(mu[i], sigma)`
 - Deterministic nodes: `mu[i] <- alpha + beta * x[i]`
 - `for(i in 1:N) { ... }` loops
 - Indexing: `x[i]`, `beta[j]`, `y[i,j]`
-- Key distributions: `dnorm(mean, precision)`, `dgamma(shape, rate)`, `dunif(lower, upper)`, `dbern(prob)`, `dpois(lambda)`, `dbin(prob, size)`, `dbeta(a, b)`, `dlnorm(meanlog, preclog)`
+- Key distributions: `dnorm(mean, sd)` (FANGS uses standard deviation, not precision), `dgamma(shape, rate)`, `dunif(lower, upper)`, `dbern(prob)`, `dpois(lambda)`, `dbin(prob, size)`, `dbeta(a, b)`, `dlnorm(meanlog, preclog)`
 - Link functions via deterministic nodes (e.g., `log(mu[i]) <- ...` or `logit(p[i]) <- ...`)
 - Truncation: `T(lower, upper)`
 - Math functions: `pow()`, `exp()`, `log()`, `sqrt()`, `abs()`, `inverse()`
@@ -98,10 +98,10 @@ FANGS/
 - Vanilla JavaScript (no framework) to keep it simple and dependency-free
 - ES modules for code organization
 - JSDoc comments for public APIs
-- Descriptive variable names matching statistical conventions (e.g., `tau` for precision, `mu` for mean)
+- Descriptive variable names matching statistical conventions (e.g., `sigma` for standard deviation, `mu` for mean)
 
 ### Key Implementation Notes
-- NIMBLE/JAGS uses **precision** (1/variance) parameterization for `dnorm` — this must be handled correctly
+- FANGS deliberately parameterises `dnorm` by **standard deviation** (σ), unlike NIMBLE/JAGS which use precision (1/variance). When porting models or reference results from NIMBLE/JAGS, convert: σ = 1/√τ
 - Rescale predictors internally before sampling for efficiency; back-transform results for display
 - Initialize chains using overdispersed draws from the priors
 - Use Web Workers for sampling to keep the UI responsive
@@ -113,32 +113,33 @@ FANGS/
 
 The app should launch with:
 - **Dataset**: ~50 observations with a continuous response `y`, one continuous predictor `x`, a categorical treatment factor `treatment` (2 levels), and a grouping variable `group` (~5 levels) for random effects
+  Note: FANGS parameterises `dnorm` by **standard deviation** (σ), not precision (see below).
 - **Pre-filled model 1** (simple linear):
   ```
   model {
     for (i in 1:N) {
-      y[i] ~ dnorm(mu[i], tau)
+      y[i] ~ dnorm(mu[i], sigma)
       mu[i] <- alpha + beta * x[i]
     }
-    alpha ~ dnorm(0, 0.001)
-    beta ~ dnorm(0, 0.001)
-    tau ~ dgamma(0.001, 0.001)
+    alpha ~ dnorm(0, 5)
+    beta ~ dnorm(0, 5)
+    sigma ~ dunif(0, 100)
   }
   ```
 - **Pre-filled model 2** (mixed-effects):
   ```
   model {
     for (i in 1:N) {
-      y[i] ~ dnorm(mu[i], tau)
+      y[i] ~ dnorm(mu[i], sigma)
       mu[i] <- alpha + beta * x[i] + b[group[i]]
     }
     for (j in 1:J) {
-      b[j] ~ dnorm(0, tau.b)
+      b[j] ~ dnorm(0, sigma.b)
     }
-    alpha ~ dnorm(0, 0.001)
-    beta ~ dnorm(0, 0.001)
-    tau ~ dgamma(0.001, 0.001)
-    tau.b ~ dgamma(0.001, 0.001)
+    alpha ~ dnorm(0, 5)
+    beta ~ dnorm(0, 5)
+    sigma ~ dunif(0, 100)
+    sigma.b ~ dunif(0, 100)
   }
   ```
 
@@ -183,7 +184,7 @@ The dashboard has:
 
 `src/ui/popups.js` implemented. 17 Quarto `.qmd` source files in `src/content/popups/`
 cover MCMC, Gibbs sampling, chains, burn-in, thinning, trace plots, R-hat, ESS,
-posteriors, priors, credible intervals, PPC, prior check, precision (τ), and
+posteriors, priors, credible intervals, PPC, prior check, standard deviation (σ), and
 mixed-effects models. `?` trigger buttons are attached via `data-popup` HTML
 attributes and programmatically on summary table column headers.
 

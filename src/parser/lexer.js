@@ -8,7 +8,7 @@
  * -----------
  * NUMBER       – integer or floating-point literal
  * STRING       – double-quoted string literal
- * IDENTIFIER   – bare name, possibly containing dots (tau.b, mu.0)
+ * IDENTIFIER   – bare name, possibly containing dots (sigma.b, mu.0)
  * TILDE        – ~
  * ARROW        – <-
  * LPAREN       – (
@@ -85,7 +85,7 @@ function isIdentStart(ch) {
 
 /**
  * Returns true if `ch` can continue an identifier (letter, digit, underscore,
- * or dot – BUGS allows dots in names like `tau.b`).
+ * or dot – BUGS allows dots in names like `sigma.b`).
  * @param {string} ch
  * @returns {boolean}
  */

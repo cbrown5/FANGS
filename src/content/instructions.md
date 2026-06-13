@@ -37,7 +37,7 @@ Throughout the interface, **?** buttons open educational pop-ups that explain MC
 
 Models are written in BUGS/JAGS syntax (compatible with NIMBLE). Each model must be enclosed in a `model { }` block and can contain:
 
-- Stochastic nodes: `y[i] ~ dnorm(mu[i], tau)`
+- Stochastic nodes: `y[i] ~ dnorm(mu[i], sigma)` (note: FANGS's `dnorm` uses the standard deviation, not precision)
 - Deterministic nodes: `mu[i] <- alpha + beta * x[i]`
 - For loops: `for(i in 1:N) { ... }`
 - Link functions via deterministic nodes: `log(mu[i]) <- ...` or `logit(p[i]) <- ...`

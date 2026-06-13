@@ -14,7 +14,7 @@ It can represent:
 ## Types of priors
 
 **Weakly informative (diffuse) priors**
-Allow a wide range of values, letting the data dominate. Example: `dnorm(0, 0.001)` in BUGS notation places most prior mass across a very wide range.
+Allow a wide range of values, letting the data dominate. Example: `dnorm(0, 5)` places most prior mass across a wide range (the second argument is the standard deviation in FANGS).
 
 **Informative priors**
 Encode specific knowledge. Useful when data are limited and you have reliable external information.
@@ -26,8 +26,8 @@ Priors that do not integrate to 1 (e.g., uniform on all real numbers). Can be us
 
 | Parameter | Prior | Interpretation |
 |-----------|-------|----------------|
-| `alpha`, `beta` | `dnorm(0, 0.001)` | Very diffuse — almost any value is plausible |
-| `tau` | `dgamma(0.001, 0.001)` | Diffuse over positive values; allows very small or large precision |
+| `alpha`, `beta` | `dnorm(0, 5)` | Diffuse — second argument is the SD, so most values within ±15 are plausible |
+| `sigma` | `dunif(0, 100)` | Flat over positive standard deviations up to 100 |
 
 ## Prior sensitivity
 

@@ -5,7 +5,7 @@
 # summaries as a JSON reference fixture for comparison against the FANGS
 # JavaScript sampler.
 #
-# Model:
+# Model (fit in NIMBLE on the precision scale, as NIMBLE requires):
 #   y[i] ~ dnorm(mu[i], tau)
 #   mu[i] <- alpha + beta * x[i]
 #   alpha ~ dnorm(0, 0.04)
@@ -13,6 +13,9 @@
 #   tau   ~ dgamma(1, 0.1)
 #
 # Note: dnorm in NIMBLE/JAGS uses precision (1/variance) as the second argument.
+# FANGS parameterises dnorm by standard deviation sigma instead, so this script
+# derives sigma = 1 / sqrt(tau) from the NIMBLE posterior and saves the sigma
+# summary as the reference fixture (matching the FANGS parameter name).
 #
 # Usage:
 #   Rscript tests/r-reference/linear-model.R
@@ -83,7 +86,11 @@ samples_list <- runMCMC(
 
 all_samples <- if (is.list(samples_list)) do.call(rbind, samples_list) else samples_list
 
-param_names <- c("alpha", "beta", "tau")
+# Derive the residual SD sigma = 1 / sqrt(tau) so the reference matches the
+# FANGS SD parameterisation, then drop the precision column.
+all_samples <- cbind(all_samples, sigma = 1 / sqrt(all_samples[, "tau"]))
+
+param_names <- c("alpha", "beta", "sigma")
 summaries   <- lapply(setNames(param_names, param_names), function(p) {
   summarize_param(all_samples[, p])
 })

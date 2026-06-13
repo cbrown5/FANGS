@@ -427,6 +427,15 @@ for (m_name in names(model_configs)) {
     if (is.null(all_samples)) next
     cat("done\n")
 
+    # NIMBLE fits on the precision scale; FANGS uses the SD scale. Derive
+    # sigma = 1/sqrt(tau) (and sigma.b) so fixtures match FANGS parameter names.
+    if ("tau" %in% colnames(all_samples)) {
+      all_samples <- cbind(all_samples, sigma = 1 / sqrt(all_samples[, "tau"]))
+    }
+    if ("tau.b" %in% colnames(all_samples)) {
+      all_samples <- cbind(all_samples, "sigma.b" = 1 / sqrt(all_samples[, "tau.b"]))
+    }
+
     # Compute summaries for all monitored parameters
     param_names <- colnames(all_samples)
     summaries   <- setNames(

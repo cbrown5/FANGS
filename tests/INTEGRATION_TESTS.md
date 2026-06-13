@@ -19,20 +19,20 @@ are counted, and `logPosterior` returns finite values at plausible starting poin
 
 ### Suite 2 — Chain initialization (linear model)
 Checks that `initializeChains` returns the right number of chains, all parameters
-are initialized with finite values, `tau` is positive, and different chains start at
+are initialized with finite values, `sigma` is positive, and different chains start at
 different points (overdispersion).
 
 ### Suite 3 — Sampler output structure (short run, linear model)
 Runs 20–50 samples to verify structure: correct number of chains, correct number of
-samples per chain, all values finite, thinning works, `tau` stays positive.
+samples per chain, all values finite, thinning works, `sigma` stays positive.
 
 ### Suite 4 — Statistical validity (100 iterations, linear model)
 Checks that posterior means are in a plausible range after a short run:
-`alpha` ≈ 2.0, `beta` ≈ 1.5, `tau` > 0. Tolerances are loose (±2 units) to keep
+`alpha` ≈ 2.0, `beta` ≈ 1.5, `sigma` ≈ 0.7. Tolerances are loose (±2 units) to keep
 the suite fast.
 
 ### Suite 5 — Single-parameter updates (unit-level, linear model)
-Tests `updateParameter` directly: parameters change value, `tau` stays positive, and
+Tests `updateParameter` directly: parameters change value, `sigma` stays positive, and
 all updated values are finite after 20 successive updates.
 
 ### Suite 6 — Mixed-effects model graph and sampler run
@@ -64,7 +64,7 @@ reference JSON at `tests/r-reference/results/mixed-effects-reference.json`. Chec
 - Posterior mean within 0.3 SD of the NIMBLE reference mean (0.5 SD for random effects, 1.0 SD for τ.b)
 - 95% CI overlaps with NIMBLE 95% CI
 
-Parameters checked: `alpha`, `beta`, `tau`, `tau.b`, `b[1]`…`b[5]`.
+Parameters checked: `alpha`, `beta`, `sigma`, `sigma.b`, `b[1]`…`b[5]`.
 
 ### Suite 11 — Poisson GLM vs exact conjugate posterior
 Runs the small Poisson model (Suite 7 dataset) for 3 chains × 1000 samples and
@@ -84,7 +84,7 @@ clearly show higher x → higher probability of y=1).
 ### Suite 14 — Linear model vs NIMBLE reference fixture
 Runs the simple linear regression (3 chains × 2000 samples, 1000 burn-in) against
 `tests/r-reference/results/linear-model-reference.json`. Checks `alpha`, `beta`,
-`tau` posterior means within 0.3 SD of NIMBLE and overlapping 95% CIs.
+`sigma` posterior means within tolerance of the (transformed) NIMBLE reference and overlapping 95% CIs.
 
 ---
 

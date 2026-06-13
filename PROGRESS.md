@@ -11,10 +11,10 @@ All core modules are implemented and 252 tests pass.
 | `app.js` | UI orchestration: editor, data upload, tab switching, run/stop/download, worker wiring, prior predictive check, model constants panel; parallel-chain run spawns one Web Worker per chain plus a final summary worker |
 | `parser/lexer.js` | Tokenises BUGS/JAGS syntax |
 | `parser/parser.js` | AST from token stream |
-| `parser/model-graph.js` | DAG from AST; conjugacy detection (`normal-normal`, `normal-normal-offset`, `gamma-normal`, `beta-binom`, `gamma-Poisson`); parents list handles indexed deps like `b[group[i]]` |
-| `samplers/gibbs.js` | Component-wise Gibbs; conjugate updates + slice fallback; `collectNormalChildResiduals` includes latent stochastic nodes (needed for tau.b) |
-| `samplers/slice.js` | Slice sampler fallback |
-| `samplers/initialize.js` | Overdispersed init from priors; diffuse normal (`tau < 0.01`) capped at SD=3; `normal-normal-offset` nodes start at SD=1 |
+| `parser/model-graph.js` | DAG from AST; conjugacy detection (`normal-normal`, `normal-normal-offset`, `beta-binom`, `gamma-Poisson`); the normal SD parameter has no conjugate update and falls to slice sampling; parents list handles indexed deps like `b[group[i]]` |
+| `samplers/gibbs.js` | Component-wise Gibbs; conjugate updates + slice fallback; `dnorm` uses the SD parameterisation (σ), converted to precision internally for normal-normal conjugate updates |
+| `samplers/slice.js` | Slice sampler fallback (also samples `sigma`/`sigma.b`) |
+| `samplers/initialize.js` | Overdispersed init from priors; diffuse normal (`sigma > 10`) capped at SD=3; `normal-normal-offset` nodes start at SD=1 |
 | `samplers/sampler-worker.js` | Web Worker: parallel-chain mode (one worker per chain via START+chainIdx → CHAIN_DONE) + coordinator mode (SUMMARIZE → DONE); legacy single-worker START path retained for prior check; supports `priorOnly` and `dataConstants` |
 | `data/csv-loader.js` | CSV parsing and column preparation |
 | `data/default-data.js` | Built-in dataset matching `data/example.csv` (R seed=42, N=50, 5 groups) |
@@ -64,7 +64,7 @@ All core modules are implemented and 252 tests pass.
 - tests with x on different scales, mv X
 
 ### Claude todo
-- Major update to use sd parameterisation instead of tau parameterisation. See plans/dnorm-sd-parameterisation.md
+- ~~Major update to use sd parameterisation instead of tau parameterisation. See plans/dnorm-sd-parameterisation.md~~ Done: `dnorm`'s second argument is now the standard deviation σ. Default models use `sigma ~ dunif(0, 100)`; SD parameters are slice-sampled (no conjugate update). R reference fixtures derive σ = 1/√τ from NIMBLE.
 - Scaling of predictors. Change pop-up appearance for " Predictors auto-scaled for sampling ". Only show it when scaling is used. Also the scaling is only applied at the end of sampling. The Trace plot shows scaled parameters. The posterior distribution shows scaled parameters, but then updates to unscaled once sampling is done. Can we have them show unscaled parameters during sampling, or will that be too slow?
 - Remove red stop light on the 'Joint parameters' page. If the. model hasn't run just show the message "Run the model to see the joint distribution of parameters"
 - PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models

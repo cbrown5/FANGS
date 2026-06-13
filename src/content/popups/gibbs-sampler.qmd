@@ -21,12 +21,13 @@ Then repeat.
 When the prior and likelihood belong to the same distributional family (a *conjugate pair*), the full conditional has a known closed form and can be sampled exactly. This is fast and exact.
 
 **Examples used in FANGS:**
-- Normal likelihood + normal prior → normal full conditional (updates α, β)
-- Gamma prior on precision τ + normal likelihood → gamma full conditional
+- Normal likelihood + normal prior → normal full conditional (updates α, β and random effects)
+- Beta prior + Bernoulli/Binomial likelihood → beta full conditional
+- Gamma prior + Poisson likelihood → gamma full conditional
 
 ## Slice sampling fallback
 
-When conjugacy does not apply (e.g., logistic regression), FANGS falls back to **slice sampling** — a derivative-free method that still samples from the correct distribution, just less efficiently.
+When conjugacy does not apply, FANGS falls back to **slice sampling** — a derivative-free method that still samples from the correct distribution, just less efficiently. This is used for logistic regression and for the standard-deviation parameter `sigma` (the normal SD has no conjugate prior under FANGS's SD parameterisation).
 
 ## Why it works
 

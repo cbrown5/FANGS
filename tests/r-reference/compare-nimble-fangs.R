@@ -1,5 +1,8 @@
-# Simple script that compres one NIMBLe and one FANGS model
-#note NIMBLE uses the SD parameterization, not precision, so have to convert the tau parameter to sigma for comparison
+# Simple script that compares one NIMBLE and one FANGS model.
+# NIMBLE parameterises dnorm by PRECISION (tau); FANGS parameterises dnorm by
+# STANDARD DEVIATION (sigma). So the two engines are fitted with their own
+# parameterisations and NIMBLE's tau is converted to sigma = 1/sqrt(tau) before
+# the side-by-side comparison.
 
 library(tidyverse)
 library(nimble)
@@ -25,9 +28,18 @@ model <- nimbleCode({
   tau ~ dgamma(1, 0.1)
 })
 
-#convert expression to plain text
-model_text <- paste("model", paste(deparse(model), collapse = "\n"))
-writeLines(model_text, "tests/r-reference/nimble-models/linear.bugs")
+# FANGS uses the SD parameterisation, so write a sigma-based model for it
+# (NOT the NIMBLE precision model above).
+fangs_model_text <- "model {
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 5)
+  beta ~ dnorm(0, 5)
+  sigma ~ dunif(0, 100)
+}"
+writeLines(fangs_model_text, "tests/r-reference/nimble-models/linear.bugs")
 
 #
 # Fit FANGS model
@@ -71,12 +83,17 @@ fit <- runMCMC(
 
 fitall <- do.call(rbind, fit)
 
+# Convert NIMBLE's precision tau to the SD scale used by FANGS, then compare on
+# alpha, beta, sigma.
+fitall <- cbind(fitall, sigma = 1 / sqrt(fitall[, "tau"]))
+compare_params <- c("alpha", "beta", "sigma")
+
 #
 # Summarise NIMBLE posterior
 #
 nimble_summary <- do.call(
   rbind,
-  lapply(monitors, function(p) {
+  lapply(compare_params, function(p) {
     vals <- fitall[, p]
     data.frame(
       engine = "nimble",
@@ -95,7 +112,7 @@ nimble_summary <- do.call(
 # Align FANGS summary to the same columns
 #
 fangs_summary2 <- fangs_summary[
-  fangs_summary$param %in% monitors,
+  fangs_summary$param %in% compare_params,
   c("param", "mean", "sd", "q2_5", "q50", "q97_5")
 ]
 fangs_summary2$engine <- "fangs"

@@ -7,7 +7,7 @@ A **prior predictive check** runs the model forward from the priors alone — be
 Priors on parameters can seem reasonable in isolation but imply unrealistic data patterns when propagated through the model. For example:
 
 - Weakly informative priors on regression coefficients may imply predicted responses in the millions
-- A diffuse prior on precision τ may allow implausibly small or large variances
+- A diffuse prior on the standard deviation σ may allow implausibly small or large spread
 
 The prior predictive check makes the implied data scale visible, so you can adjust priors if needed.
 
