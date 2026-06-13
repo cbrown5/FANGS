@@ -64,7 +64,7 @@ All core modules are implemented and 252 tests pass.
 - tests with x on different scales, mv X
 
 ### Claude todo
-- Nimble uses SD not precision for dnorm. So need to check all the fixtures to make sure we are doing correct conversions, including for the priors. Or just change FANGS to use the SD instead? Its more straightforward
+- Major update to use sd parameterisation instead of tau parameterisation. See plans/dnorm-sd-parameterisation.md
 - Scaling of predictors. Change pop-up appearance for " Predictors auto-scaled for sampling ". Only show it when scaling is used. Also the scaling is only applied at the end of sampling. The Trace plot shows scaled parameters. The posterior distribution shows scaled parameters, but then updates to unscaled once sampling is done. Can we have them show unscaled parameters during sampling, or will that be too slow?
 - Remove red stop light on the 'Joint parameters' page. If the. model hasn't run just show the message "Run the model to see the joint distribution of parameters"
 - PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
