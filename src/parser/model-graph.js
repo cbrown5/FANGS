@@ -51,8 +51,8 @@ function isDataArray(v) {
  * Each function receives (x, ...params) where params are already-evaluated
  * numeric values.
  *
- * JAGS/NIMBLE argument orders:
- *   dnorm(mean, precision)
+ * Argument orders (JAGS/NIMBLE, except dnorm which FANGS parameterises by SD):
+ *   dnorm(mean, sd)        — NOTE: FANGS uses standard deviation, not precision
  *   dgamma(shape, rate)
  *   dbeta(a, b)
  *   dbinom(prob, size)   — note: JAGS order is dbinom(p, n) not dbinom(n, p)
@@ -62,7 +62,7 @@ function isDataArray(v) {
  *   dlnorm(meanlog, preclog)
  */
 const LOG_DENSITY = {
-  dnorm:  (x, mu, tau)       => dnorm(x, mu, tau),
+  dnorm:  (x, mu, sigma)     => dnorm(x, mu, sigma),
   dgamma: (x, shape, rate)   => dgamma(x, shape, rate),
   dbeta:  (x, a, b)          => dbeta(x, a, b),
   dbinom: (x, p, n)          => dbinom(x, n, p),   // JAGS: dbinom(p, n)
@@ -77,7 +77,7 @@ const LOG_DENSITY = {
  * Each function receives (...params) in BUGS argument order and returns a draw.
  */
 const RANDOM_SAMPLER = {
-  dnorm:  (mu, tau)            => rnorm(mu, tau),
+  dnorm:  (mu, sigma)          => rnorm(mu, sigma),
   dgamma: (shape, rate)        => rgamma(shape, rate),
   dbeta:  (a, b)               => rbeta(a, b),
   dbinom: (p, n)               => rbinom(n, p),   // JAGS: dbinom(p, n)
@@ -92,7 +92,7 @@ const RANDOM_SAMPLER = {
  * Used to compute fitted/expected values without sampling noise.
  */
 const DIST_MEAN = {
-  dnorm:  (mu, _tau)           => mu,
+  dnorm:  (mu, _sigma)         => mu,
   dgamma: (shape, rate)        => shape / rate,
   dbeta:  (a, b)               => a / (a + b),
   dbinom: (p, n)               => p * n,
@@ -444,9 +444,13 @@ function exprReferencesVar_mg(expr, varName) {
  *
  * Conjugate pairs (prior → likelihood):
  *   Normal prior   + Normal stochastic descendants using this as mean param → 'normal-normal'
- *   Gamma prior    + Normal descendants where this node is precision         → 'gamma-normal'
  *   Gamma prior    + Poisson descendants where this is lambda                → 'gamma-poisson'
  *   Beta prior     + Bernoulli / Binomial descendants                        → 'beta-binomial'
+ *
+ * NOTE: there is no conjugate update for the SD parameter of a normal. FANGS
+ * parameterises dnorm by standard deviation σ, and no standard prior on σ is
+ * conjugate with a normal likelihood, so SD parameters fall through to slice
+ * sampling.
  *
  * Traverses through deterministic intermediaries so that patterns like:
  *   alpha -> mu[i] (det) -> y[i] (dnorm)  are correctly classified.
@@ -477,17 +481,8 @@ function detectConjugateType(node, nodeMap) {
 
   if (isGammaPrior) {
     if (descDists.has('dpois')) return 'gamma-poisson';
-    if (descDists.has('dnorm')) {
-      // Gamma prior → precision for Normal descendants → gamma-normal
-      // Check that this node appears (directly) in the second (precision) parameter
-      // of at least one dnorm descendant.
-      const appearsAsPrecision = [...descStochastic].some(c => {
-        if (c.distribution?.name !== 'dnorm') return false;
-        const paramNodes = c.distribution?.paramNodes ?? [];
-        return paramNodes.length >= 2 && paramNodes[1] === node.name;
-      });
-      if (appearsAsPrecision) return 'gamma-normal';
-    }
+    // A Gamma prior on the SD of a normal is NOT conjugate, so we do not detect
+    // a 'gamma-normal' pattern; such nodes fall through to slice sampling.
     return null;
   }
 
@@ -924,7 +919,7 @@ export class ModelGraph {
   }
 
   /**
-   * Process a stochastic assignment: y[i] ~ dnorm(mu[i], tau)
+   * Process a stochastic assignment: y[i] ~ dnorm(mu[i], sigma)
    * @param {object} stmt
    * @param {object} loopVars
    */

@@ -5,7 +5,7 @@
 # using NIMBLE and save posterior summaries as a JSON reference fixture for
 # comparison against the FANGS JavaScript sampler.
 #
-# Model:
+# Model (fit in NIMBLE on the precision scale, as NIMBLE requires):
 #   y[i]  ~ dnorm(mu[i], tau)
 #   mu[i] <- alpha + beta * x[i] + b[group[i]]
 #   b[j]  ~ dnorm(0, tau.b)          for j in 1:J
@@ -15,6 +15,9 @@
 #   tau.b ~ dgamma(1, 0.1)
 #
 # Note: dnorm in NIMBLE/JAGS uses precision (1/variance) as the second argument.
+# FANGS parameterises dnorm by standard deviation, so this script derives
+# sigma = 1/sqrt(tau) and sigma.b = 1/sqrt(tau.b) from the NIMBLE posterior and
+# saves those SD summaries as the reference fixture (matching FANGS names).
 #
 # Usage:
 #   Rscript tests/r-reference/mixed-effects.R
@@ -92,7 +95,15 @@ samples_list <- runMCMC(
 
 all_samples <- if (is.list(samples_list)) do.call(rbind, samples_list) else samples_list
 
-pop_params   <- c("alpha", "beta", "tau", "tau.b")
+# Derive SD-scale parameters from the NIMBLE precision posterior so the
+# reference matches the FANGS SD parameterisation.
+all_samples <- cbind(
+  all_samples,
+  sigma     = 1 / sqrt(all_samples[, "tau"]),
+  "sigma.b" = 1 / sqrt(all_samples[, "tau.b"])
+)
+
+pop_params   <- c("alpha", "beta", "sigma", "sigma.b")
 group_params <- paste0("b[", seq_len(J), "]")
 param_names  <- c(pop_params, group_params)
 

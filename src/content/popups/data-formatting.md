@@ -30,11 +30,11 @@ For example, a `treatment` column with values `A, B, A, C` becomes `1, 2, 1, 3`.
 
 ```
 for (i in 1:N) {
-  y[i] ~ dnorm(mu[i], tau)
+  y[i] ~ dnorm(mu[i], sigma)
   mu[i] <- alpha[treatment[i]] + beta * x[i]
 }
 for (k in 1:K) {
-  alpha[k] ~ dnorm(0, 0.001)
+  alpha[k] ~ dnorm(0, 5)
 }
 ```
 

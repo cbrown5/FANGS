@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showErrorModal(
           'Sampler Error',
           message,
-          'The sampler encountered a problem. This is often caused by numerical instability — try using weakly informative priors (e.g. <code>dgamma(0.001, 0.001)</code> for precision), or check that your data does not contain extreme values or zeros where the model does not expect them.'
+          'The sampler encountered a problem. This is often caused by numerical instability — try using weakly informative priors (e.g. <code>dunif(0, 100)</code> for a standard deviation), or check that your data does not contain extreme values or zeros where the model does not expect them.'
         );
       }
     }
@@ -798,5 +798,5 @@ function _guessParams(model) {
   while ((m = re.exec(model)) !== null) {
     names.add(m[1]);
   }
-  return names.size > 0 ? [...names] : ['alpha', 'beta', 'tau'];
+  return names.size > 0 ? [...names] : ['alpha', 'beta', 'sigma'];
 }

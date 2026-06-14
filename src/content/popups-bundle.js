@@ -92,11 +92,11 @@ export const POPUP_CONTENT = {
 <p>For example, a <code>treatment</code> column with values <code>A, B, A, C</code> becomes <code>1, 2, 1, 3</code>.</p>
 <p><strong>You do not need to create a dummy/design matrix yourself.</strong> Reference the integer-coded column directly in your BUGS model:</p>
 <pre><code>for (i in 1:N) {
-  y[i] ~ dnorm(mu[i], tau)
+  y[i] ~ dnorm(mu[i], sigma)
   mu[i] &lt;- alpha[treatment[i]] + beta * x[i]
 }
 for (k in 1:K) {
-  alpha[k] ~ dnorm(0, 0.001)
+  alpha[k] ~ dnorm(0, 5)
 }</code></pre>
 <p>Here <code>K</code> is the number of treatment levels (set in the Constants panel).</p>
 <h2 id="grouping-variables-for-random-effects">Grouping variables for random effects</h2>
@@ -163,18 +163,18 @@ for (k in 1:K) {
 <h2 id="the-key-idea">The key idea</h2>
 <p>Instead of moving all parameters simultaneously (which is hard), Gibbs sampling cycles through each parameter and draws a new value from its <strong>full conditional distribution</strong> — the distribution of that parameter given the current values of every other parameter and the data.</p>
 <h2 id="one-iteration">One iteration</h2>
-<p>For a model with parameters α, β, and τ, one Gibbs iteration looks like:</p>
+<p>For a model with parameters α, β, and σ, one Gibbs iteration looks like:</p>
 <ol type="1">
-<li>Draw new α from <code>p(α | β, τ, data)</code></li>
-<li>Draw new β from <code>p(β | α, τ, data)</code></li>
-<li>Draw new τ from <code>p(τ | α, β, data)</code></li>
+<li>Draw new α from <code>p(α | β, σ, data)</code></li>
+<li>Draw new β from <code>p(β | α, σ, data)</code></li>
+<li>Draw new σ from <code>p(σ | α, β, data)</code></li>
 </ol>
 <p>Then repeat.</p>
 <h2 id="conjugate-updates">Conjugate updates</h2>
 <p>When the prior and likelihood belong to the same distributional family (a <em>conjugate pair</em>), the full conditional has a known closed form and can be sampled exactly. This is fast and exact.</p>
-<p><strong>Examples used in FANGS:</strong> - Normal likelihood + normal prior → normal full conditional (updates α, β) - Gamma prior on precision τ + normal likelihood → gamma full conditional</p>
+<p><strong>Examples used in FANGS:</strong> - Normal likelihood + normal prior → normal full conditional (updates α, β and random effects) - Beta prior + Bernoulli/Binomial likelihood → beta full conditional - Gamma prior + Poisson likelihood → gamma full conditional</p>
 <h2 id="slice-sampling-fallback">Slice sampling fallback</h2>
-<p>When conjugacy does not apply (e.g., logistic regression), FANGS falls back to <strong>slice sampling</strong> — a derivative-free method that still samples from the correct distribution, just less efficiently.</p>
+<p>When conjugacy does not apply, FANGS falls back to <strong>slice sampling</strong> — a derivative-free method that still samples from the correct distribution, just less efficiently. This is used for logistic regression and for the standard-deviation parameter <code>sigma</code> (the normal SD has no conjugate prior under FANGS's SD parameterisation).</p>
 <h2 id="why-it-works">Why it works</h2>
 <p>Each update leaves the joint posterior distribution invariant. After many cycles, the chain converges to samples from the true joint posterior.</p>
 </body></html>`,
@@ -266,22 +266,23 @@ for (k in 1:K) {
 </ul>
 <p>Ignoring this structure underestimates uncertainty and can give misleading inference.</p>
 <h2 id="the-structure">The structure</h2>
-<pre><code>y[i] ~ dnorm(mu[i], tau)
+<pre><code>y[i] ~ dnorm(mu[i], sigma)
 mu[i] &lt;- alpha + beta * x[i] + b[group[i]]
-b[j]  ~ dnorm(0, tau.b)</code></pre>
+b[j]  ~ dnorm(0, sigma.b)</code></pre>
 <ul>
 <li><strong>alpha</strong> — overall intercept (fixed effect)</li>
 <li><strong>beta</strong> — slope for x (fixed effect)</li>
 <li><strong>b[j]</strong> — random intercept for group j (random effect)</li>
-<li><strong>tau.b</strong> — precision of the random effects (hyperparameter)</li>
+<li><strong>sigma</strong> — residual standard deviation</li>
+<li><strong>sigma.b</strong> — standard deviation of the random effects (hyperparameter)</li>
 </ul>
 <h2 id="fixed-vs.-random-effects">Fixed vs.&nbsp;random effects</h2>
 <p><strong>Fixed effects</strong> (alpha, beta) apply to the whole population. They are estimated directly from data.</p>
 <p><strong>Random effects</strong> (b[j]) are group-specific deviations. They are assumed to come from a distribution with mean 0 and some variance — this is the <em>random effects assumption</em>. The variance is estimated from the data.</p>
 <h2 id="partial-pooling">Partial pooling</h2>
 <p>Mixed-effects models achieve <strong>partial pooling</strong>: group estimates are shrunk towards the overall mean. Groups with little data are pulled more towards the average; groups with lots of data are pulled less. This reduces overfitting compared to fitting each group separately.</p>
-<h2 id="the-hyperparameter-tau.b">The hyperparameter tau.b</h2>
-<p><code>tau.b</code> controls how much groups are allowed to differ from each other. A posterior value of tau.b near infinity means very little group variation; near zero means groups are very different.</p>
+<h2 id="the-hyperparameter-sigma.b">The hyperparameter sigma.b</h2>
+<p><code>sigma.b</code> controls how much groups are allowed to differ from each other. A posterior value of sigma.b near zero means very little group variation; a large value means groups are very different.</p>
 <h2 id="benefits">Benefits</h2>
 <ul>
 <li>Accounts for non-independence in grouped data</li>
@@ -316,7 +317,7 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <pre><code>for (i in 1:N) {
   count[i] ~ dpois(lambda[i])
   log(lambda[i]) &lt;- alpha + beta * x[i] + eps[i]
-  eps[i] ~ dnorm(0, tau.eps)
+  eps[i] ~ dnorm(0, sigma.eps)
 }</code></pre>
 <p>This is sometimes called a <strong>Poisson-lognormal</strong> model.</p>
 <h2 id="checking-for-overdispersion">Checking for overdispersion</h2>
@@ -395,16 +396,12 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <h2 id="important-limitation">Important limitation</h2>
 <p>PPCs use the same data for fitting and checking. A model can “overfit” the check by design. PPCs are most useful for detecting obvious failures, not subtle ones.</p>
 </body></html>`,
-  'precision': `<html><head></head><body><h1 id="precision-τ-vs.-variance-σ²">Precision (τ) vs.&nbsp;Variance (σ²)</h1>
-<p>BUGS/JAGS models parameterise the normal distribution using <strong>precision</strong> (τ, tau) rather than variance (σ²) or standard deviation (σ).</p>
-<h2 id="the-relationship">The relationship</h2>
-<pre><code>precision τ = 1 / variance σ²
-           σ = 1 / sqrt(τ)</code></pre>
-<p>A <strong>high precision</strong> means observations are tightly clustered around the mean (low variance). A <strong>low precision</strong> means observations are spread out (high variance).</p>
-<h2 id="why-precision">Why precision?</h2>
-<p>The precision parameterisation leads to conjugate updates with normal likelihoods, making Gibbs sampling tractable. It was the convention adopted by BUGS when it was developed in the 1990s, and JAGS/NIMBLE follow the same convention.</p>
-<h2 id="common-confusion">Common confusion</h2>
-<p>If you write <code>dnorm(mu, tau)</code> in BUGS syntax, the second argument is <strong>precision</strong>, not standard deviation or variance. This is different from most other software:</p>
+  'precision': `<html><head></head><body><h1 id="standard-deviation-σ">Standard deviation (σ)</h1>
+<p>FANGS parameterises the normal distribution using the <strong>standard deviation</strong> (σ, written <code>sigma</code> in models). The second argument of <code>dnorm</code> is the SD:</p>
+<pre><code>y[i] ~ dnorm(mu[i], sigma)</code></pre>
+<p>Here <code>sigma</code> is the residual standard deviation — the typical size of the gap between an observation and its fitted mean.</p>
+<h2 id="different-from-bugs-jags-nimble">Different from BUGS/JAGS/NIMBLE</h2>
+<p>This is a deliberate difference from the BUGS family. BUGS, JAGS and NIMBLE parameterise the normal by <strong>precision</strong> (τ = 1/σ²) instead:</p>
 <table class="caption-top">
 <thead>
 <tr class="header">
@@ -414,8 +411,8 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td>BUGS / JAGS / NIMBLE</td>
-<td>precision τ = 1/σ²</td>
+<td>FANGS</td>
+<td>standard deviation σ</td>
 </tr>
 <tr class="even">
 <td>R <code>dnorm()</code></td>
@@ -425,17 +422,21 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <td>Stan</td>
 <td>standard deviation σ</td>
 </tr>
+<tr class="even">
+<td>BUGS / JAGS / NIMBLE</td>
+<td>precision τ = 1/σ²</td>
+</tr>
 </tbody>
 </table>
-<h2 id="interpreting-τ-in-the-summary-table">Interpreting τ in the summary table</h2>
-<p>The posterior for <code>tau</code> is on the precision scale. To convert to a more interpretable scale:</p>
-<ul>
-<li><strong>Posterior SD</strong>: σ = 1/sqrt(τ)</li>
-<li><strong>Posterior variance</strong>: σ² = 1/τ</li>
-</ul>
-<p>For example, if the posterior mean of τ is 4, then σ ≈ 0.5, meaning the model’s residual standard deviation is about 0.5.</p>
-<h2 id="typical-priors-on-τ">Typical priors on τ</h2>
-<p><code>tau ~ dgamma(0.001, 0.001)</code> is a common vague prior that is nearly flat on the log scale, allowing τ to range from very small to very large values.</p>
+<p>FANGS uses the SD because it is the most directly interpretable scale for teaching: σ is in the same units as the response. If you are copying a model from JAGS/BUGS, remember to replace the precision argument with a standard deviation.</p>
+<h2 id="the-relationships">The relationships</h2>
+<pre><code>variance  σ² = sigma * sigma
+precision τ  = 1 / (sigma * sigma)</code></pre>
+<p>A <strong>small</strong> σ means observations are tightly clustered around the mean; a <strong>large</strong> σ means they are spread out.</p>
+<h2 id="typical-priors-on-σ">Typical priors on σ</h2>
+<p>A simple, transparent choice is a uniform prior over a positive range:</p>
+<pre><code>sigma ~ dunif(0, 100)</code></pre>
+<p>This is weakly informative for most teaching datasets (the response is usually well within ±100 of its mean) and keeps σ positive. Because there is no conjugate update for the SD of a normal, FANGS samples <code>sigma</code> with the slice sampler — the mean parameters (<code>alpha</code>, <code>beta</code>, random effects) still receive exact conjugate updates.</p>
 </body></html>`,
   'prior-check': `<html><head></head><body><h1 id="prior-predictive-check">Prior Predictive Check</h1>
 <p>A <strong>prior predictive check</strong> runs the model forward from the priors alone — before seeing any data — to inspect what values of the observable response your priors imply.</p>
@@ -443,7 +444,7 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <p>Priors on parameters can seem reasonable in isolation but imply unrealistic data patterns when propagated through the model. For example:</p>
 <ul>
 <li>Weakly informative priors on regression coefficients may imply predicted responses in the millions</li>
-<li>A diffuse prior on precision τ may allow implausibly small or large variances</li>
+<li>A diffuse prior on the standard deviation σ may allow implausibly small or large spread</li>
 </ul>
 <p>The prior predictive check makes the implied data scale visible, so you can adjust priors if needed.</p>
 <h2 id="how-it-works">How it works</h2>
@@ -467,7 +468,7 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <p>The prior answers: “What values of this parameter are plausible, before I look at the data?”</p>
 <p>It can represent: - <strong>Previous studies</strong> — use results from earlier experiments - <strong>Domain knowledge</strong> — a regression coefficient for body weight cannot plausibly be 10,000 - <strong>Vague uncertainty</strong> — if you have little prior knowledge, use a weakly informative prior</p>
 <h2 id="types-of-priors">Types of priors</h2>
-<p><strong>Weakly informative (diffuse) priors</strong> Allow a wide range of values, letting the data dominate. Example: <code>dnorm(0, 0.001)</code> in BUGS notation places most prior mass across a very wide range.</p>
+<p><strong>Weakly informative (diffuse) priors</strong> Allow a wide range of values, letting the data dominate. Example: <code>dnorm(0, 5)</code> places most prior mass across a wide range (the second argument is the standard deviation in FANGS).</p>
 <p><strong>Informative priors</strong> Encode specific knowledge. Useful when data are limited and you have reliable external information.</p>
 <p><strong>Improper priors</strong> Priors that do not integrate to 1 (e.g., uniform on all real numbers). Can be used mathematically but require care — they can sometimes lead to improper posteriors.</p>
 <h2 id="common-priors-in-this-app">Common priors in this app</h2>
@@ -487,13 +488,13 @@ b[j]  ~ dnorm(0, tau.b)</code></pre>
 <tbody>
 <tr class="odd">
 <td><code>alpha</code>, <code>beta</code></td>
-<td><code>dnorm(0, 0.001)</code></td>
-<td>Very diffuse — almost any value is plausible</td>
+<td><code>dnorm(0, 5)</code></td>
+<td>Diffuse — second argument is the SD, so most values within ±15 are plausible</td>
 </tr>
 <tr class="even">
-<td><code>tau</code></td>
-<td><code>dgamma(0.001, 0.001)</code></td>
-<td>Diffuse over positive values; allows very small or large precision</td>
+<td><code>sigma</code></td>
+<td><code>dunif(0, 100)</code></td>
+<td>Flat over positive standard deviations up to 100</td>
 </tr>
 </tbody>
 </table>

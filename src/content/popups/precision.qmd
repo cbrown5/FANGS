@@ -1,39 +1,41 @@
-# Precision (τ) vs. Variance (σ²)
+# Standard deviation (σ)
 
-BUGS/JAGS models parameterise the normal distribution using **precision** (τ, tau) rather than variance (σ²) or standard deviation (σ).
-
-## The relationship
+FANGS parameterises the normal distribution using the **standard deviation** (σ, written `sigma` in models). The second argument of `dnorm` is the SD:
 
 ```
-precision τ = 1 / variance σ²
-           σ = 1 / sqrt(τ)
+y[i] ~ dnorm(mu[i], sigma)
 ```
 
-A **high precision** means observations are tightly clustered around the mean (low variance). A **low precision** means observations are spread out (high variance).
+Here `sigma` is the residual standard deviation — the typical size of the gap between an observation and its fitted mean.
 
-## Why precision?
+## Different from BUGS/JAGS/NIMBLE
 
-The precision parameterisation leads to conjugate updates with normal likelihoods, making Gibbs sampling tractable. It was the convention adopted by BUGS when it was developed in the 1990s, and JAGS/NIMBLE follow the same convention.
-
-## Common confusion
-
-If you write `dnorm(mu, tau)` in BUGS syntax, the second argument is **precision**, not standard deviation or variance. This is different from most other software:
+This is a deliberate difference from the BUGS family. BUGS, JAGS and NIMBLE parameterise the normal by **precision** (τ = 1/σ²) instead:
 
 | Software | `dnorm(mean, ?)` |
 |----------|-----------------|
-| BUGS / JAGS / NIMBLE | precision τ = 1/σ² |
+| FANGS | standard deviation σ |
 | R `dnorm()` | standard deviation σ |
 | Stan | standard deviation σ |
+| BUGS / JAGS / NIMBLE | precision τ = 1/σ² |
 
-## Interpreting τ in the summary table
+FANGS uses the SD because it is the most directly interpretable scale for teaching: σ is in the same units as the response. If you are copying a model from JAGS/BUGS, remember to replace the precision argument with a standard deviation.
 
-The posterior for `tau` is on the precision scale. To convert to a more interpretable scale:
+## The relationships
 
-- **Posterior SD**: σ = 1/sqrt(τ)
-- **Posterior variance**: σ² = 1/τ
+```
+variance  σ² = sigma * sigma
+precision τ  = 1 / (sigma * sigma)
+```
 
-For example, if the posterior mean of τ is 4, then σ ≈ 0.5, meaning the model's residual standard deviation is about 0.5.
+A **small** σ means observations are tightly clustered around the mean; a **large** σ means they are spread out.
 
-## Typical priors on τ
+## Typical priors on σ
 
-`tau ~ dgamma(0.001, 0.001)` is a common vague prior that is nearly flat on the log scale, allowing τ to range from very small to very large values.
+A simple, transparent choice is a uniform prior over a positive range:
+
+```
+sigma ~ dunif(0, 100)
+```
+
+This is weakly informative for most teaching datasets (the response is usually well within ±100 of its mean) and keeps σ positive. Because there is no conjugate update for the SD of a normal, FANGS samples `sigma` with the slice sampler — the mean parameters (`alpha`, `beta`, random effects) still receive exact conjugate updates.

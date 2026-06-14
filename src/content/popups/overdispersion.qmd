@@ -36,7 +36,7 @@ Note the negative bionomial is not supported in FANGS. But you can use the **Poi
 for (i in 1:N) {
   count[i] ~ dpois(lambda[i])
   log(lambda[i]) <- alpha + beta * x[i] + eps[i]
-  eps[i] ~ dnorm(0, tau.eps)
+  eps[i] ~ dnorm(0, sigma.eps)
 }
 ```
 

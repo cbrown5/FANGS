@@ -73,16 +73,17 @@ const muMinus = graph.evaluateExpr(meanExpr, pvMinus);
 
 ### Change 4 — Conjugate child-collection uses `node.children` (`src/samplers/gibbs.js`)
 
-**What:** `collectNormalChildren`, `collectNormalChildResiduals`, the inner loops of
-`conjugateBetaBinom`, and `conjugateGammaPoisson` previously iterated over all `graph.nodes`
-(O(all nodes)) to find relevant children. They now iterate `node.children` (pre-wired at
-`build()` time, O(children)).
+**What:** `collectNormalChildren` and the inner loops of `conjugateBetaBinom` and
+`conjugateGammaPoisson` previously iterated over all `graph.nodes` (O(all nodes)) to find
+relevant children. They now iterate `node.children` (pre-wired at `build()` time,
+O(children)). (Note: a former `collectNormalChildResiduals` helper for the gamma-on-precision
+update was removed when FANGS switched `dnorm` to the SD parameterisation.)
 
 **Why:** For a model with N=50 observations and P=5 parameters, the old approach did
 50×5×iterations graph-full scans; the new one scans only the ~50-element children list.
 
-**Revert signal:** Conjugate updates return wrong sufficient statistics (e.g. tau posteriors
-near its prior, not data-informed).
+**Revert signal:** Conjugate updates return wrong sufficient statistics (e.g. a residual SD
+`sigma` posterior near its prior, not data-informed).
 
 **How to revert:** Change each `for (const childName of node.children)` back to
 `for (const [, child] of graph.nodes)` and remove the `graph.nodes.get(childName)` lookup.

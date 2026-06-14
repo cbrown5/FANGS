@@ -8,7 +8,7 @@
 # a 1:1 reference line.  Points are coloured by model type and annotated
 # with error bars for 95% credible intervals.
 #
-# Additional panels compare all shared parameters (alpha, tau, etc.).
+# Additional panels compare all shared parameters (alpha, sigma, etc.).
 #
 # Usage:
 #   Rscript tests/r-reference/beta-comparison/compare.R

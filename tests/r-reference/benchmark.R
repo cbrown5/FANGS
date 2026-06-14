@@ -419,7 +419,7 @@ if (has_ggplot2) {
 
   # Plot C: posterior means vs n_samples (convergence check)
   if (is.data.frame(posterior_df_a) && nrow(posterior_df_a) > 0) {
-    pop_params <- c("alpha", "beta", "tau")
+    pop_params <- c("alpha", "beta", "sigma")
     sub <- posterior_df_a[
       posterior_df_a$param %in% pop_params, , drop = FALSE
     ]
