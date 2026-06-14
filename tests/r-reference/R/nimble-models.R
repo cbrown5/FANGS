@@ -4,6 +4,12 @@
 
 #' Compile a NIMBLE linear regression model
 #'
+#' Model uses SD parameterisation (sd = sigma) matching FANGS exactly:
+#'   y[i] ~ dnorm(mu[i], sd = sigma)
+#'   alpha ~ dnorm(0, sd = 5)
+#'   beta  ~ dnorm(0, sd = 5)
+#'   sigma ~ dunif(0, 100)
+#'
 #' @param N  Number of observations
 #' @param y  Response vector
 #' @param x  Predictor vector
@@ -14,19 +20,19 @@ nimble_compile_linear <- function(N, y, x) {
     model <- nimbleModel(
       code      = nimbleCode({
         for (i in 1:N) {
-          y[i]  ~ dnorm(mu[i], tau)
+          y[i]  ~ dnorm(mu[i], sd = sigma)
           mu[i] <- alpha + beta * x[i]
         }
-        alpha ~ dnorm(0, 0.04)
-        beta  ~ dnorm(0, 0.04)
-        tau   ~ dgamma(1, 0.1)
+        alpha ~ dnorm(0, sd = 5)
+        beta  ~ dnorm(0, sd = 5)
+        sigma ~ dunif(0, 100)
       }),
       constants = list(N = N),
       data      = list(y = y, x = x),
-      inits     = list(alpha = 0, beta = 0, tau = 1)
+      inits     = list(alpha = 0, beta = 0, sigma = 1)
     )
     compiled_model <- compileNimble(model)
-    monitors       <- c("alpha", "beta", "tau")
+    monitors       <- c("alpha", "beta", "sigma")
     mcmc_conf      <- configureMCMC(model, monitors = monitors)
     mcmc           <- buildMCMC(mcmc_conf)
     compiled_mcmc  <- compileNimble(mcmc, project = model)
@@ -35,6 +41,14 @@ nimble_compile_linear <- function(N, y, x) {
 }
 
 #' Compile a NIMBLE linear mixed-effects model (random intercepts by group)
+#'
+#' Model uses SD parameterisation matching FANGS exactly:
+#'   y[i]  ~ dnorm(mu[i], sd = sigma)
+#'   b[j]  ~ dnorm(0, sd = sigma.b)
+#'   alpha ~ dnorm(0, sd = 5)
+#'   beta  ~ dnorm(0, sd = 5)
+#'   sigma   ~ dunif(0, 100)
+#'   sigma.b ~ dunif(0, 100)
 #'
 #' @param N      Number of observations
 #' @param J      Number of groups
@@ -48,23 +62,23 @@ nimble_compile_mixed <- function(N, J, y, x, group) {
     model <- nimbleModel(
       code      = nimbleCode({
         for (i in 1:N) {
-          y[i]  ~ dnorm(mu[i], tau)
+          y[i]  ~ dnorm(mu[i], sd = sigma)
           mu[i] <- alpha + beta * x[i] + b[group[i]]
         }
         for (j in 1:J) {
-          b[j] ~ dnorm(0, tau.b)
+          b[j] ~ dnorm(0, sd = sigma.b)
         }
-        alpha ~ dnorm(0, 0.04)
-        beta  ~ dnorm(0, 0.04)
-        tau   ~ dgamma(1, 0.1)
-        tau.b ~ dgamma(1, 0.1)
+        alpha   ~ dnorm(0, sd = 5)
+        beta    ~ dnorm(0, sd = 5)
+        sigma   ~ dunif(0, 100)
+        sigma.b ~ dunif(0, 100)
       }),
       constants = list(N = N, J = J),
       data      = list(y = y, x = x, group = group),
-      inits     = list(alpha = 0, beta = 0, tau = 1, tau.b = 1, b = rep(0, J))
+      inits     = list(alpha = 0, beta = 0, sigma = 1, sigma.b = 1, b = rep(0, J))
     )
     compiled_model <- compileNimble(model)
-    monitors       <- c("alpha", "beta", "tau", "tau.b", paste0("b[", seq_len(J), "]"))
+    monitors       <- c("alpha", "beta", "sigma", "sigma.b", paste0("b[", seq_len(J), "]"))
     mcmc_conf      <- configureMCMC(model, monitors = monitors)
     mcmc           <- buildMCMC(mcmc_conf)
     compiled_mcmc  <- compileNimble(mcmc, project = model)
@@ -99,16 +113,8 @@ nimble_run <- function(compiled_mcmc, monitors, n_samples, n_chains, burnin, thi
 
   all_samp <- if (is.list(samples_list)) do.call(rbind, samples_list) else samples_list
 
-  # NIMBLE fits on the precision scale; FANGS uses the SD scale. Derive
-  # sigma = 1/sqrt(tau) (and sigma.b) so summaries match the FANGS parameter names.
-  if ("tau" %in% colnames(all_samp)) {
-    all_samp <- cbind(all_samp, sigma = 1 / sqrt(all_samp[, "tau"]))
-  }
-  if ("tau.b" %in% colnames(all_samp)) {
-    all_samp <- cbind(all_samp, "sigma.b" = 1 / sqrt(all_samp[, "tau.b"]))
-  }
-
-  # Focus on population-level parameters (skip random effects b[j])
+  # Focus on population-level parameters (skip random effects b[j]).
+  # NIMBLE models now use SD parameterisation directly so no tau conversion needed.
   pop_params <- intersect(colnames(all_samp), c("alpha", "beta", "sigma", "sigma.b"))
   rows <- lapply(pop_params, function(p) {
     s <- summarize_chain(all_samp[, p], p)

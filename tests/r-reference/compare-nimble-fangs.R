@@ -19,13 +19,12 @@ model <- nimbleCode({
     y[i] ~ dnorm(mu[i], sd = sigma)
     mu[i] <- alpha + beta * x[i]
   }
-  alpha ~ dnorm(0, 0.04)
-  beta ~ dnorm(0, 0.04)
+  alpha ~ dnorm(0, sd = 5)
+  beta  ~ dnorm(0, sd = 5)
   sigma ~ dunif(0, 100)
 })
 
-# FANGS uses the SD parameterisation, so write a sigma-based model for it
-# (NOT the NIMBLE precision model above).
+# FANGS model text uses the same SD parameterisation.
 fangs_model_text <- "model {
   for (i in 1:N) {
     y[i] ~ dnorm(mu[i], sigma)
@@ -71,7 +70,7 @@ mcmc <- buildMCMC(mcmc_conf)
 compiled_mcmc <- compileNimble(mcmc, project = model)
 fit <- runMCMC(
   compiled_mcmc,
-  niter = 1000 + BURNIN,
+  niter = 2000 + BURNIN,
   nburnin = BURNIN,
   thin = THIN,
   nchains = N_CHAINS
