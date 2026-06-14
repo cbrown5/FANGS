@@ -49,8 +49,11 @@ All core modules are implemented and 252 tests pass.
 ## Next Steps
 
 ### USER todo
+- Re-run R reference fixtures
 - test tests/r-reference/benchmark.R to do time benchmarking. 
 - test poisson gamma, 
+- Test the mixed effects model with a non-cenntered parameterisation, see if it improves convergence: b[j] = sigma.b * z[j]
+z[j] ~ dnorm(0, 1)
 - is the slice faster than the conjuaget? seems to be? 
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper
@@ -64,7 +67,11 @@ All core modules are implemented and 252 tests pass.
 - tests with x on different scales, mv X
 
 ### Claude todo
-- ~~Major update to use sd parameterisation instead of tau parameterisation. See plans/dnorm-sd-parameterisation.md~~ Done: `dnorm`'s second argument is now the standard deviation σ. Default models use `sigma ~ dunif(0, 100)`; SD parameters are slice-sampled (no conjugate update). R reference fixtures derive σ = 1/√τ from NIMBLE.
+- Need check and update tests/r-reference/R/nimble-models.R and all other tests to make sure they are using SD parameterization with appropriate priors. 
+- R NIMBLE models need to name sd as the parameter (ie dnorm(0, sd = 1000))
+- Add support for a dexp() distribution. 
+- Use dexp() for the random effect SD in the example mixed-effects model for FANGS. 
+- Need to also update help files so they talk abotu SD instead of precision. Make sure help files explain we use an SD parameterisation
 - Scaling of predictors. Change pop-up appearance for " Predictors auto-scaled for sampling ". Only show it when scaling is used. Also the scaling is only applied at the end of sampling. The Trace plot shows scaled parameters. The posterior distribution shows scaled parameters, but then updates to unscaled once sampling is done. Can we have them show unscaled parameters during sampling, or will that be too slow?
 - Remove red stop light on the 'Joint parameters' page. If the. model hasn't run just show the message "Run the model to see the joint distribution of parameters"
 - PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models

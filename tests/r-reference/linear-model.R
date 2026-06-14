@@ -47,7 +47,11 @@ library(nimble)
 data_path <- find_example_csv(script_dir)
 cat("Reading data from:", data_path, "\n")
 dat <- read.csv(data_path)
-cat(sprintf("Loaded %d rows, columns: %s\n", nrow(dat), paste(names(dat), collapse = ", ")))
+cat(sprintf(
+  "Loaded %d rows, columns: %s\n",
+  nrow(dat),
+  paste(names(dat), collapse = ", ")
+))
 
 N <- nrow(dat)
 y <- dat$y
@@ -59,24 +63,26 @@ x <- dat$x
 
 set.seed(2024)
 
-n_chains  <- 3
+n_chains <- 3
 n_samples <- 10000
-burnin    <- 2000
+burnin <- 2000
 
 cat("Building NIMBLE model...\n")
 obj <- nimble_compile_linear(N, y, x)
 
 cat(sprintf(
   "Running MCMC: %d chains, %d samples, %d burn-in...\n",
-  n_chains, n_samples, burnin
+  n_chains,
+  n_samples,
+  burnin
 ))
 
 samples_list <- runMCMC(
   obj$compiled_mcmc,
-  nchains     = n_chains,
-  niter       = n_samples + burnin,
-  nburnin     = burnin,
-  setSeed     = TRUE,
+  nchains = n_chains,
+  niter = n_samples + burnin,
+  nburnin = burnin,
+  setSeed = TRUE,
   progressBar = interactive()
 )
 
@@ -84,27 +90,31 @@ samples_list <- runMCMC(
 # 4. Compute posterior summaries
 # ---------------------------------------------------------------------------
 
-all_samples <- if (is.list(samples_list)) do.call(rbind, samples_list) else samples_list
+all_samples <- if (is.list(samples_list)) {
+  do.call(rbind, samples_list)
+} else {
+  samples_list
+}
 
 # Derive the residual SD sigma = 1 / sqrt(tau) so the reference matches the
 # FANGS SD parameterisation, then drop the precision column.
 all_samples <- cbind(all_samples, sigma = 1 / sqrt(all_samples[, "tau"]))
 
 param_names <- c("alpha", "beta", "sigma")
-summaries   <- lapply(setNames(param_names, param_names), function(p) {
+summaries <- lapply(setNames(param_names, param_names), function(p) {
   summarize_param(all_samples[, p])
 })
 
 summaries[["__meta__"]] <- list(
-  model          = "simple linear regression",
-  n_chains       = n_chains,
-  n_samples      = n_samples,
-  burnin         = burnin,
-  generated      = format(Sys.time(), "%Y-%m-%dT%H:%M:%S"),
+  model = "simple linear regression",
+  n_chains = n_chains,
+  n_samples = n_samples,
+  burnin = burnin,
+  generated = format(Sys.time(), "%Y-%m-%dT%H:%M:%S"),
   nimble_version = as.character(packageVersion("nimble")),
-  data_file      = "data/example.csv",
-  N              = N,
-  true_dgp       = list(alpha = 2.0, beta = 1.5, sigma = 0.7)
+  data_file = "data/example.csv",
+  N = N,
+  true_dgp = list(alpha = 2.0, beta = 1.5, sigma = 0.7)
 )
 
 cat("\nPosterior summaries:\n")
@@ -112,7 +122,11 @@ for (p in param_names) {
   s <- summaries[[p]]
   cat(sprintf(
     "  %s: mean=%.4f  sd=%.4f  95%%CI=[%.4f, %.4f]\n",
-    p, s$mean, s$sd, s$q2_5, s$q97_5
+    p,
+    s$mean,
+    s$sd,
+    s$q2_5,
+    s$q97_5
   ))
 }
 

@@ -1,8 +1,4 @@
 # Simple script that compares one NIMBLE and one FANGS model.
-# NIMBLE parameterises dnorm by PRECISION (tau); FANGS parameterises dnorm by
-# STANDARD DEVIATION (sigma). So the two engines are fitted with their own
-# parameterisations and NIMBLE's tau is converted to sigma = 1/sqrt(tau) before
-# the side-by-side comparison.
 
 library(tidyverse)
 library(nimble)
@@ -20,12 +16,12 @@ coef(lm(y ~ x, data = dat))
 
 model <- nimbleCode({
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], tau)
+    y[i] ~ dnorm(mu[i], sd = sigma)
     mu[i] <- alpha + beta * x[i]
   }
   alpha ~ dnorm(0, 0.04)
   beta ~ dnorm(0, 0.04)
-  tau ~ dgamma(1, 0.1)
+  sigma ~ dunif(0, 100)
 })
 
 # FANGS uses the SD parameterisation, so write a sigma-based model for it
@@ -65,11 +61,11 @@ model <- nimbleModel(
   model,
   data = dat,
   constants = list(N = N),
-  inits = list(alpha = 0, beta = 0, tau = 1)
+  inits = list(alpha = 0, beta = 0, sigma = 1)
 )
 
 compiled_model <- compileNimble(model)
-monitors <- c("alpha", "beta", "tau")
+monitors <- c("alpha", "beta", "sigma")
 mcmc_conf <- configureMCMC(model, monitors = monitors)
 mcmc <- buildMCMC(mcmc_conf)
 compiled_mcmc <- compileNimble(mcmc, project = model)
@@ -83,9 +79,8 @@ fit <- runMCMC(
 
 fitall <- do.call(rbind, fit)
 
-# Convert NIMBLE's precision tau to the SD scale used by FANGS, then compare on
+#  compare on
 # alpha, beta, sigma.
-fitall <- cbind(fitall, sigma = 1 / sqrt(fitall[, "tau"]))
 compare_params <- c("alpha", "beta", "sigma")
 
 #
