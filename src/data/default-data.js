@@ -111,7 +111,7 @@ export const defaultModel2 = `model {
   alpha ~ dnorm(0, 5)
   beta ~ dnorm(0, 5)
   sigma ~ dunif(0, 100)
-  sigma.b ~ dunif(0, 100)
+  sigma.b ~ dexp(1)
 }`;
 
 /**

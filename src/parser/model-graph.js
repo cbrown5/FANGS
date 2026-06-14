@@ -16,8 +16,8 @@
  */
 
 import {
-  dnorm, dgamma, dbeta, dbinom, dbern, dpois, dunif, dlnorm,
-  rnorm, rgamma, rbeta, rbinom, rbern, rpois, runif, rlnorm,
+  dnorm, dgamma, dbeta, dbinom, dbern, dpois, dunif, dlnorm, dexp,
+  rnorm, rgamma, rbeta, rbinom, rbern, rpois, runif, rlnorm, rexp,
 } from '../utils/distributions.js';
 
 // ---------------------------------------------------------------------------
@@ -70,6 +70,7 @@ const LOG_DENSITY = {
   dpois:  (x, lambda)        => dpois(x, lambda),
   dunif:  (x, lower, upper)  => dunif(x, lower, upper),
   dlnorm: (x, meanlog, preclog) => dlnorm(x, meanlog, preclog),
+  dexp:   (x, rate)            => dexp(x, rate),
 };
 
 /**
@@ -85,6 +86,7 @@ const RANDOM_SAMPLER = {
   dpois:  (lambda)             => rpois(lambda),
   dunif:  (lower, upper)       => runif(lower, upper),
   dlnorm: (meanlog, preclog)   => rlnorm(meanlog, preclog),
+  dexp:   (rate)               => rexp(rate),
 };
 
 /**
@@ -100,6 +102,7 @@ const DIST_MEAN = {
   dpois:  (lambda)             => lambda,
   dunif:  (lower, upper)       => (lower + upper) / 2,
   dlnorm: (meanlog, preclog)   => Math.exp(meanlog + 0.5 / preclog),
+  dexp:   (rate)               => 1 / rate,
 };
 
 // ---------------------------------------------------------------------------

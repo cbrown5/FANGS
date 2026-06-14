@@ -2,7 +2,7 @@
 
 ## Status: Fully Working
 
-All core modules are implemented and 252 tests pass.
+All core modules are implemented and 253 tests pass.
 
 ### Source files (`src/`)
 
@@ -49,12 +49,8 @@ All core modules are implemented and 252 tests pass.
 ## Next Steps
 
 ### USER todo
-- Re-run R reference fixtures
 - test tests/r-reference/benchmark.R to do time benchmarking. 
 - test poisson gamma, 
-- Test the mixed effects model with a non-cenntered parameterisation, see if it improves convergence: b[j] = sigma.b * z[j]
-z[j] ~ dnorm(0, 1)
-- is the slice faster than the conjuaget? seems to be? 
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper
 - Confirm number of tests is what is said in the paper
@@ -66,37 +62,18 @@ z[j] ~ dnorm(0, 1)
 - nimble tests covering conjugate and non conjugate dists
 - tests with x on different scales, mv X
 
-### Failures to fix
-Failure 1: Mixed-effects alpha posterior mean biased (−1.22, expected > −1)
-File: tests/integration.test.js:650-665
-
-The test runs 3 chains × 500 samples with 500 burn-in, and the true DGP value for alpha is ≈2. Getting −1.22 suggests the sampler is poorly identified in the mixed-effects case — alpha and the random effects b[j] are not summing to the right intercept. This is a genuine sampler correctness issue (likely non-centering or poor initialization of the random effects).
-To fix this: Add a dexp() distribution and use this as the prior for the mixed effects model
-
 
 ### Claude todo
-- Add support for a dexp() distribution. 
-- Use dexp() for the random effect SD in the example mixed-effects model for FANGS. 
 - Need to also update help files so they talk abotu SD instead of precision. Make sure help files explain we use an SD parameterisation
+- Add suggestion for  mixed effects model help file: with a non-cenntered parameterisation, see if it improves convergence: b[j] = sigma.b * z[j]
+z[j] ~ dnorm(0, 1)
 - Scaling of predictors. Change pop-up appearance for " Predictors auto-scaled for sampling ". Only show it when scaling is used. Also the scaling is only applied at the end of sampling. The Trace plot shows scaled parameters. The posterior distribution shows scaled parameters, but then updates to unscaled once sampling is done. Can we have them show unscaled parameters during sampling, or will that be too slow?
 - Remove red stop light on the 'Joint parameters' page. If the. model hasn't run just show the message "Run the model to see the joint distribution of parameters"
 - PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
 - remove line/border around ribbon on predictions plot. show just as a shaded ribbon with line for mean. 
 - model is optimized for predictors that are on unit SD scale amd centered. brainstorm options for begginer friendly handling if predictors on any scale. 
 - Plots use sensible scale for tick labels (e.g. 0.2, 0.4, not 0.23456789).
-- Issue with one of the tests Returns:
-```
-tests/integration.test.js > Bernoulli GLM: fixture comparison vs exact posterior > p posterior mean matches exact Beta(6,4) within 0.3 SD
-TypeError: Cannot read properties of undefined (reading 'toFixed')
- ❯ checkParam tests/integration.test.js:1098:106
-    1096|     const rq97_5 = exact.q97_5;
-    1097|     const overlaps = fq2_5 < rq97_5 && fq97_5 > rq2_5;
-    1098|     expect(overlaps, `${paramName}: 95% CI [${fq2_5.toFixed(3)}, ${fq97_5.toFixed(3)}] vs exact [${rq2_5.toFix…
-       |                                                                                                          ^
-    1099|       .toBe(true);
-    1100|   }
- ❯ tests/integration.test.js:1102:70
- ```
+
 
 
 ## Future improvements

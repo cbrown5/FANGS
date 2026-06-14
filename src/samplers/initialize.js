@@ -6,7 +6,7 @@
  * parameter space, which is important for diagnosing non-convergence via Rhat.
  */
 
-import { rnorm, rgamma, rbeta, runif, rlnorm } from '../utils/distributions.js';
+import { rnorm, rgamma, rbeta, runif, rlnorm, rexp } from '../utils/distributions.js';
 
 /**
  * Initialize MCMC chains by drawing from overdispersed priors.
@@ -163,6 +163,12 @@ export function drawFromPrior(node, paramValues, graph) {
       // Use Gamma(0.5, 1/lambda) — half the prior shape for overdispersion.
       const rate = 1 / Math.max(lambda, 1e-6);
       return rgamma(0.5, rate);
+    }
+
+    case 'dexp': {
+      // dexp(rate) — overdisperse by halving the rate (doubles the mean).
+      const [rate] = args;
+      return rexp(Math.max(rate / 2, 1e-6));
     }
 
     default: {

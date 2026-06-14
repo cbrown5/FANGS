@@ -574,6 +574,7 @@ function getParameterBounds(node, graph, paramValues) {
   switch (node.distribution.name) {
     case 'dgamma':
     case 'dlnorm':
+    case 'dexp':
       return { lower: 1e-10, upper: Infinity };
 
     case 'dbeta':
@@ -645,6 +646,11 @@ function computeSliceWidth(node, paramValues, graph) {
       case 'dunif': {
         const [lo, hi] = args;
         return Math.max((hi - lo) / 4, 0.01);
+      }
+      case 'dexp': {
+        // Prior mean = 1/rate; use that as the initial slice width.
+        const [rate] = args;
+        return Math.min(Math.max(1 / Math.max(rate, 1e-6), 0.01), 100);
       }
       default:
         return 1.0;

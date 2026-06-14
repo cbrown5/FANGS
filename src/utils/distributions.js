@@ -423,3 +423,33 @@ export function rlnorm(meanlog, preclog) {
   // rnorm now takes an SD, so convert preclog → SD before drawing.
   return Math.exp(rnorm(meanlog, 1 / Math.sqrt(preclog)));
 }
+
+// ---------------------------------------------------------------------------
+// Exponential distribution  (rate parameterization)
+// ---------------------------------------------------------------------------
+
+/**
+ * Log density of Exponential(rate).
+ * dexp(x, rate) where rate = 1/mean (must be > 0, x must be > 0).
+ *
+ * @param {number} x - Must be > 0
+ * @param {number} rate - Rate parameter (must be > 0)
+ * @returns {number} Log density
+ */
+export function dexp(x, rate) {
+  if (x <= 0 || rate <= 0) return -Infinity;
+  return Math.log(rate) - rate * x;
+}
+
+/**
+ * Draw from Exponential(rate) via the inverse-CDF method.
+ *
+ * @param {number} rate - Rate parameter (must be > 0)
+ * @returns {number}
+ */
+export function rexp(rate) {
+  if (rate <= 0) throw new RangeError('rexp: rate must be > 0');
+  // Avoid log(0) by clamping U away from 0.
+  const u = Math.max(Math.random(), Number.MIN_VALUE);
+  return -Math.log(u) / rate;
+}

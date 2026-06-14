@@ -103,7 +103,7 @@
     "n_chains": 3,
     "n_samples": 10000,
     "burnin": 2000,
-    "generated": "2026-06-14T17:35:55",
+    "generated": "2026-06-14T18:31:28",
     "nimble_version": "1.2.1",
     "data_file": "data/example.csv",
     "N": 50,
