@@ -66,9 +66,15 @@ z[j] ~ dnorm(0, 1)
 - nimble tests covering conjugate and non conjugate dists
 - tests with x on different scales, mv X
 
+### Failures to fix
+Failure 1: Mixed-effects alpha posterior mean biased (−1.22, expected > −1)
+File: tests/integration.test.js:650-665
+
+The test runs 3 chains × 500 samples with 500 burn-in, and the true DGP value for alpha is ≈2. Getting −1.22 suggests the sampler is poorly identified in the mixed-effects case — alpha and the random effects b[j] are not summing to the right intercept. This is a genuine sampler correctness issue (likely non-centering or poor initialization of the random effects).
+To fix this: Add a dexp() distribution and use this as the prior for the mixed effects model
+
+
 ### Claude todo
-- Need check and update tests/r-reference/R/nimble-models.R and all other tests to make sure they are using SD parameterization with appropriate priors. 
-- R NIMBLE models need to name sd as the parameter (ie dnorm(0, sd = 1000))
 - Add support for a dexp() distribution. 
 - Use dexp() for the random effect SD in the example mixed-effects model for FANGS. 
 - Need to also update help files so they talk abotu SD instead of precision. Make sure help files explain we use an SD parameterisation

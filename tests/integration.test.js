@@ -1040,8 +1040,8 @@ describe('Poisson GLM: fixture comparison vs exact posterior', () => {
 
     const fq2_5  = quantile(all, 0.025);
     const fq97_5 = quantile(all, 0.975);
-    const rq2_5  = exact.q2_5;
-    const rq97_5 = exact.q97_5;
+    const rq2_5  = exact['q2.5'];
+    const rq97_5 = exact['q97.5'];
     const overlaps = fq2_5 < rq97_5 && fq97_5 > rq2_5;
     expect(overlaps, `${paramName}: 95% CI [${fq2_5.toFixed(3)}, ${fq97_5.toFixed(3)}] vs exact [${rq2_5.toFixed(3)}, ${rq97_5.toFixed(3)}]`)
       .toBe(true);
@@ -1096,8 +1096,8 @@ describe('Bernoulli GLM: fixture comparison vs exact posterior', () => {
 
     const fq2_5  = quantile(all, 0.025);
     const fq97_5 = quantile(all, 0.975);
-    const rq2_5  = exact.q2_5;
-    const rq97_5 = exact.q97_5;
+    const rq2_5  = exact['q2.5'];
+    const rq97_5 = exact['q97.5'];
     const overlaps = fq2_5 < rq97_5 && fq97_5 > rq2_5;
     expect(overlaps, `${paramName}: 95% CI [${fq2_5.toFixed(3)}, ${fq97_5.toFixed(3)}] vs exact [${rq2_5.toFixed(3)}, ${rq97_5.toFixed(3)}]`)
       .toBe(true);
