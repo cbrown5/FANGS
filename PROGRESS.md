@@ -49,6 +49,8 @@ All core modules are implemented and 253 tests pass.
 ## Next Steps
 
 ### USER todo
+- Halfway through running benchmark.R to save results and do plots. 
+- Try compare-nimble-fangs with different random initials. 
 - test tests/r-reference/benchmark.R to do time benchmarking. 
 - test poisson gamma, 
 - read the paper draft and suggest updates

@@ -855,6 +855,19 @@ export class ModelGraph {
     return evaluateExpr(expr, allValues, this._dataColumns);
   }
 
+  /**
+   * Evaluate an expression against a pre-merged allValues object.
+   * Use this inside hot loops where _mergeValues has already been called once,
+   * to avoid the O(N) merge cost on every child evaluation.
+   *
+   * @param {object} expr
+   * @param {object} allValues - already-merged values (from _mergeValues)
+   * @returns {number}
+   */
+  evaluateExprMerged(expr, allValues) {
+    return evaluateExpr(expr, allValues, this._dataColumns);
+  }
+
   // ── Private: graph construction ───────────────────────────────────────────
 
   /**

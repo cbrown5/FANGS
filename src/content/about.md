@@ -19,7 +19,7 @@ FANGS is designed as a teaching tool. The goal is to give students hands-on expe
 
 ## Technical details
 
-The sampler is implemented entirely in JavaScript and runs in the browser. Each MCMC chain runs in a separate Web Worker for true parallelism. The parser accepts standard BUGS/JAGS syntax and automatically detects conjugate relationships to use exact conjugate updates where possible, falling back to slice sampling for non-conjugate nodes.
+The sampler is implemented entirely in JavaScript and runs in the browser. Each MCMC chain runs in a separate Web Worker for true parallelism. The parser accepts standard BUGS/JAGS syntax, then uses slice sampling to estimate the posteriors. 
 
 If you want to use Bayesian modelling in your real research, I recommend checking out [NIMBLE](https://r-nimble.org/), [Stan](https://mc-stan.org/), [INLA](https://www.r-inla.org/), or [brms](https://paul-buerkner.github.io/brms/) (R), or [PyMC](https://www.pymc.io/) (Python) for more powerful and flexible tools. These will be much faster and more accurate than this simple browser tool.
 

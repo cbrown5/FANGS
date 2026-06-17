@@ -40,6 +40,18 @@ Mixed-effects models achieve **partial pooling**: group estimates are shrunk tow
 
 `sigma.b` controls how much groups are allowed to differ from each other. A posterior value of sigma.b near zero means very little group variation; a large value means groups are very different.
 
+## Improving sampling
+
+MCMC chains for mixed effects models often have slow convergence due to the hierarchical structure. The means for each group can be highly correlated with the global mean (to see this look at the 'Joint' tab after you fit a model). To improve sampling, you can update the model code to use a **non-centered parameterisation**:
+
+```
+b[j] ~ dnorm(0, 1)  # standard normal
+b_scaled[j] <- b[j] * sigma.b  # scale by the hyperparameter
+mu[i] <- alpha + beta * x[i] + b_scaled[group[i]]
+``` 
+
+removing the direct dependence of b[j] on sigma.b. This reduces the correlation between parameters and can lead to much faster convergence.
+
 ## Benefits
 
 - Accounts for non-independence in grouped data

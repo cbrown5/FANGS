@@ -217,15 +217,17 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
  * @returns {number} Posterior draw.
  */
 export function conjugateNormalNormal(node, graph, paramValues) {
+  const allValues = graph._mergeValues(paramValues);
+
   const priorArgs = node.distribution.paramExprs.map((e) =>
-    graph.evaluateExpr(e, paramValues)
+    graph.evaluateExprMerged(e, allValues)
   );
   const mu0    = priorArgs[0];
   const sigma0 = Math.max(priorArgs[1], 1e-10);
   const tau0   = 1 / (sigma0 * sigma0); // prior precision
 
   // Collect child observations and their likelihood precision (converted from SD).
-  const { sumY, n, tauLik } = collectNormalChildren(node, graph, paramValues);
+  const { sumY, n, tauLik } = collectNormalChildren(node, graph, allValues);
 
   const tauN = tau0 + n * tauLik;
   const muN  = (tau0 * mu0 + tauLik * sumY) / tauN;
@@ -255,15 +257,26 @@ export function conjugateNormalNormal(node, graph, paramValues) {
  * @returns {number} Posterior draw.
  */
 export function conjugateNormalNormalOffset(node, graph, paramValues) {
+  const theta = paramValues[node.name];
+  const eps   = Math.max(Math.abs(theta) * 1e-5, 1e-7);
+
+  // Three merges total (not 3×N): current θ, θ+eps, θ-eps.
+  // Per-child evaluation then reads directly from the pre-merged objects,
+  // reducing cost from O(N²) to O(N).
+  const allFull  = graph._mergeValues(paramValues);
+
+  paramValues[node.name] = theta + eps;
+  const allPlus  = graph._mergeValues(paramValues);
+  paramValues[node.name] = theta - eps;
+  const allMinus = graph._mergeValues(paramValues);
+  paramValues[node.name] = theta; // restore
+
   const priorArgs = node.distribution.paramExprs.map((e) =>
-    graph.evaluateExpr(e, paramValues)
+    graph.evaluateExprMerged(e, allFull)
   );
   const mu0    = priorArgs[0];
   const sigma0 = Math.max(priorArgs[1], 1e-10);
-  const tau0   = 1 / (sigma0 * sigma0); // prior precision
-
-  const theta   = paramValues[node.name];
-  const eps     = Math.max(Math.abs(theta) * 1e-5, 1e-7);
+  const tau0   = 1 / (sigma0 * sigma0);
 
   let sumWtResid = 0;
   let sumWtSq    = 0;
@@ -280,28 +293,21 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
     const y = resolveObservedValue(child, paramValues);
     if (y === null) continue;
 
-    // Child's second dnorm arg is now the SD; convert to precision.
+    // Child's second dnorm arg is the SD; use pre-merged allFull.
     const sigmaLik = Math.max(
-      graph.evaluateExpr(child.distribution.paramExprs[1], paramValues),
+      graph.evaluateExprMerged(child.distribution.paramExprs[1], allFull),
       1e-10
     );
     tauLik = 1 / (sigmaLik * sigmaLik);
 
-    // Coefficient c[i] = ∂mu[i]/∂θ via central differences.
-    // Mutate paramValues in-place (safe: graph.evaluateExpr calls _mergeValues
-    // which copies paramValues before use, so the caller's object is unaffected
-    // at the cost of copying — but we avoid two extra object spreads per child).
-    paramValues[node.name] = theta + eps;
-    const muPlus  = graph.evaluateExpr(meanExpr, paramValues);
-    paramValues[node.name] = theta - eps;
-    const muMinus = graph.evaluateExpr(meanExpr, paramValues);
-    paramValues[node.name] = theta; // restore for muFull and subsequent children
+    // Coefficient c[i] = ∂mu[i]/∂θ — read from the pre-merged perturbed objects.
+    const muPlus  = graph.evaluateExprMerged(meanExpr, allPlus);
+    const muMinus = graph.evaluateExprMerged(meanExpr, allMinus);
     const ci      = (muPlus - muMinus) / (2 * eps);
 
     if (!isFinite(ci) || Math.abs(ci) < 1e-14) continue;
 
-    // Partial mean (excluding θ's contribution): mu_without = mu - c[i]*θ
-    const muFull    = graph.evaluateExpr(meanExpr, paramValues);
+    const muFull    = graph.evaluateExprMerged(meanExpr, allFull);
     const muWithout = muFull - ci * theta;
 
     sumWtResid += ci * (y - muWithout);
@@ -311,7 +317,6 @@ export function conjugateNormalNormalOffset(node, graph, paramValues) {
   const tauN = tau0 + tauLik * sumWtSq;
   const muN  = (tau0 * mu0 + tauLik * sumWtResid) / tauN;
 
-  // rnorm now takes SD, so convert posterior precision → SD for the draw.
   return dist.rnorm(muN, 1 / Math.sqrt(tauN));
 }
 
@@ -475,7 +480,7 @@ export function conjugateGammaPoisson(node, graph, paramValues) {
  * @param {Object} paramValues
  * @returns {{ sumY: number, n: number, tauLik: number }}
  */
-function collectNormalChildren(node, graph, paramValues) {
+function collectNormalChildren(node, graph, allValues) {
   let sumY   = 0;
   let n      = 0;
   let tauLik = 1; // default; overwritten by first child found
@@ -489,12 +494,12 @@ function collectNormalChildren(node, graph, paramValues) {
     // Check that the first parameter (mean) evaluates to or references our node.
     if (!distributionUsesParam(child, node.name, 0)) continue;
 
-    const y = resolveObservedValue(child, paramValues);
-    if (y === null) continue;
+    const y = allValues[child.name] ?? child.value;
+    if (y === null || y === undefined) continue;
 
-    // The second dnorm argument is now the SD; convert to precision.
+    // The second dnorm argument is the SD; use pre-merged allValues.
     const sigmaLik = Math.max(
-      graph.evaluateExpr(child.distribution.paramExprs[1], paramValues),
+      graph.evaluateExprMerged(child.distribution.paramExprs[1], allValues),
       1e-10
     );
     tauLik = 1 / (sigmaLik * sigmaLik);
