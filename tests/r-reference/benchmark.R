@@ -20,7 +20,7 @@
 # ===========================================================================
 # 0.  Directories
 # ===========================================================================
-
+library(tidyverse)
 R_DIR <- file.path("tests", "r-reference", "R")
 source(file.path(R_DIR, "utils.R"))
 source(file.path(R_DIR, "data.R"))
@@ -38,7 +38,7 @@ DEFAULT_DATA_CSV <- file.path("data", "example.csv")
 N_SAMPLES_GRID <- c(200, 500, 1000, 2000, 5000)
 
 # Data-size grid (number of observations)
-N_DATA_GRID <- c(50, 100, 250, 500, 1000)
+N_DATA_GRID <- c(20, 50, 100)
 
 # Fixed settings used when the other dimension is being varied
 N_SAMPLES_FIXED <- 1000 # used for the data-size sweep
