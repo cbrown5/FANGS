@@ -8,13 +8,18 @@ source(file.path(R_DIR, "utils.R"))
 source(file.path(R_DIR, "data.R"))
 source(file.path(R_DIR, "nimble-models.R"))
 
-# Generate data
+# Generate data — edit N and seed here to explore different datasets
 N <- 50
-dat <- generate_data(N = N, seed = 323)
+SEED <- 323
+dat <- generate_data(N = N, seed = SEED)
 ggplot(dat, aes(x = x, y = y)) + geom_point()
 coef(lm(y ~ x, data = dat))
 
-model <- nimbleCode({
+# Save to a temp file so both engines use identical data
+tmp_csv <- tempfile(fileext = ".csv")
+write.csv(dat, tmp_csv, row.names = FALSE)
+
+nimble_model <- nimbleCode({
   for (i in 1:N) {
     y[i] ~ dnorm(mu[i], sd = sigma)
     mu[i] <- alpha + beta * x[i]
@@ -40,7 +45,6 @@ writeLines(fangs_model_text, "tests/r-reference/nimble-models/linear.bugs")
 # Fit FANGS model
 #
 FANGS_ROOT <- find_project_root()
-DEFAULT_DATA_CSV <- find_example_csv()
 N_CHAINS <- 3
 BURNIN <- 500
 THIN <- 1
@@ -48,7 +52,7 @@ THIN <- 1
 fangs_summary <- run_fangs(
   model = "tests/r-reference/nimble-models/linear.bugs",
   n_samples = 2000,
-  data_csv = DEFAULT_DATA_CSV
+  data_csv = tmp_csv
 )
 
 
@@ -57,8 +61,8 @@ fangs_summary <- run_fangs(
 #
 
 model <- nimbleModel(
-  model,
-  data = dat,
+  nimble_model,
+  data = list(y = dat$y, x = dat$x),
   constants = list(N = N),
   inits = list(alpha = 0, beta = 0, sigma = 1)
 )

@@ -61,16 +61,12 @@ N_REPS_NIMBLE <- 1
 # ===========================================================================
 
 has_nimble <- requireNamespace("nimble", quietly = TRUE)
-has_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
 
 if (!has_nimble) {
   message(
     "\n[NOTE] 'nimble' is not installed -- NIMBLE benchmarks will be skipped.\n",
     "       Install with: install.packages('nimble')\n"
   )
-}
-if (!has_ggplot2) {
-  message("[NOTE] 'ggplot2' not installed -- falling back to base-R plots.")
 }
 
 # ===========================================================================
@@ -377,236 +373,175 @@ agg_timing <- function(df) {
   )
 }
 
+
+engine_colours <- c("fangs" = "#2171b5", "nimble" = "#d73027")
+model_ltypes <- c("linear" = "solid", "mixed" = "dashed")
+
 # ---------------------------------------------------------------------------
-# ggplot2 plots
+# Helper: pivot timing data to long format for two-panel plots
+#   Panel 1 — "Sampler only":  FANGS excludes Node startup/parse;
+#                               NIMBLE excludes C++ compilation
+#   Panel 2 — "Total incl. setup": FANGS includes startup/parse (~0.4s);
+#                               NIMBLE includes compilation (~14s per call)
 # ---------------------------------------------------------------------------
-if (has_ggplot2) {
-  library(ggplot2)
+pivot_timing_long <- function(agg) {
+  panel1 <- agg
+  panel1$time_s <- agg$elapsed_s
+  panel1$timing <- "Sampler only\n(NIMBLE excludes compile)"
 
-  engine_colours <- c("fangs" = "#2171b5", "nimble" = "#d73027")
-  model_ltypes <- c("linear" = "solid", "mixed" = "dashed")
+  panel2 <- agg
+  panel2$time_s <- agg$elapsed_wall_s
+  panel2$timing <- "Total wall time\n(NIMBLE includes compile)"
 
-  # Plot A: n_samples vs time
-  if (is.data.frame(timing_df_a) && nrow(timing_df_a) > 0) {
-    agg_a <- agg_timing(timing_df_a)
-    p_a <- ggplot(
-      agg_a,
-      aes(
-        x = n_samples,
-        y = elapsed_s,
-        colour = engine,
-        linetype = model,
-        shape = model
-      )
+  rbind(panel1, panel2)
+}
+
+# Plot A: n_samples vs time
+if (is.data.frame(timing_df_a) && nrow(timing_df_a) > 0) {
+  agg_a <- agg_timing(timing_df_a)
+  long_a <- pivot_timing_long(agg_a)
+
+  p_a <- ggplot(
+    long_a,
+    aes(
+      x = n_samples,
+      y = time_s,
+      colour = engine,
+      linetype = model,
+      shape = model
+    )
+  ) +
+    geom_line(linewidth = 0.9) +
+    geom_point(size = 2.5) +
+    facet_wrap(~timing, ncol = 2, scales = "free_y") +
+    scale_x_log10(
+      breaks = N_SAMPLES_GRID,
+      labels = scales::comma_format()
     ) +
-      geom_line(linewidth = 0.9) +
-      geom_point(size = 2.5) +
-      scale_x_log10(
-        breaks = N_SAMPLES_GRID,
-        labels = scales::comma_format()
-      ) +
-      scale_y_log10(labels = scales::comma_format(suffix = "s")) +
-      scale_colour_manual(values = engine_colours) +
-      scale_linetype_manual(values = model_ltypes) +
-      labs(
-        title = "MCMC sample size vs fitting time",
-        subtitle = sprintf(
-          "N_data = %d  |  chains = %d  |  burn-in = %d",
-          N_DATA_FIXED,
-          N_CHAINS,
-          BURNIN
-        ),
-        x = "Post-burn-in samples per chain",
-        y = "Elapsed time (s, log scale)",
-        colour = "Engine",
-        linetype = "Model",
-        shape = "Model"
-      ) +
-      theme_bw(base_size = 12) +
-      theme(legend.position = "bottom")
-
-    ggsave(
-      file.path(OUTPUT_DIR, "plot-timing-vs-nsamples.pdf"),
-      p_a,
-      width = 7,
-      height = 5
-    )
-    cat("  Plot saved: plot-timing-vs-nsamples.pdf\n")
-  }
-
-  # Plot B: N_data vs time
-  if (is.data.frame(timing_df_b) && nrow(timing_df_b) > 0) {
-    agg_b <- agg_timing(timing_df_b)
-    p_b <- ggplot(
-      agg_b,
-      aes(
-        x = N_data,
-        y = elapsed_s,
-        colour = engine,
-        linetype = model,
-        shape = model
-      )
+    scale_y_log10(labels = scales::comma_format(suffix = "s")) +
+    scale_colour_manual(values = engine_colours) +
+    scale_linetype_manual(values = model_ltypes) +
+    labs(
+      title = "MCMC sample size vs fitting time",
+      subtitle = sprintf(
+        "N_data = %d  |  chains = %d  |  burn-in = %d\nNIMBLE is faster once compiled; FANGS is faster for a quick first run",
+        N_DATA_FIXED,
+        N_CHAINS,
+        BURNIN
+      ),
+      x = "Post-burn-in samples per chain",
+      y = "Elapsed time (s, log scale)",
+      colour = "Engine",
+      linetype = "Model",
+      shape = "Model"
     ) +
-      geom_line(linewidth = 0.9) +
-      geom_point(size = 2.5) +
-      scale_x_log10(
-        breaks = N_DATA_GRID,
-        labels = scales::comma_format()
-      ) +
-      scale_y_log10(labels = scales::comma_format(suffix = "s")) +
-      scale_colour_manual(values = engine_colours) +
-      scale_linetype_manual(values = model_ltypes) +
-      labs(
-        title = "Data size vs fitting time",
-        subtitle = sprintf(
-          "n_samples = %d  |  chains = %d  |  burn-in = %d",
-          N_SAMPLES_FIXED,
-          N_CHAINS,
-          BURNIN
-        ),
-        x = "N (observations)",
-        y = "Elapsed time (s, log scale)",
-        colour = "Engine",
-        linetype = "Model",
-        shape = "Model"
-      ) +
-      theme_bw(base_size = 12) +
-      theme(legend.position = "bottom")
-
-    ggsave(
-      file.path(OUTPUT_DIR, "plot-timing-vs-ndata.pdf"),
-      p_b,
-      width = 7,
-      height = 5
-    )
-    cat("  Plot saved: plot-timing-vs-ndata.pdf\n")
-  }
-
-  # Plot C: posterior means vs n_samples (convergence check)
-  if (is.data.frame(posterior_df_a) && nrow(posterior_df_a) > 0) {
-    pop_params <- c("alpha", "beta", "sigma")
-    sub <- posterior_df_a[
-      posterior_df_a$param %in% pop_params,
-      ,
-      drop = FALSE
-    ]
-    sub$n_samples <- as.numeric(sub$n_samples)
-
-    p_c <- ggplot(
-      sub,
-      aes(
-        x = n_samples,
-        y = mean,
-        colour = engine,
-        fill = engine,
-        ymin = q2_5,
-        ymax = q97_5
-      )
-    ) +
-      geom_ribbon(alpha = 0.15, colour = NA) +
-      geom_line(linewidth = 0.8) +
-      facet_grid(param ~ model, scales = "free_y") +
-      scale_x_log10(labels = scales::comma_format()) +
-      scale_colour_manual(values = engine_colours) +
-      scale_fill_manual(values = engine_colours) +
-      labs(
-        title = "Posterior means & 95% CIs vs MCMC sample size",
-        x = "Post-burn-in samples per chain",
-        y = "Posterior estimate",
-        colour = "Engine",
-        fill = "Engine"
-      ) +
-      theme_bw(base_size = 11) +
-      theme(legend.position = "bottom")
-
-    ggsave(
-      file.path(OUTPUT_DIR, "plot-posteriors-vs-nsamples.pdf"),
-      p_c,
-      width = 9,
-      height = 7
-    )
-    cat("  Plot saved: plot-posteriors-vs-nsamples.pdf\n")
-  }
-} else {
-  # ---------------------------------------------------------------------------
-  # Base-R fallback plots
-  # ---------------------------------------------------------------------------
-
-  make_base_plot <- function(agg_df, x_col, title, xlab, filename) {
-    if (!is.data.frame(agg_df) || nrow(agg_df) == 0) {
-      return(invisible(NULL))
-    }
-
-    pdf(file.path(OUTPUT_DIR, filename))
-    engines <- unique(agg_df$engine)
-    models <- unique(agg_df$model)
-    cols <- c("fangs" = "steelblue", "nimble" = "tomato3")
-    ltys <- c("linear" = 1L, "mixed" = 2L)
-    pchs <- c("linear" = 16L, "mixed" = 17L)
-
-    x_range <- range(agg_df[[x_col]])
-    y_range <- range(agg_df$elapsed_s[agg_df$elapsed_s > 0], na.rm = TRUE)
-
-    plot(
-      NA,
-      xlim = x_range,
-      ylim = y_range,
-      log = "xy",
-      xlab = xlab,
-      ylab = "Elapsed time (s)",
-      main = title
-    )
-    grid(equilogs = FALSE)
-
-    for (eng in engines) {
-      for (mod in models) {
-        sub <- agg_df[agg_df$engine == eng & agg_df$model == mod, ]
-        if (nrow(sub) == 0) {
-          next
-        }
-        sub <- sub[order(sub[[x_col]]), ]
-        lines(
-          sub[[x_col]],
-          sub$elapsed_s,
-          col = cols[eng],
-          lty = ltys[mod],
-          lwd = 2
-        )
-        points(sub[[x_col]], sub$elapsed_s, col = cols[eng], pch = pchs[mod])
-      }
-    }
-
-    legend_labels <- as.vector(outer(engines, models, paste))
-    legend_cols <- as.vector(outer(cols[engines], rep(1, length(models)), "*"))
-    legend_ltys <- as.vector(outer(rep(1, length(engines)), ltys[models], "*"))
-    legend(
-      "topleft",
-      legend = legend_labels,
-      col = legend_cols,
-      lty = legend_ltys,
-      lwd = 2,
-      bty = "n"
-    )
-
-    dev.off()
-    cat("  Plot saved:", filename, "\n")
-  }
-
-  make_base_plot(
-    agg_timing(timing_df_a),
-    "n_samples",
-    "MCMC sample size vs fitting time",
-    "Post-burn-in samples per chain",
-    "plot-timing-vs-nsamples.pdf"
+    theme_bw(base_size = 12) +
+    theme(legend.position = "bottom")
+  print(p_a)
+  ggsave(
+    file.path(OUTPUT_DIR, "plot-timing-vs-nsamples.png"),
+    p_a,
+    width = 11,
+    height = 5
   )
+  cat("  Plot saved: plot-timing-vs-nsamples.png\n")
+}
 
-  make_base_plot(
-    agg_timing(timing_df_b),
-    "N_data",
-    "Data size vs fitting time",
-    "N (observations)",
-    "plot-timing-vs-ndata.pdf"
+# Plot B: N_data vs time
+if (is.data.frame(timing_df_b) && nrow(timing_df_b) > 0) {
+  agg_b <- agg_timing(timing_df_b)
+  long_b <- pivot_timing_long(agg_b)
+
+  p_b <- ggplot(
+    long_b,
+    aes(
+      x = N_data,
+      y = time_s,
+      colour = engine,
+      linetype = model,
+      shape = model
+    )
+  ) +
+    geom_line(linewidth = 0.9) +
+    geom_point(size = 2.5) +
+    facet_wrap(~timing, ncol = 2, scales = "free_y") +
+    scale_x_log10(
+      breaks = N_DATA_GRID,
+      labels = scales::comma_format()
+    ) +
+    scale_y_log10(labels = scales::comma_format(suffix = "s")) +
+    scale_colour_manual(values = engine_colours) +
+    scale_linetype_manual(values = model_ltypes) +
+    labs(
+      title = "Data size vs fitting time",
+      subtitle = sprintf(
+        "n_samples = %d  |  chains = %d  |  burn-in = %d\nNIMBLE is faster once compiled; FANGS is faster for a quick first run",
+        N_SAMPLES_FIXED,
+        N_CHAINS,
+        BURNIN
+      ),
+      x = "N (observations)",
+      y = "Elapsed time (s, log scale)",
+      colour = "Engine",
+      linetype = "Model",
+      shape = "Model"
+    ) +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "bottom")
+  print(p_b)
+  ggsave(
+    file.path(OUTPUT_DIR, "plot-timing-vs-ndata.png"),
+    p_b,
+    width = 11,
+    height = 5
   )
+  cat("  Plot saved: plot-timing-vs-ndata.png\n")
+}
+
+# Plot C: posterior means vs n_samples (convergence check)
+if (is.data.frame(posterior_df_a) && nrow(posterior_df_a) > 0) {
+  pop_params <- c("alpha", "beta", "sigma")
+  sub <- posterior_df_a[
+    posterior_df_a$param %in% pop_params,
+    ,
+    drop = FALSE
+  ]
+  sub$n_samples <- as.numeric(sub$n_samples)
+  pd <- position_dodge(width = 0.05)
+  p_c <- ggplot(
+    sub,
+    aes(
+      x = n_samples,
+      y = mean,
+      colour = engine,
+      fill = engine,
+      ymin = q2_5,
+      ymax = q97_5
+    )
+  ) +
+    geom_linerange(alpha = 0.9, position = pd) +
+    geom_point(position = pd) +
+    facet_grid(param ~ model, scales = "free_y") +
+    scale_x_log10(labels = scales::comma_format()) +
+    scale_colour_manual(values = engine_colours) +
+    scale_fill_manual(values = engine_colours) +
+    labs(
+      title = "Posterior means & 95% CIs vs MCMC sample size",
+      x = "Post-burn-in samples per chain",
+      y = "Posterior estimate",
+      colour = "Engine",
+      fill = "Engine"
+    ) +
+    theme_bw(base_size = 11) +
+    theme(legend.position = "bottom")
+  print(p_c)
+  ggsave(
+    file.path(OUTPUT_DIR, "plot-posteriors-vs-nsamples.png"),
+    p_c,
+    width = 9,
+    height = 7
+  )
+  cat("  Plot saved: plot-posteriors-vs-nsamples.png\n")
 }
 
 # ===========================================================================
