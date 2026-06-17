@@ -11,12 +11,12 @@ source(file.path(R_DIR, "nimble-models.R"))
 # Generate data — edit N and seed here to explore different datasets
 N <- 50
 SEED <- runif(1, 0, 10000)
-dat <- generate_data(N = N, seed = SEED)
-ggplot(dat, aes(x = x1, y = y)) + geom_point()
-ggplot(dat, aes(x = x2, y = y)) +
+dat <- generate_data(N = N, seed = SEED, beta1 = -3, beta2 = -1)
+ggplot(dat, aes(x = x1, y = y_count)) + geom_point()
+ggplot(dat, aes(x = x2, y = y_count)) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE)
-coef(lm(y ~ x1 + x2, data = dat))
+  geom_smooth(method = "glm", method.args = list(family = poisson), se = FALSE)
+coef(glm(y_count ~ x1 + x2, data = dat, family = poisson))
 
 # Save to a temp file so both engines use identical data
 tmp_csv <- tempfile(fileext = ".csv")
@@ -24,27 +24,25 @@ write.csv(dat, tmp_csv, row.names = FALSE)
 
 nimble_model <- nimbleCode({
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], sd = sigma)
-    mu[i] <- alpha + beta1 * x1[i] + beta2 * x2[i]
+    y_count[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta1 * x1[i] + beta2 * x2[i]
   }
   alpha ~ dnorm(0, sd = 5)
   beta1 ~ dnorm(0, sd = 5)
   beta2 ~ dnorm(0, sd = 5)
-  sigma ~ dunif(0, 100)
 })
 
-# FANGS model text uses the same SD parameterisation.
+# FANGS model text (Poisson GLM with log link)
 fangs_model_text <- "model {
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], sigma)
-    mu[i] <- alpha + beta1 * x1[i] + beta2 * x2[i]
+    y_count[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta1 * x1[i] + beta2 * x2[i]
   }
   alpha ~ dnorm(0, 5)
   beta1 ~ dnorm(0, 5)
   beta2 ~ dnorm(0, 5)
-  sigma ~ dunif(0, 100)
 }"
-writeLines(fangs_model_text, "tests/r-reference/nimble-models/linear.bugs")
+writeLines(fangs_model_text, "tests/r-reference/nimble-models/poisson.bugs")
 
 #
 # Fit FANGS model
@@ -55,7 +53,7 @@ BURNIN <- 500
 THIN <- 1
 
 fangs_summary <- run_fangs(
-  model = "tests/r-reference/nimble-models/linear.bugs",
+  model = "tests/r-reference/nimble-models/poisson.bugs",
   n_samples = 2000,
   data_csv = tmp_csv
 )
@@ -67,13 +65,13 @@ fangs_summary <- run_fangs(
 
 model <- nimbleModel(
   nimble_model,
-  data = list(y = dat$y, x1 = dat$x1, x2 = dat$x2),
-  constants = list(N = N),
-  inits = list(alpha = 0, beta1 = 0, beta2 = 0, sigma = 1)
+  data = list(y_count = dat$y_count),
+  constants = list(N = N, x1 = dat$x1, x2 = dat$x2),
+  inits = list(alpha = 0, beta1 = 0, beta2 = 0)
 )
 
 compiled_model <- compileNimble(model)
-monitors <- c("alpha", "beta1", "beta2", "sigma")
+monitors <- c("alpha", "beta1", "beta2")
 mcmc_conf <- configureMCMC(model, monitors = monitors)
 mcmc <- buildMCMC(mcmc_conf)
 compiled_mcmc <- compileNimble(mcmc, project = model)
@@ -87,9 +85,7 @@ fit <- runMCMC(
 
 fitall <- do.call(rbind, fit)
 
-#  compare on
-# alpha, beta1, beta2, sigma.
-compare_params <- c("alpha", "beta1", "beta2", "sigma")
+compare_params <- c("alpha", "beta1", "beta2")
 
 #
 # Summarise NIMBLE posterior
@@ -164,7 +160,7 @@ p <- ggplot(
   ) +
   scale_colour_manual(values = engine_colours) +
   labs(
-    title = "NIMBLE vs FANGS — posterior estimates with 95% CIs",
+    title = "NIMBLE vs FANGS — Poisson GLM posterior estimates with 95% CIs",
     x = "Posterior mean (bars = 95% CI)",
     y = "Parameter",
     colour = "Engine"

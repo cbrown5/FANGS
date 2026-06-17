@@ -51,21 +51,35 @@ find_example_csv <- function(script_dir = getwd()) {
 #'
 #' @param N     Number of observations
 #' @param seed  Random seed for reproducibility
-generate_data <- function(N, seed = 42) {
+generate_data <- function(
+  N,
+  seed = 4452,
+  n_groups = 5,
+  alpha = 1,
+  beta1 = 1.5,
+  beta2 = -0.5,
+  sigma = 0.7,
+  group_sd = 0.5
+) {
   set.seed(seed)
-  n_groups <- 5
-  group    <- rep(seq_len(n_groups), length.out = N)
-  x        <- rnorm(N)
-  b_group  <- rnorm(n_groups, 0, 0.5)
-  y        <- 2 + 1.5 * x + b_group[group] + rnorm(N, 0, 0.7)
-  y_count  <- rpois(N, exp(1.0 + 0.5 * x))
-  y_bin    <- rbinom(N, 1, plogis(1.5 * x))
+  group <- rep(seq_len(n_groups), length.out = N)
+  x1 <- rnorm(N)
+  x2 <- rnorm(N)
+  b_group <- rnorm(n_groups, 0, group_sd)
+  y <- alpha + beta1 * x1 + beta2 * x2 + b_group[group] + rnorm(N, 0, sigma)
+  y_count <- rpois(N, exp(alpha + beta1 * x1 + beta2 * x2 + b_group[group]))
+  y_bin <- rbinom(
+    N,
+    1,
+    plogis(alpha + beta1 * x1 + beta2 * x2 + b_group[group])
+  )
   data.frame(
-    id      = seq_len(N),
-    y       = y,
-    x       = x,
-    group   = group,
+    id = seq_len(N),
+    y = y,
+    x1 = x1,
+    x2 = x2,
+    group = group,
     y_count = y_count,
-    y_bin   = y_bin
+    y_bin = y_bin
   )
 }

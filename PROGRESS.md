@@ -50,7 +50,8 @@ All core modules are implemented and 253 tests pass.
 
 ### USER todo
 - Add figures from benchmark.R on timing from tests/results to the paper
-- Do compare-nimble-fangs.R with different datasets (change means betas etc....)
+- UPdate hex to use a deep sea devil fish with big teeth. 
+- Test how it works with different scales of x
 - test poisson gamma 
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper. I think there are still some mentions of conjugates
@@ -62,6 +63,7 @@ All core modules are implemented and 253 tests pass.
 - Add a writing style and update the help pages. 
 - nimble tests covering conjugate and non conjugate dists
 - tests with x on different scales, mv X
+- Get rid of predictions page. Could replace with custom code parser to make predictions? 
 
 
 ### Claude todo

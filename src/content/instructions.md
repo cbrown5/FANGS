@@ -8,7 +8,7 @@ Drag and drop a CSV file onto the **Data** panel, or click *Load example data* t
 
 ## 2. Choose a model
 
-Select **Linear Model**, **Mixed Effects**, **Poisson GLM**, or **Bernoulli GLM** to load a pre-written model, or type your own BUGS/JAGS model code in the editor. Supported distributions: `dnorm`, `dgamma`, `dbeta`, `dbern`, `dpois`, `dbinom`, `dunif`, `dlnorm`.
+Select **Linear Model**, **Mixed Effects**, **Poisson GLM**, or **Bernoulli GLM** to load a pre-written model, or type your own BUGS/JAGS model code in the editor. Supported distributions: `dnorm`, `dgamma`, `dbeta`, `dbern`, `dpois`, `dbinom`, `dunif`, `dlnorm`, `dexp`.
 
 ## 3. Configure sampler settings
 

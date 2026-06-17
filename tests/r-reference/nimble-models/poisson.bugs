@@ -1,0 +1,9 @@
+model {
+  for (i in 1:N) {
+    y_count[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta1 * x1[i] + beta2 * x2[i]
+  }
+  alpha ~ dnorm(0, 5)
+  beta1 ~ dnorm(0, 5)
+  beta2 ~ dnorm(0, 5)
+}
