@@ -49,12 +49,11 @@ All core modules are implemented and 253 tests pass.
 ## Next Steps
 
 ### USER todo
-- Halfway through running benchmark.R to save results and do plots. 
-- Try compare-nimble-fangs with different random initials. 
-- test tests/r-reference/benchmark.R to do time benchmarking. 
-- test poisson gamma, 
+- Add figures from benchmark.R on timing from tests/results to the paper
+- Do compare-nimble-fangs.R with different datasets (change means betas etc....)
+- test poisson gamma 
 - read the paper draft and suggest updates
-- Confirm the samplers work as explained in the paper
+- Confirm the samplers work as explained in the paper. I think there are still some mentions of conjugates
 - Confirm number of tests is what is said in the paper
 - Edits to help files
 - Confirm ESS and Rhat equations in help and JS code
@@ -67,8 +66,6 @@ All core modules are implemented and 253 tests pass.
 
 ### Claude todo
 - Need to also update help files so they talk abotu SD instead of precision. Make sure help files explain we use an SD parameterisation
-- Add suggestion for  mixed effects model help file: with a non-cenntered parameterisation, see if it improves convergence: b[j] = sigma.b * z[j]
-z[j] ~ dnorm(0, 1)
 - Scaling of predictors. Change pop-up appearance for " Predictors auto-scaled for sampling ". Only show it when scaling is used. Also the scaling is only applied at the end of sampling. The Trace plot shows scaled parameters. The posterior distribution shows scaled parameters, but then updates to unscaled once sampling is done. Can we have them show unscaled parameters during sampling, or will that be too slow?
 - Remove red stop light on the 'Joint parameters' page. If the. model hasn't run just show the message "Run the model to see the joint distribution of parameters"
 - PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models

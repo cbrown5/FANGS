@@ -10,7 +10,7 @@ source(file.path(R_DIR, "nimble-models.R"))
 
 # Generate data — edit N and seed here to explore different datasets
 N <- 50
-SEED <- 323
+SEED <- 500
 dat <- generate_data(N = N, seed = SEED)
 ggplot(dat, aes(x = x, y = y)) + geom_point()
 coef(lm(y ~ x, data = dat))
@@ -25,7 +25,7 @@ nimble_model <- nimbleCode({
     mu[i] <- alpha + beta * x[i]
   }
   alpha ~ dnorm(0, sd = 5)
-  beta  ~ dnorm(0, sd = 5)
+  beta ~ dnorm(0, sd = 5)
   sigma ~ dunif(0, 100)
 })
 
