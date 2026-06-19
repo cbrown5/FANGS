@@ -1,29 +1,58 @@
 # Fit your first model in FANGS
 
-Time to put it together in the real app. From here on you work in **FANGS
-itself** — open it with the link in the header (or the button in the challenge).
+Enough rehearsal — time to fit a real model to real fish. From here on you work in
+**FANGS itself**. Open it with the link in the header (or the button in the
+challenge) and keep it side by side with this page.
+
+## Meet the data
+
+The file `fish-lengths.csv` holds body measurements for **42 species of frogfish**
+— those lumpy, camouflaged ambush predators from Module 2. Each row is one species,
+with these columns:
+
+- `Tree_name` — the species name (e.g. *Antennarius_commerson*).
+- `Standard_length` — body length in mm, the snout-to-tail-base measurement
+  ecologists use as a standard size.
+- `Lower_jaw_length` — jaw length in mm (we will use this in a later module).
+- `Mouth_width` — mouth width in mm.
+
+For now we ignore the predictors and ask the simplest possible question:
+**across these species, what is the typical body length, and how much do species vary?**
+That is an intercept-only model:
+
+```
+model {
+  for (i in 1:N) {
+    Standard_length[i] ~ dnorm(alpha, sigma)
+  }
+  alpha ~ dnorm(100, 50)
+  sigma ~ dunif(0, 100)
+}
+```
+
+Here `alpha` is the average body length and `sigma` is how widely species spread
+around it.
 
 ## The FANGS workflow
 
-1. **Load data.** Drag your CSV onto the upload area, or use *Load Example*.
-   Check the **Data** tab to confirm it read correctly.
-2. **Write the model** in the editor (left panel). Use the intercept-only
-   fish-length model from the previous module.
+1. **Load data.** Drag `fish-lengths.csv` onto the upload area. Check the **Data**
+   tab to confirm it read in correctly.
+2. **Write the model** in the editor on the left (the intercept-only model above).
 3. **Set the constants.** Tell FANGS the number of observations `N`.
-4. **Set sampler settings:** chains, samples, burn-in, thinning. Start with the
-   defaults (3 chains, 2000 samples).
-5. **Run.** Watch the **Trace** tab fill in live, then read the
-   **Posteriors** and **Summary** tabs.
+4. **Set sampler settings:** chains, samples, burn-in, thinning. The defaults
+   (3 chains, 2000 samples) are a fine starting point.
+5. **Run.** Watch the **Trace** tab fill in live, then read the **Posteriors** and
+   **Summary** tabs.
 
 ## What to look for
 
 - The **trace plots** should look like fuzzy caterpillars with the chains
-  overlapping — that means they agree.
-- The **summary table** gives the posterior mean, SD, and a 95% credible
-  interval for each parameter.
+  overlapping — that overlap means the chains agree on the answer.
+- The **Summary** table gives the posterior mean, SD, and a 95% credible interval
+  for each parameter.
 
 ## Your task
 
-Fit the intercept-only model to `fish-length.csv`. Then come back here and enter
-your posterior means for $\alpha$ (the mean length) and $\sigma$ (the SD). The
-challenge checks them against the reference fit.
+Fit the intercept-only model to `fish-lengths.csv`. Then come back here and enter
+your posterior means for $\alpha$ (the mean body length) and $\sigma$ (the
+species-to-species spread). The challenge checks them against the reference fit.

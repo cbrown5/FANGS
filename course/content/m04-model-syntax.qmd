@@ -1,19 +1,31 @@
 # Writing models in BUGS/JAGS syntax
 
-FANGS reads models written in the **BUGS/JAGS language**. You describe the model
-the way a statistician would on paper, and the sampler figures out the rest.
+So far the computer has done the writing for you. Now you take over. FANGS reads
+models written in the **BUGS/JAGS language** — a compact way of describing a model
+that reads almost exactly like the maths you would scribble on paper. You state
+how the data and parameters relate, and the sampler works out how to fit it.
 
 ## The building blocks
 
-- **Stochastic nodes** use `~` ("is distributed as"):
-  `y[i] ~ dnorm(mu[i], sigma)`
-- **Deterministic nodes** use `<-` ("is calculated as"):
-  `mu[i] <- alpha + beta * x[i]`
-- **Loops** run a statement over every observation:
-  `for (i in 1:N) { ... }`
-- **Priors** are stochastic nodes on parameters: `alpha ~ dnorm(0, 5)`
+There are really only four pieces to learn:
 
-## A minimal fish-length model
+- **Stochastic nodes** use `~`, read aloud as *"is distributed as"*. This is how
+  you say a quantity is random:
+  `jaw[i] ~ dnorm(mu, sigma)`
+- **Deterministic nodes** use `<-`, read as *"is calculated as"*. This is for
+  quantities you compute exactly from others:
+  `mu[i] <- alpha + beta * body[i]`
+- **Loops** repeat a statement over every fish in the dataset:
+  `for (i in 1:N) { ... }`
+- **Priors** are just stochastic nodes placed on the parameters themselves:
+  `alpha ~ dnorm(0, 5)`
+
+That is the whole grammar. Everything else is built from these four.
+
+## A minimal frogfish model
+
+Here is the smallest useful model: the jaw lengths of one species scatter around a
+common mean `mu`, with spread `sigma`.
 
 ```
 model {
@@ -25,14 +37,18 @@ model {
 }
 ```
 
-## One thing that trips everyone up
+Read it top to bottom: *every measured `length` is normally distributed around a shared `mu`; our prior belief is that `mu` sits somewhere around 40 mm; and the spread `sigma` is somewhere between 0 and 50 mm.*
 
-FANGS parameterises the normal distribution by its **standard deviation**, not
-precision: `dnorm(mean, SD)`. This is different from textbook JAGS/BUGS, which
-uses precision $\tau = 1/\sigma^2$. If you port a model, convert with
-$\sigma = 1/\sqrt{\tau}$.
+## The one thing that trips everyone up
+
+FANGS describes the normal distribution by its **standard deviation**, not its
+precision: `dnorm(mean, SD)`. Most textbooks and classic JAGS/BUGS code instead
+use precision, $\tau = 1/\sigma^2$. So if you copy a model from a textbook, you
+must convert: $\sigma = 1/\sqrt{\tau}$. Forgetting this is the single most common
+source of "why is my fit nonsense?" — so it is worth burning into memory now.
 
 ## Your task
 
-The model in the challenge has a **syntax error**. Fix it so the parser accepts
-it. The error message tells you the line and column — use it.
+The model in the challenge has a deliberate **syntax error**. Fix it so the parser
+accepts it. The error message points you to the exact line and column — let it do
+the work.

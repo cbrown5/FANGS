@@ -44,6 +44,10 @@ export function mount(container, config) {
           <label>Steps <input data-steps type="range" min="200" max="5000" step="200" value="1500"></label>
           <output data-stepsout>1500</output>
         </div>
+        <div class="challenge-slider-row">
+          <label>Animation speed <input data-speed type="range" min="1" max="5" step="1" value="2"></label>
+          <output data-speedout>Slow</output>
+        </div>
         <canvas data-canvas height="200"></canvas>
         <div class="challenge-controls">
           <button data-run class="challenge-submit">Run sampler</button>
@@ -54,16 +58,35 @@ export function mount(container, config) {
       const canvas   = body.querySelector('[data-canvas]');
       const propEl    = body.querySelector('[data-prop]');
       const stepsEl   = body.querySelector('[data-steps]');
+      const speedEl   = body.querySelector('[data-speed]');
       const propOut   = body.querySelector('[data-propout]');
       const stepsOut  = body.querySelector('[data-stepsout]');
+      const speedOut  = body.querySelector('[data-speedout]');
       const statsEl   = body.querySelector('[data-stats]');
       const runBtn    = body.querySelector('[data-run]');
 
+      // Each speed setting maps to (steps drawn per animation frame, ms between
+      // frames). Lower settings deliberately crawl so the chain's walk is
+      // visible; higher settings race through long runs.
+      const SPEEDS = {
+        1: { label: 'Crawl',  perFrame: 1,   delay: 90 },
+        2: { label: 'Slow',   perFrame: 3,   delay: 45 },
+        3: { label: 'Medium', perFrame: 10,  delay: 16 },
+        4: { label: 'Fast',   perFrame: 40,  delay: 0  },
+        5: { label: 'Turbo',  perFrame: 200, delay: 0  },
+      };
+
       propEl.addEventListener('input', () => propOut.textContent = (+propEl.value).toFixed(1));
       stepsEl.addEventListener('input', () => stepsOut.textContent = stepsEl.value);
+      speedEl.addEventListener('input', () => speedOut.textContent = SPEEDS[+speedEl.value].label);
+      speedOut.textContent = SPEEDS[+speedEl.value].label;
 
       let samples = [];
-      let raf = null;
+      let timer = null;
+
+      function stopTimer() {
+        if (timer) { clearTimeout(timer); timer = null; }
+      }
 
       function reset() {
         samples = [];
@@ -74,7 +97,7 @@ export function mount(container, config) {
       reset();
 
       runBtn.addEventListener('click', () => {
-        if (raf) { cancelAnimationFrame(raf); raf = null; }
+        stopTimer();
         reset();
         const propSd = +propEl.value;
         const nSteps = +stepsEl.value;
@@ -83,8 +106,9 @@ export function mount(container, config) {
         let accepted = 0, done = 0;
 
         function step() {
-          const batch = Math.max(10, Math.floor(nSteps / 60));
-          for (let k = 0; k < batch && done < nSteps; k++, done++) {
+          timer = null;
+          const { perFrame, delay } = SPEEDS[+speedEl.value];
+          for (let k = 0; k < perFrame && done < nSteps; k++, done++) {
             const prop = cur + propSd * gaussian();
             const propLp = logPost(prop);
             if (Math.log(Math.random()) < propLp - curLp) {
@@ -92,12 +116,13 @@ export function mount(container, config) {
             }
             samples.push(cur);
           }
-          drawHist(canvas, grid, trueCurve, trueMax, samples, xMin, xMax);
+          drawHist(canvas, grid, trueCurve, trueMax, samples, xMin, xMax, cur);
           const ess = effectiveSampleSize(samples);
           ctx._ess = ess;
           statsEl.textContent =
             `n=${samples.length}  accept=${(100 * accepted / samples.length).toFixed(0)}%  ESS≈${ess.toFixed(0)}`;
-          if (done < nSteps) raf = requestAnimationFrame(step);
+          // Re-read the speed slider each frame so it can be adjusted mid-run.
+          if (done < nSteps) timer = setTimeout(step, SPEEDS[+speedEl.value].delay);
         }
         step();
       });
@@ -139,8 +164,9 @@ function effectiveSampleSize(x) {
   return n / (1 + 2 * sumRho);
 }
 
-/** Draw the accumulating histogram against the true posterior curve. */
-function drawHist(canvas, grid, trueCurve, trueMax, samples, xMin, xMax) {
+/** Draw the accumulating histogram against the true posterior curve.
+ *  `current` (optional) marks where the chain is standing right now. */
+function drawHist(canvas, grid, trueCurve, trueMax, samples, xMin, xMax, current) {
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.clientWidth || 560;
   const cssH = 200;
@@ -178,6 +204,21 @@ function drawHist(canvas, grid, trueCurve, trueMax, samples, xMin, xMax) {
     i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
   }
   ctx.stroke();
+
+  // current chain position — a moving marker so the walk is visible
+  if (Number.isFinite(current)) {
+    const cx = xPix(current);
+    ctx.strokeStyle = '#ffb86c';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, padT);
+    ctx.lineTo(cx, padT + plotH);
+    ctx.stroke();
+    ctx.fillStyle = '#ffb86c';
+    ctx.beginPath();
+    ctx.arc(cx, padT + plotH, 4, 0, 2 * Math.PI);
+    ctx.fill();
+  }
 
   // axis
   ctx.strokeStyle = '#44475a';

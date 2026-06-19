@@ -1,31 +1,38 @@
 # Posterior predictive checks
 
-You fit a model — but does it actually reproduce the data? A **posterior
-predictive check (PPC)** answers this by simulating new datasets from the
-*fitted* model and comparing them to what you observed.
+You have a fitted model — but a fit is not the same as a *good* fit. The model will
+always draw you a line; the real question is whether that line, with its scatter,
+could plausibly have produced the frogfish you actually measured.
+A **posterior predictive check (PPC)** answers exactly this, by simulating fresh
+datasets from
+the *fitted* model and laying them next to the real one.
 
 ## Prior vs posterior predictive
 
+These two checks bookend the fitting:
+
 - **Prior** predictive (Module 7): simulate from the priors *before* fitting —
-  "are my assumptions sane?"
+  *"are my assumptions even sane?"*
 - **Posterior** predictive (now): simulate from the posterior *after* fitting —
-  "does the fitted model look like reality?"
+  *"does the fitted model look like reality?"*
 
 ## How to read it
 
-In FANGS' **PPC** tab you see your observed data against a fan of simulated
-datasets:
+In FANGS' **PPC** tab you see your observed jaw lengths against a fan of simulated
+datasets drawn from the fit:
 
-- If the observed data sit comfortably **within** the simulated spread, the
-  model captures the key features. Good.
-- If the observed data fall in the **far tail** of every replicate — too skewed,
-  too over-dispersed, wrong shape — the model is missing something. That is a
-  prompt to change the model (e.g. a different distribution or extra predictor).
+- If the real data sit comfortably **inside** the simulated spread, the model is
+  reproducing the features you care about. That is the result you want.
+- If the real data fall in the **far tail** of every replicate — more skewed, more
+  spread out, or just the wrong shape — the model is missing something. That is
+  your cue to change it: a different distribution, an extra predictor, perhaps
+  allowing the spread to grow with size.
 
-A PPC will not tell you the model is *true*, only whether it is *adequate* for
-the features you check.
+A PPC will never certify that a model is *true* — only whether it is *good enough*
+for the features you chose to check. That is a more honest, and more useful,
+question anyway.
 
 ## Your task
 
-Open the PPC tab for your jaw-length fit, then answer the interpretation
-questions below.
+Open the PPC tab for your jaw-length-on-body-length fit from `fish-lengths.csv`,
+then answer the interpretation questions below.

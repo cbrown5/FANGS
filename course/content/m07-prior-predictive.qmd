@@ -1,29 +1,33 @@
 # Prior predictive checks
 
-Before fitting, ask: **do my priors imply sensible data?** A prior predictive
-check answers this by simulating fake datasets from the priors *alone* — no
-observed data involved.
+Before fitting anything, it pays to ask a blunt question:
+**do my priors imply sensible data?** It is easy to write down a prior that looks
+innocent and quietly believes in impossible fish. A prior predictive check catches
+this by simulating
+whole fake datasets from the priors *alone* — the real measurements never enter.
 
 ## How it works
 
 1. Draw parameter values from their priors.
-2. Push them through the model to simulate a dataset.
+2. Push those values through the model to simulate a dataset.
 3. Repeat many times and look at the spread of simulated data.
 
-If your "fish lengths" range from $-400$ to $600$ mm, your priors are absurd —
-they put weight on impossible values. Tighten them.
+If your simulated "frogfish body lengths" come out spanning $-400$ to $600$ mm,
+something is wrong: real frogfish are never negative, and a half-metre frogfish is
+a monster. A prior that produces those values is putting belief on the impossible.
+Tighten it.
 
 ## In FANGS
 
 Use the **Prior Check** tab. It runs the model forward from the priors with the
-likelihood switched off, so you see exactly what your priors predict before the
-data has any say.
+likelihood switched off, so you see exactly what your assumptions predict *before*
+the data gets any vote.
 
-This is the natural companion to the σ-prior work you just did: a vague
-`dnorm(0, 1000)` on an intercept looks harmless until you see the data it
-implies.
+This is the natural partner to the $\sigma$-prior work you just did. A vague-looking
+`dnorm(0, 1000)` on the mean body length seems harmless on the page — until the
+prior check shows you the absurd fish it implies.
 
 ## Your task
 
-Run a prior check on your fish-length model. Then answer the question below about
-interpreting an obviously-too-vague prior.
+Run a prior check on your frogfish body-length model. Then answer the question
+below about how to read an obviously-too-vague prior.

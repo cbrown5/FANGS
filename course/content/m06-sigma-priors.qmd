@@ -1,31 +1,42 @@
 # Choosing a prior for σ
 
-Every parameter needs a prior — including the standard deviation $\sigma$. Unlike
-the mean, $\sigma$ must be **positive**, so its prior has to respect that.
+Every parameter in a Bayesian model needs a prior — and that includes the spread,
+$\sigma$. People give a lot of thought to the prior on the mean and then forget
+about $\sigma$, but it deserves the same care. The one rule it must obey: a
+standard deviation can never be negative, so its prior has to live entirely on the
+positive side of zero.
 
 ## Common choices
 
-- `sigma ~ dunif(0, U)` — flat between 0 and some generous upper bound `U`.
-  Simple, but you must pick `U` large enough not to clip the posterior.
-- A **half-normal** via truncation: `sigma ~ dnorm(0, 10) T(0, )` — concentrates
-  mass near small values, gently penalising large SDs.
-- `sigma ~ dexp(rate)` — another positive, light-tailed option.
+- `sigma ~ dunif(0, U)` — flat between 0 and some generous ceiling `U`. Simple and
+  honest, but you have to pick `U` large enough that it never clips the posterior.
+  For our frogfish body lengths (which run up to ~250 mm), something like
+  `dunif(0, 100)` gives the spread plenty of room.
+- A **half-normal** via truncation: `sigma ~ dnorm(0, 10) T(0, )` — piles most of
+  its belief on small values and gently discourages enormous ones.
+- `sigma ~ dexp(rate)` — another positive, light-tailed option that fades smoothly
+  toward larger values.
 
 ## Why σ is special in FANGS
 
-Because FANGS parameterises `dnorm` by the **standard deviation**, the normal SD
-has **no conjugate update** — there is no tidy closed-form draw for it. FANGS
-samples it with a **slice sampler** instead. This is invisible to you, but it is
-why $\sigma$ sometimes needs a few more iterations to mix well.
+Because FANGS describes `dnorm` by its **standard deviation**, the normal $\sigma$
+has **no conjugate update** — there is no neat closed-form recipe to draw it in one
+step. So FANGS quietly falls back to a **slice sampler** for it. You never see this
+happening, but it explains why $\sigma$ occasionally needs a few more iterations to
+settle than the mean does.
 
-## Does the prior matter?
+## Does the prior actually matter?
 
-With plenty of data, the likelihood dominates and the prior barely moves the
-posterior. With little data, the prior matters more. The way to *know* is to
-try a couple of priors and compare.
+Often, surprisingly little. With plenty of data the likelihood takes over and the
+prior barely nudges the posterior. With only a handful of observations the prior
+carries more weight. The honest way to find out which situation you are in is not
+to argue about it — it is to **try two priors and compare the answers.**
 
 ## Your task
 
-Refit your fish-length model under **two different priors for $\sigma$**
-(e.g. `dunif(0, 50)` vs a truncated half-normal). Record the posterior mean and
-95% CI for $\sigma$ in the table below for each. Two runs unlocks the module.
+Refit your frogfish body-length model from `fish-lengths.csv` under
+**two different priors for $\sigma$** (for example `dunif(0, 100)` versus a
+truncated half-normal).
+Record the posterior mean and 95% CI for $\sigma$ in the table below for each run.
+Two completed rows unlocks the module — and shows you, first-hand, how much (or how
+little) the prior moved things.

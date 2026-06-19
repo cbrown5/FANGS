@@ -1,16 +1,27 @@
 # Bayes' theorem with discrete models
 
-Bayesian inference is just bookkeeping with probability. We start with what we
-believe *before* seeing data (the **prior**), multiply by how well each
-hypothesis explains the data (the **likelihood**), and renormalise to get what
-we believe *after* (the **posterior**).
+Here is the whole idea of Bayesian inference in one sentence:
+**start with what you already believe, then update it in proportion to how well the new data fit.**
+Nothing more mysterious than that. The maths below is just careful bookkeeping
+for that update.
 
-## A marine example
+You begin with a belief held *before* the data arrive — the **prior**. You ask how
+well each explanation accounts for what you saw — the **likelihood**. Multiply the
+two, tidy up so the numbers add to one, and you have your belief *after* the data
+— the **posterior**.
 
-An acoustic tag pings and is picked up by receivers, but the detection pattern
-is ambiguous: the fish could have come from the **North**, **Mid**, or **South**
-reef. From past tracking we know how likely that detection pattern is from each
-reef — these are the **likelihoods**.
+## A fish that could have come from three reefs
+
+Imagine you are tracking fish on a reef system with acoustic tags. A tagged fish
+swims past a line of underwater receivers and leaves a trail of detections. From
+the pattern of pings you want to know one thing:
+**which reef did this fish come from — North, Mid, or South?**
+
+The detections are not a clean answer. The same trail could plausibly have been
+left by a fish from any of the three reefs — just with different odds. From years
+of past tracking you know roughly how often *this particular* detection pattern
+shows up for fish from each reef. Those three numbers are your **likelihoods**:
+how well each reef explains the data.
 
 ## The theorem, term by term
 
@@ -25,46 +36,49 @@ $$
 }
 $$
 
-- The **numerator** for each reef is just `prior × likelihood`.
-- The **denominator** is *the sum of the numerators across all reefs*. It is the
-  total probability of the data, and it is what makes the posterior add to 1.
+It looks busier than it is. Read it as three small steps:
 
-That second point is the key idea: **the denominator is not a separate mystery
-quantity — it is built from the same numerators you already computed.**
+- The **numerator** for each reef is just `prior × likelihood` — your belief in
+  that reef, weighted by how well it explains the trail.
+- The **denominator** is *the sum of those numerators across all three reefs*. It
+  is the total probability of seeing this trail at all, and dividing by it is what
+  forces the three posteriors to add up to 1.
 
-## Survey weight as a prior
+That second point is the part people overthink.
+**The denominator is not some extra quantity you have to go and find — it is just the numerators you already worked out, added together.**
 
-In fisheries and marine ecology, survey data often come with a **survey weight**
-— a number that reflects how much effort was spent sampling each area, or how
-representative each observation is of the population. This weight is a natural
-candidate for the prior.
+## Where does the prior come from? A survey weight
 
-Suppose the three reefs were surveyed unevenly: the North reef was sampled on
-60 % of survey trips, the Mid reef on 30 %, and the South reef on 10 %. Before
-you even look at the acoustic data, you already know a fish is *more likely* to
-come from the North reef simply because it was sampled more heavily. The survey
-weight encodes that prior belief.
+In fisheries and marine ecology, surveys are rarely spread evenly. Some reefs get
+visited on most trips; others get a glance once a season. That uneven effort is
+recorded as a **survey weight** — a number saying how much of your sampling went
+where. It turns out to be a very natural prior.
 
-Setting $P(\text{reef}) \propto \text{survey weight}$ is then a principled
-choice: you are saying "my prior is proportional to how often I looked there."
-When the acoustic evidence is strong, the data will still dominate and the
-posterior will differ from the prior. When the evidence is weak or ambiguous,
-the posterior will stay close to the survey weight — exactly the behaviour you
-want.
+Suppose the boat reached the North reef on 60% of trips, the Mid reef on 30%, and
+the South reef on only 10%. Before you look at a single ping, you already have a
+reason to lean North: that is simply where you spent most of your effort, so that
+is where most of your tagged fish are likely to be. Setting
+$P(\text{reef}) \propto \text{survey weight}$ writes that reasoning down honestly:
+*"my prior is proportional to how often I actually looked there."*
 
-This connection appears throughout Bayesian ecology:
+The beauty is that the data still get their say. When the acoustic evidence points
+clearly to one reef, it will overrule the survey weight and the posterior shifts.
+When the evidence is murky, the posterior stays close to the survey weight — which
+is exactly the cautious behaviour you want.
+
+This pattern shows up everywhere in ecology:
 
 | Prior | What it encodes |
 |-------|----------------|
-| Uniform ($P = 1/n$ for each option) | Complete ignorance — all hypotheses equally plausible |
-| Survey weight | Sampling effort — some areas observed more than others |
-| Historical detection rate | Past experience about where animals are found |
+| Uniform ($P = 1/n$ for each option) | Complete ignorance — every option equally plausible |
+| Survey weight | Sampling effort — some places watched more than others |
+| Historical detection rate | Past experience about where animals turn up |
 
-The choice of prior is *an explicit modelling decision*. Stating
-it as a survey weight makes that decision transparent and auditable.
+The point is that choosing a prior is *a modelling decision you make out loud*.
+Calling it a survey weight makes that decision easy to explain and easy to defend.
 
 ## Your task
 
 In the challenge below, fill in the numerator for each reef, then the
-denominator (the sum), then each posterior. Then switch the prior and watch the
-posterior change — same data, different starting beliefs.
+denominator (their sum), then each posterior. Then switch the prior and watch the
+posterior move — same fish, same pings, different starting beliefs.

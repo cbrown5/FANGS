@@ -95,10 +95,12 @@ export const MODULES = [
     title: 'Fit your first model in FANGS', mode: 'fangs',
     challenge: 'answer-check',
     config: {
-      dataset: 'fish-length.csv',
+      // fish-lengths.csv columns: Tree_name, Standard_length, Lower_jaw_length,
+      // Mouth_width. Intercept-only model on Standard_length.
+      dataset: 'fish-lengths.csv',
       params: [
-        { name: 'alpha', label: 'Mean length α', mean: 0, ci: [0, 0], tol: 0.5 },
-        { name: 'sigma', label: 'SD σ',          mean: 0, ci: [0, 0], tol: 0.5 },
+        { name: 'alpha', label: 'Mean length α (mm)', mean: 0, ci: [0, 0], tol: 1.0 },
+        { name: 'sigma', label: 'SD σ (mm)',          mean: 0, ci: [0, 0], tol: 1.0 },
       ],
     },
   },
@@ -136,10 +138,11 @@ export const MODULES = [
     title: 'Gaussian regression: jaw length ~ body length', mode: 'fangs',
     challenge: 'answer-check',
     config: {
-      dataset: 'jaw-length.csv',
+      // fish-lengths.csv: regress Lower_jaw_length on Standard_length.
+      dataset: 'fish-lengths.csv',
       params: [
-        { name: 'alpha', label: 'Intercept α', mean: 0, ci: [0, 0], tol: 0.5 },
-        { name: 'beta',  label: 'Slope β',     mean: 0, ci: [0, 0], tol: 0.2 },
+        { name: 'alpha', label: 'Intercept α (mm)',           mean: 0, ci: [0, 0], tol: 1.0 },
+        { name: 'beta',  label: 'Slope β (jaw per body mm)',  mean: 0, ci: [0, 0], tol: 0.1 },
       ],
     },
   },
@@ -204,7 +207,8 @@ export const MODULES = [
     title: 'Single-factor linear model & the design matrix', mode: 'fangs',
     challenge: 'answer-check',
     config: {
-      dataset: 'oa-study.csv',
+      // clownfish-oa.csv columns: group (Normal seawater / Acidified), time.
+      dataset: 'clownfish-oa.csv',
       params: [
         { name: 'alpha',     label: 'Control mean α',        mean: 0, ci: [0, 0], tol: 0.5 },
         { name: 'beta_trt',  label: 'Acidification effect',  mean: 0, ci: [0, 0], tol: 0.5 },

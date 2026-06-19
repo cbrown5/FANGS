@@ -14,7 +14,6 @@ import { TracePlot }      from './ui/trace-plot.js';
 import { DensityPlot }    from './ui/density-plot.js';
 import { SummaryTable }   from './ui/summary-table.js';
 import { PPCPlot }        from './ui/ppc-plot.js';
-import { PredictionsPlot } from './ui/predictions-plot.js';
 import { SamplerSettings} from './ui/settings.js';
 import { defaultCSV, defaultModel1, defaultModel2,
          defaultModel3, defaultModel4, defaultModel5 } from './data/default-data.js';
@@ -38,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const density  = new DensityPlot(document.getElementById('density-container'));
   const summary  = new SummaryTable(document.getElementById('summary-container'), attachPopupTrigger);
   const ppc         = new PPCPlot(document.getElementById('ppc-container'));
-  const predictions = new PredictionsPlot(document.getElementById('predictions-container'));
   const settings = new SamplerSettings(document.getElementById('settings-panel'));
   const scatter  = new ScatterPlot(document.getElementById('joint-container'));
 
@@ -236,9 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dataTableContainer) {
         renderDataTable(dataTableContainer, rows);
       }
-      // Populate predictions x-axis selector with available columns
-      const { columns } = prepareDataColumns(rows);
-      predictions.setData(columns);
       // Refresh constants panel with new data
       updateConstantsPanel();
     } catch (e) {
@@ -298,8 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Trigger density re-render when switching to Posteriors (canvas size may have changed)
       if (btn.dataset.tab === 'posteriors') density.render();
-      // Trigger predictions re-render when switching to Predictions tab
-      if (btn.dataset.tab === 'predictions') predictions._render();
       // Trigger scatter re-render when switching to Joint tab
       if (btn.dataset.tab === 'joint') scatter.render();
     });
@@ -357,7 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
     trace.clear();
     density.clear();
     summary.clear();
-    predictions.clear();
     scatter.clear();
     posteriorSamples = {};
     setProgress(0);
@@ -496,20 +488,18 @@ document.addEventListener('DOMContentLoaded', () => {
         density.render();
         summary.update(msg.summary);
 
-        const yObs = capturedOriginalDataColumns.y ? Array.from(capturedOriginalDataColumns.y) : [];
-        if (yObs.length > 0) {
-          ppc.update(yObs, msg.predictions?.y ?? []);
-        }
-
         // Auto-detect the response variable from prediction keys (first non-fitted_ key).
         const predObj = msg.predictions ?? {};
         const responseVar = Object.keys(predObj).find(k => !k.startsWith('fitted_') && !k.startsWith('marginal_')) ?? 'y';
 
-        predictions.setData(capturedOriginalDataColumns, responseVar);
-        predictions.setPredictions(
-          predObj[responseVar] ?? [],
-          predObj[`marginal_fitted_${responseVar}`] ?? predObj[`fitted_${responseVar}`] ?? null
-        );
+        // Feed the PPC the actual response variable (e.g. y_count / y_bin for
+        // Poisson/Binomial models), not a hardcoded `y`.
+        const yObs = capturedOriginalDataColumns[responseVar]
+          ? Array.from(capturedOriginalDataColumns[responseVar])
+          : [];
+        if (yObs.length > 0) {
+          ppc.update(yObs, predObj[responseVar] ?? []);
+        }
 
         scatter.setSamplesMap(posteriorSamples);
 
