@@ -1,38 +1,52 @@
 # Sampling the posterior with MCMC
 
-Finding the *peak* of the posterior was easy. But we usually want the **whole
-distribution** — the mean, the spread, a 95% interval. For many real models the
-integral in the denominator is impossible to do by hand.
+Finding the single *peak* of the posterior was easy. But the peak alone rarely
+answers an ecological question. We want the **whole distribution**: the average
+jaw length, how uncertain it is, a range we are 95% sure it falls in. And for most
+real models — many parameters, awkward shapes — that integral in the denominator
+simply cannot be done by hand.
 
-**Markov chain Monte Carlo (MCMC)** sidesteps it. Instead of computing the
-posterior, we **draw samples** from it. With enough samples we can approximate
-any summary we like just by counting.
+**Markov chain Monte Carlo (MCMC)** is the clever way around the problem. Instead
+of *calculating* the posterior, we **draw samples from it** — like dipping a net
+in again and again. Pile up enough samples and you can read off any summary you
+want just by looking at the pile.
 
 ## The Metropolis recipe
 
-1. Start somewhere in parameter space.
+Think of an explorer wandering the landscape of possible jaw lengths, spending
+more time where the posterior is high:
+
+1. Start somewhere — anywhere.
 2. **Propose** a small random step to a nearby value.
-3. **Accept** the step with a probability based on the ratio of posterior
-   densities (downhill moves are sometimes accepted, which lets the chain explore).
+3. **Accept or reject** the step based on the ratio of posterior heights. Uphill
+   moves are usually taken; downhill moves are *sometimes* taken too, which is
+   what lets the explorer wander out of dead ends and cover the whole landscape.
 4. Repeat thousands of times.
 
-The accepted values form a **chain** that, after it "forgets" its starting
-point, is a sample from the posterior. The histogram of the chain *is* the
-posterior.
+The values the explorer actually visits form a **chain**. Once it has wandered far
+enough to forget where it started, the chain is a fair sample from the posterior.
+Build a histogram of those visited values and you are looking at the posterior
+itself.
 
 ## The tuning trade-off
 
-The **proposal step size** matters:
+The size of each proposed step — the **proposal step size** — is the thing you
+tune, and it matters a lot:
 
-- **Too small** → the chain inches along, neighbouring samples are almost
-  identical (high autocorrelation), and you learn very little per step.
-- **Too large** → almost every proposal is rejected, so the chain gets stuck.
+- **Too small** → the explorer shuffles forward in tiny steps. Neighbouring
+  samples are nearly identical (high autocorrelation) and you learn almost nothing
+  new per step.
+- **Too large** → almost every bold leap lands somewhere implausible and gets
+  rejected, so the explorer stays stuck in one spot.
 
-We measure efficiency with the **effective sample size (ESS)**: how many truly
-independent draws your correlated chain is worth.
+We measure how well this is going with the **effective sample size (ESS)**: out of
+all your correlated samples, how many *genuinely independent* draws are they worth?
+A well-tuned chain converts thousands of steps into a healthy ESS; a badly tuned
+one wastes them.
 
 ## Your task
 
-Run the sampler on the jaw-length posterior. Tune the proposal SD and number of
-steps until the ESS clears the target. Notice that *both* extremes hurt ESS — the
-sweet spot is in the middle.
+Run the sampler on the frogfish jaw-length posterior. Tune the proposal SD and the
+number of steps until the ESS clears the target. Watch what happens at the
+extremes: *both* a tiny and a huge proposal SD wreck the ESS — the sweet spot sits
+in the middle.

@@ -1,8 +1,23 @@
 # Bayes for a continuous parameter
 
-Last module the parameter took one of three values. Now it is **continuous**: the
-mean jaw length $\mu$ of a fish species could be *any* number. The logic is
-identical, but the sum in the denominator becomes an **integral**.
+In the last module the answer was one of three reefs — a short list. Real
+ecological questions are usually not like that.
+**How long is the jaw of this frogfish species, on average?**
+The answer is a number that could land *anywhere* on a continuous scale. The
+Bayesian logic does not change at all; only the sum in the denominator turns into
+an integral.
+
+## A frogfish with a very big mouth
+
+Frogfish are ambush predators. They sit camouflaged on the reef and strike by
+opening an enormous mouth that swallows prey whole — so jaw size genuinely matters
+for what a species can eat. Say you measure the lower jaw of seven individuals
+from one species. Your measuring is a little noisy (a known measurement error, a
+fixed standard deviation $\sigma$), and the readings scatter around some true
+species mean $\mu$ that you would love to pin down.
+
+That unknown mean $\mu$ is now a **continuous** parameter. It could be 38 mm, or
+41.6 mm, or anything in between.
 
 ## The same theorem, continuous version
 
@@ -10,25 +25,28 @@ $$
 p(\mu \mid y) = \frac{p(y \mid \mu)\,p(\mu)}{\displaystyle\int p(y \mid \mu)\,p(\mu)\,d\mu}
 $$
 
-We measure a handful of jaws with a known measurement error (a fixed standard
-deviation $\sigma$). The **likelihood** $p(y\mid\mu)$ peaks near the sample mean;
-the **prior** $p(\mu)$ encodes what we expected beforehand.
+It is the same recipe as before. The **likelihood** $p(y\mid\mu)$ is largest near
+the average of your seven measurements — that is the value of $\mu$ that best
+explains the readings. The **prior** $p(\mu)$ says what jaw lengths you found
+plausible before measuring anything.
 
 ## Why the integral?
 
-The denominator sums `prior × likelihood` over *every possible* $\mu$. With a
-continuous parameter there are infinitely many values, so we cannot add them up
-one by one. Instead we **chop the $\mu$-axis into thin slices**, add up
-`prior × likelihood × (slice width)`, and let the slices get thinner and
-thinner. That limit *is* the integral.
+The denominator still adds up `prior × likelihood` over every value $\mu$ could
+take. But now there are infinitely many such values, so you cannot list them and
+add them one by one. Instead you **slice the $\mu$-axis into thin strips**, add up
+`prior × likelihood × (strip width)`, and imagine the strips getting thinner and
+thinner without end. That limiting sum *is* the integral. Same bookkeeping, finer
+grid.
 
-The good news: to find the **most probable** value — the **maximum a posteriori
-(MAP)** estimate — we do not even need the denominator. It is a constant that
-does not depend on $\mu$, so the peak of `prior × likelihood` is the peak of the
-posterior.
+Here is a shortcut that saves a lot of effort. To find the **single most probable**
+value — the **maximum a posteriori (MAP)** estimate — you do not need the
+denominator at all. It is just a constant that does not depend on $\mu$, so the
+peak of `prior × likelihood` sits at exactly the same place as the peak of the
+full posterior.
 
 ## Your task
 
 Drag the slider to the peak of the posterior (purple). Watch how the prior (cyan)
-and likelihood (orange) combine. Then switch to a tighter prior and find the new
-MAP — the prior pulls the answer toward itself.
+and likelihood (orange) combine into it. Then switch to a tighter prior and find
+the new MAP — notice how a confident prior tugs the answer toward itself.

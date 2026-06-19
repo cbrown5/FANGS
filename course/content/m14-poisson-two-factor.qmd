@@ -25,8 +25,7 @@ model {
 ```
 
 - $\alpha$ — log mean count for the **reference combination** (both factors 0).
-- $\beta_A,\ \beta_B$ — multiplicative effects of each factor, **holding the
-  other constant**.
+- $\beta_A,\ \beta_B$ — multiplicative effects of each factor, **holding the other constant**.
 
 This is the additive (no-interaction) model. If you suspect the effect of one
 factor depends on the other, you would add an interaction term — but start
