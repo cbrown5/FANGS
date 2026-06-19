@@ -12,6 +12,8 @@ source(file.path(R_DIR, "nimble-models.R"))
 N <- 50
 SEED <- runif(1, 0, 10000)
 dat <- generate_data(N = N, seed = SEED)
+dat$x1 <- dat$x1 * 100
+
 ggplot(dat, aes(x = x1, y = y)) + geom_point()
 ggplot(dat, aes(x = x2, y = y)) +
   geom_point() +
@@ -21,6 +23,7 @@ coef(lm(y ~ x1 + x2, data = dat))
 # Save to a temp file so both engines use identical data
 tmp_csv <- tempfile(fileext = ".csv")
 write.csv(dat, tmp_csv, row.names = FALSE)
+write.csv(dat, "data/temp-data.csv", row.names = FALSE)
 
 nimble_model <- nimbleCode({
   for (i in 1:N) {
