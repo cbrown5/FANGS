@@ -65,16 +65,17 @@ All core modules are implemented and 253 tests pass.
 
 
 ### Claude todo
-- Move pop-up for 'predictor-scaling.md' so it shows just below the RUN button
-- Remove the prediction tab
-- Remove red stop light on the 'Joint parameters' page. If the. model hasn't run just show the message "Run the model to see the joint distribution of parameters"
-- PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
-- Plots use sensible scale for tick labels (e.g. 0.2, 0.4, not 0.23456789).
+- Move pop-up for 'predictor-scaling.md' so it appears just below the RUN button
+- Remove the 'Predictions' tab (but keep the PPC tab ). Prediction from covariate doesn't work for complex models.
+- Remove the div that shows the red stop light on the 'Joint' tab. If the model hasn't run just show the message "Run the model to see the joint distribution of parameters"
+- PPC tab: observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
 
 
 
 ## Future improvements
 Review code and UX of the shiny stan package to get ideas for plots to add and how to present results. 
+More sophisticated prediction tab. Could look at shinystan for inspiration? Or have user enter code that is parsed to make the plot? Or just provide tutorial do it with the download of samples
+
 
 ---
 
