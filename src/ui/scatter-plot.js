@@ -46,6 +46,7 @@ export class ScatterPlot {
    */
   setSamplesMap(samplesMap) {
     this._samples = samplesMap;
+    this._updateNotRunState();
     this._updateSelects();
     this._draw();
   }
@@ -65,6 +66,21 @@ export class ScatterPlot {
       this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
       this._drawEmpty();
     }
+    this._updateNotRunState();
+  }
+
+  /**
+   * Show a plain "run the model" message until posterior samples exist;
+   * hide the plot controls/canvas in that state.
+   */
+  _updateNotRunState() {
+    const hasSamples = Object.keys(this._samples || {}).length > 0;
+    if (this._notRunMsg) {
+      this._notRunMsg.style.display = hasSamples ? 'none' : '';
+    }
+    if (this._plotWrap) {
+      this._plotWrap.style.display = hasSamples ? '' : 'none';
+    }
   }
 
   /**
@@ -79,17 +95,31 @@ export class ScatterPlot {
   // ------------------------------------------------------------------ //
 
   _build() {
+    this.container.innerHTML = '';
+
     // Title row
     const title = document.createElement('div');
     title.className = 'pane-title';
     title.textContent = 'Joint Parameter Distribution';
     this.container.appendChild(title);
 
+    // Plain message shown before the model has run.
+    this._notRunMsg = document.createElement('p');
+    this._notRunMsg.style.cssText = 'font-size:0.9rem;color:#6272a4;margin:18px 0;';
+    this._notRunMsg.textContent =
+      'Run the model to see the joint distribution of parameters';
+    this.container.appendChild(this._notRunMsg);
+
+    // Everything below is hidden until samples are available.
+    this._plotWrap = document.createElement('div');
+    this._plotWrap.style.display = 'none';
+    this.container.appendChild(this._plotWrap);
+
     const desc = document.createElement('p');
     desc.style.cssText = 'font-size:0.82rem;color:#6272a4;margin:4px 0 14px;';
     desc.textContent =
       'Plot MCMC samples for two parameters to visualise their joint posterior and correlations.';
-    this.container.appendChild(desc);
+    this._plotWrap.appendChild(desc);
 
     // Controls row
     const controls = document.createElement('div');
@@ -126,13 +156,13 @@ export class ScatterPlot {
 
     controls.appendChild(xGroup.wrap);
     controls.appendChild(yGroup.wrap);
-    this.container.appendChild(controls);
+    this._plotWrap.appendChild(controls);
 
     // Correlation label
     this._corrLabel = document.createElement('div');
     this._corrLabel.style.cssText =
       'font-size:0.82rem;color:#6272a4;margin-bottom:8px;min-height:1.2em;';
-    this.container.appendChild(this._corrLabel);
+    this._plotWrap.appendChild(this._corrLabel);
 
     // Canvas
     const canvasWrap = document.createElement('div');
@@ -141,7 +171,7 @@ export class ScatterPlot {
     this._canvas = document.createElement('canvas');
     this._canvas.style.cssText = `display:block;width:100%;height:${CANVAS_HEIGHT}px;`;
     canvasWrap.appendChild(this._canvas);
-    this.container.appendChild(canvasWrap);
+    this._plotWrap.appendChild(canvasWrap);
 
     this._ctx = this._canvas.getContext('2d');
     this._drawEmpty();

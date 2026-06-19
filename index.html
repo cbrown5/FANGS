@@ -789,9 +789,6 @@
         <button class="btn-sm" id="btn-load-example">Load example data</button>
       </div>
       <div id="data-status">No data loaded</div>
-      <div id="scaling-note" style="display:none; font-size:0.75em; color:#8be9fd; margin-top:4px;">
-        Predictors auto-scaled for sampling <button class="popup-trigger" data-popup="predictor-scaling" style="font-size:0.9em; padding:0 4px; margin-left:2px;">?</button>
-      </div>
     </div>
 
     <!-- Model editor -->
@@ -843,6 +840,9 @@
         <button id="btn-run">&#9654; Run</button>
         <button id="btn-stop" disabled>&#9632; Stop</button>
       </div>
+      <div id="scaling-note" style="display:none; font-size:0.75em; color:#8be9fd; margin-top:8px;">
+        Predictors auto-scaled for sampling <button class="popup-trigger" data-popup="predictor-scaling" style="font-size:0.9em; padding:0 4px; margin-left:2px;">?</button>
+      </div>
     </div>
 
     <!-- Status bar -->
@@ -869,8 +869,6 @@
         aria-selected="false" aria-controls="pane-summary">Summary</button>
       <button class="tab-btn" role="tab" data-tab="ppc"
         aria-selected="false" aria-controls="pane-ppc">PPC</button>
-      <button class="tab-btn" role="tab" data-tab="predictions"
-        aria-selected="false" aria-controls="pane-predictions">Predictions</button>
       <button class="tab-btn" role="tab" data-tab="prior-check"
         aria-selected="false" aria-controls="pane-prior-check">Prior Check</button>
       <button class="tab-btn" role="tab" data-tab="joint"
@@ -936,17 +934,6 @@
         </div>
       </div>
 
-      <!-- Predictions -->
-      <div class="tab-pane" id="pane-predictions" role="tabpanel">
-        <div class="pane-title">Model Predictions</div>
-        <div id="predictions-container">
-          <div class="empty-state">
-            <span class="empty-icon">&#128200;</span>
-            <p>Predictions will appear after sampling completes.</p>
-          </div>
-        </div>
-      </div>
-
       <!-- Prior Check -->
       <div class="tab-pane" id="pane-prior-check" role="tabpanel">
         <div class="pane-title" data-popup="prior-check">Prior Predictive Check</div>
@@ -973,12 +960,7 @@
 
       <!-- Joint distribution -->
       <div class="tab-pane" id="pane-joint" role="tabpanel">
-        <div id="joint-container">
-          <div class="empty-state">
-            <span class="empty-icon">&#128308;</span>
-            <p>Run a model to plot joint parameter distributions.</p>
-          </div>
-        </div>
+        <div id="joint-container"></div>
       </div>
 
     </div><!-- /tab-content -->

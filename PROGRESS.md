@@ -65,10 +65,10 @@ All core modules are implemented and 253 tests pass.
 
 
 ### Claude todo
-- Move pop-up for 'predictor-scaling.md' so it appears just below the RUN button
-- Remove the 'Predictions' tab (but keep the PPC tab ). Prediction from covariate doesn't work for complex models.
-- Remove the div that shows the red stop light on the 'Joint' tab. If the model hasn't run just show the message "Run the model to see the joint distribution of parameters"
-- PPC tab: observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
+- [x] Move pop-up for 'predictor-scaling.md' so it appears just below the RUN button
+- [x] Remove the 'Predictions' tab (but keep the PPC tab ). Prediction from covariate doesn't work for complex models.
+- [x] Remove the div that shows the red stop light on the 'Joint' tab. If the model hasn't run just show the message "Run the model to see the joint distribution of parameters"
+- [x] PPC tab: observer vs predicted plot doesnt show for poisson amd binomial models. works for other models — root cause: PPC was hardcoded to response var `y`; now uses the model's actual response (e.g. `y_count`, `y_bin`).
 
 
 
