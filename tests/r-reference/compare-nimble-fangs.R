@@ -12,7 +12,7 @@ source(file.path(R_DIR, "nimble-models.R"))
 N <- 50
 SEED <- runif(1, 0, 10000)
 dat <- generate_data(N = N, seed = SEED)
-dat$x1 <- dat$x1 * 100
+dat$x1 <- dat$x1 * 10000
 
 ggplot(dat, aes(x = x1, y = y)) + geom_point()
 ggplot(dat, aes(x = x2, y = y)) +
@@ -62,7 +62,7 @@ fangs_summary <- run_fangs(
   n_samples = 2000,
   data_csv = tmp_csv
 )
-
+summary(lm(y ~ x1 + x2, data = dat))
 
 #
 # Fit NIMBLE model

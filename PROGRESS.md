@@ -50,8 +50,6 @@ All core modules are implemented and 253 tests pass.
 
 ### USER todo
 - Add figures from benchmark.R on timing from tests/results to the paper
-- UPdate hex to use a deep sea devil fish with big teeth. 
-- Test how it works with different scales of x
 - test poisson gamma 
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper. I think there are still some mentions of conjugates
@@ -67,12 +65,10 @@ All core modules are implemented and 253 tests pass.
 
 
 ### Claude todo
-- Need to also update help files so they talk abotu SD instead of precision. Make sure help files explain we use an SD parameterisation
-- Scaling of predictors. Change pop-up appearance for " Predictors auto-scaled for sampling ". Only show it when scaling is used. Also the scaling is only applied at the end of sampling. The Trace plot shows scaled parameters. The posterior distribution shows scaled parameters, but then updates to unscaled once sampling is done. Can we have them show unscaled parameters during sampling, or will that be too slow?
+- Move pop-up for 'predictor-scaling.md' so it shows just below the RUN button
+- Remove the prediction tab
 - Remove red stop light on the 'Joint parameters' page. If the. model hasn't run just show the message "Run the model to see the joint distribution of parameters"
 - PPC observer vs predicted plot doesnt show for poisson amd binomial models. works for other models
-- remove line/border around ribbon on predictions plot. show just as a shaded ribbon with line for mean. 
-- model is optimized for predictors that are on unit SD scale amd centered. brainstorm options for begginer friendly handling if predictors on any scale. 
 - Plots use sensible scale for tick labels (e.g. 0.2, 0.4, not 0.23456789).
 
 

@@ -2,6 +2,8 @@
 
 FANGS automatically standardises continuous predictor variables (like `x`) before running the sampler, then converts all results back to your original data units before display.
 
+Note that the MCMC trace plots show the scaled parameters, the conversion is done after sampling is complete. In the summary tables and coefficient estimates, the back-transformed values are shown. This means you can interpret the results as if you had run the sampler on your original data, without needing to worry about the scaling step.
+
 ## Why is this done?
 
 Bayesian MCMC works best when variables are on a similar scale — roughly centred around zero with a standard deviation near 1. When a predictor has a wide range (e.g., values from 0 to 10,000), two problems can occur:
