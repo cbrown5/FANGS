@@ -1,0 +1,38 @@
+# Sampling the posterior with MCMC
+
+Finding the *peak* of the posterior was easy. But we usually want the **whole
+distribution** — the mean, the spread, a 95% interval. For real models the
+integral in the denominator is impossible to do by hand.
+
+**Markov chain Monte Carlo (MCMC)** sidesteps it. Instead of computing the
+posterior, we **draw samples** from it. With enough samples we can approximate
+any summary we like just by counting.
+
+## The Metropolis recipe
+
+1. Start somewhere in parameter space.
+2. **Propose** a small random step to a nearby value.
+3. **Accept** the step with a probability based on the ratio of posterior
+   densities (downhill moves are sometimes accepted, which lets the chain explore).
+4. Repeat thousands of times.
+
+The accepted values form a **chain** that, after it "forgets" its starting
+point, is a sample from the posterior. The histogram of the chain *is* the
+posterior.
+
+## The tuning trade-off
+
+The **proposal step size** matters:
+
+- **Too small** → the chain inches along, neighbouring samples are almost
+  identical (high autocorrelation), and you learn very little per step.
+- **Too large** → almost every proposal is rejected, so the chain gets stuck.
+
+We measure efficiency with the **effective sample size (ESS)**: how many truly
+independent draws your correlated chain is worth.
+
+## Your task
+
+Run the sampler on the jaw-length posterior. Tune the proposal SD and number of
+steps until the ESS clears the target. Notice that *both* extremes hurt ESS — the
+sweet spot is in the middle.

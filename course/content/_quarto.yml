@@ -1,0 +1,13 @@
+project:
+  type: default
+  output-dir: _rendered
+
+format:
+  html:
+    template: fragment-template.html
+    toc: false
+    number-sections: false
+    self-contained: false
+    minimal: true
+    embed-resources: false
+    css: []

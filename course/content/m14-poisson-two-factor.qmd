@@ -1,0 +1,38 @@
+# Poisson with two factors
+
+Real surveys rarely vary one thing at a time. Suppose fish counts depend on both
+**habitat** (e.g. reef vs seagrass) and **season** (e.g. wet vs dry). We can put
+both factors in the same Poisson model.
+
+## The model
+
+$$
+\log(\lambda_i) = \alpha + \beta_A\,A_i + \beta_B\,B_i
+$$
+
+Each factor contributes its own 0/1 indicator (its own design-matrix column):
+
+```
+model {
+  for (i in 1:N) {
+    count[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta_a * A[i] + beta_b * B[i]
+  }
+  alpha  ~ dnorm(0, 10)
+  beta_a ~ dnorm(0, 10)
+  beta_b ~ dnorm(0, 10)
+}
+```
+
+- $\alpha$ — log mean count for the **reference combination** (both factors 0).
+- $\beta_A,\ \beta_B$ — multiplicative effects of each factor, **holding the
+  other constant**.
+
+This is the additive (no-interaction) model. If you suspect the effect of one
+factor depends on the other, you would add an interaction term — but start
+simple.
+
+## Your task
+
+Fit the two-factor Poisson model to `fish-counts.csv` and check your posterior
+means for $\alpha$, $\beta_A$, and $\beta_B$.

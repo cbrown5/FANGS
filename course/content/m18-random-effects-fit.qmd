@@ -1,0 +1,46 @@
+# Fit a random-effects model
+
+Now we fit the mixed-effects model: a population-level regression **plus** random
+intercepts for each group (reef/site).
+
+## The model
+
+$$
+y_i \sim \text{Normal}(\mu_i,\ \sigma), \qquad
+\mu_i = \alpha + \beta\,x_i + b_{\text{group}[i]}, \qquad
+b_j \sim \text{Normal}(0,\ \sigma_b)
+$$
+
+In FANGS:
+
+```
+model {
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + beta * x[i] + b[group[i]]
+  }
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
+  alpha   ~ dnorm(0, 50)
+  beta    ~ dnorm(0, 10)
+  sigma   ~ dunif(0, 50)
+  sigma.b ~ dunif(0, 50)
+}
+```
+
+- `J` — the number of groups. Set it in the constants alongside `N`.
+- `group[i]` — which group observation `i` belongs to (FANGS encodes a text
+  column for you).
+- $\sigma_b$ — the **group-level SD**. It quantifies how much groups differ and
+  controls the shrinkage.
+
+## What to check
+
+The **Summary** tab now includes $\sigma_b$ and each `b[j]`. Watch R-hat for
+$\sigma_b$ especially — variance parameters are the slowest to mix.
+
+## Your task
+
+Fit the random-intercepts model to `random-effects.csv` and check $\alpha$,
+$\beta$, and the group SD $\sigma_b$.

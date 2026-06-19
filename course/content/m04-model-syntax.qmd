@@ -1,0 +1,38 @@
+# Writing models in BUGS/JAGS syntax
+
+FANGS reads models written in the **BUGS/JAGS language**. You describe the model
+the way a statistician would on paper, and the sampler figures out the rest.
+
+## The building blocks
+
+- **Stochastic nodes** use `~` ("is distributed as"):
+  `y[i] ~ dnorm(mu[i], sigma)`
+- **Deterministic nodes** use `<-` ("is calculated as"):
+  `mu[i] <- alpha + beta * x[i]`
+- **Loops** run a statement over every observation:
+  `for (i in 1:N) { ... }`
+- **Priors** are stochastic nodes on parameters: `alpha ~ dnorm(0, 5)`
+
+## A minimal fish-length model
+
+```
+model {
+  for (i in 1:N) {
+    length[i] ~ dnorm(mu, sigma)
+  }
+  mu ~ dnorm(40, 20)
+  sigma ~ dunif(0, 50)
+}
+```
+
+## One thing that trips everyone up
+
+FANGS parameterises the normal distribution by its **standard deviation**, not
+precision: `dnorm(mean, SD)`. This is different from textbook JAGS/BUGS, which
+uses precision $\tau = 1/\sigma^2$. If you port a model, convert with
+$\sigma = 1/\sqrt{\tau}$.
+
+## Your task
+
+The model in the challenge has a **syntax error**. Fix it so the parser accepts
+it. The error message tells you the line and column — use it.

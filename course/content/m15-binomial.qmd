@@ -1,0 +1,40 @@
+# Binomial regression with a logit link
+
+When the response is **yes/no** — species present or absent, survived or not — we
+model the **probability** of a "yes". Probabilities live in $[0, 1]$, so again we
+need a link that keeps predictions in range.
+
+## The logit link
+
+$$
+y_i \sim \text{Bernoulli}(p_i), \qquad
+\text{logit}(p_i) = \log\!\frac{p_i}{1 - p_i} = \alpha + \beta\,x_i
+$$
+
+The logit maps a probability to the whole real line, so the linear predictor can
+roam freely and we transform back with the inverse logit.
+
+In FANGS:
+
+```
+model {
+  for (i in 1:N) {
+    present[i] ~ dbern(p[i])
+    logit(p[i]) <- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 10)
+  beta  ~ dnorm(0, 10)
+}
+```
+
+## Interpreting on the logit scale
+
+A slope $\beta$ is a change in **log-odds** per unit $x$; $e^{\beta}$ is an
+**odds ratio**. Positive $\beta$ → presence becomes more likely as $x$ increases.
+To get a probability for a given $x$, push the linear predictor through the
+inverse logit.
+
+## Your task
+
+Fit the logistic model to `presence.csv` and check your posterior means for
+$\alpha$ and $\beta$ (logit scale).

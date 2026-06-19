@@ -6,8 +6,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:popups": "node scripts/build-popups-bundle.js",
+    "build:course": "node scripts/build-course.js",
+    "build": "npm run build:popups && npm run build:course",
     "dev": "npx serve .",
-    "start": "npm run build:popups && npx serve ."
+    "start": "npm run build && npx serve ."
   },
   "devDependencies": {
     "vitest": "^2.0.0"

@@ -1,0 +1,48 @@
+# Single-factor linear model & the design matrix
+
+Many marine studies compare **groups**: control vs treatment, inshore vs
+offshore. Here we use an **ocean-acidification (OA)** experiment — fish reared in
+control vs acidified seawater — and ask whether acidification changes our
+response (say, growth).
+
+## Coding a 2-level factor
+
+A categorical predictor enters the model through a **design matrix**. With two
+levels we use a single **0/1 indicator**:
+
+| Treatment | indicator `trt` |
+|-----------|-----------------|
+| Control   | 0 |
+| Acidified | 1 |
+
+$$
+y_i = \alpha + \beta\,\text{trt}_i
+$$
+
+- $\alpha$ — the **control** mean (when `trt = 0`).
+- $\beta$ — the **difference** for acidified fish (the treatment effect).
+
+If $\beta$'s 95% CI excludes 0, acidification credibly shifts the response.
+
+## In FANGS
+
+FANGS auto-encodes a text column like `treatment` (`"control"`, `"acidified"`)
+into integers for you. You can write the model directly against the indicator,
+e.g. `mu[i] <- alpha + beta * trt[i]`.
+
+```
+model {
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + beta_trt * trt[i]
+  }
+  alpha ~ dnorm(0, 50)
+  beta_trt ~ dnorm(0, 10)
+  sigma ~ dunif(0, 50)
+}
+```
+
+## Your task
+
+Fit the single-factor model to `oa-study.csv` and check your posterior means for
+the control mean $\alpha$ and the acidification effect.

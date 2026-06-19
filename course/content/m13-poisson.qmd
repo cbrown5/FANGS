@@ -1,0 +1,39 @@
+# Poisson regression with a log link
+
+Counts — fish per transect, eggs per nest, individuals per quadrat — are not
+Gaussian. They are non-negative integers, and their variance grows with their
+mean. The **Poisson** distribution is the natural starting point.
+
+## The model
+
+We cannot model the rate $\lambda$ directly with a line, because a line can go
+negative. Instead we model it on the **log scale** — the **log link**:
+
+$$
+\text{count}_i \sim \text{Poisson}(\lambda_i), \qquad
+\log(\lambda_i) = \alpha + \beta\,x_i
+$$
+
+In FANGS:
+
+```
+model {
+  for (i in 1:N) {
+    count[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 10)
+  beta  ~ dnorm(0, 10)
+}
+```
+
+## Interpreting on the log scale
+
+Coefficients act **multiplicatively** on the count. A slope $\beta$ means each
+unit of $x$ multiplies the expected count by $e^{\beta}$. So $\beta = 0.69$
+roughly **doubles** the count per unit ($e^{0.69}\approx 2$).
+
+## Your task
+
+Fit the Poisson model to `fish-counts.csv` and check your posterior means for
+$\alpha$ and $\beta$ (both on the log scale).

@@ -1,0 +1,37 @@
+# MCMC diagnostics: R-hat & ESS
+
+MCMC only works if the chains have **converged**. Two numbers tell you whether to
+trust the output — both are in the **Summary** tab.
+
+## R-hat (the convergence check)
+
+R-hat compares the variation *within* each chain to the variation *between*
+chains. If the chains have converged to the same distribution, these match and:
+
+$$
+\hat{R} \approx 1.0
+$$
+
+- $\hat{R} \le 1.01$ — good.
+- $\hat{R} > 1.1$ — **do not trust it.** The chains disagree. Run longer, or
+  reparameterise (Module 19).
+
+In the trace plot, a high R-hat looks like chains exploring different regions
+instead of overlapping.
+
+## ESS (the efficiency check)
+
+The **effective sample size** is how many *independent* draws your correlated
+chain is worth. 4000 saved samples with ESS = 35 means heavy autocorrelation —
+your estimates are noisier than the sample count suggests.
+
+- Low ESS → widen the sampler (more samples / thinning) or improve mixing.
+
+## Rule of thumb
+
+Glance at **R-hat first** (is it valid?), then **ESS** (is it precise enough?).
+FANGS highlights problem rows for you.
+
+## Your task
+
+Answer the two diagnostic questions below.
