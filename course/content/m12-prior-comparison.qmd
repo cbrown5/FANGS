@@ -1,0 +1,33 @@
+# Comparing priors with the OA study
+
+How much does your prior on the **treatment effect** change the conclusion? With
+a small experiment, it can matter — so let's measure it instead of guessing.
+
+## The experiment
+
+Refit the OA model from the previous module several times, changing **only** the
+prior on the acidification effect `beta_trt`. For example:
+
+- Vague:   `beta_trt ~ dnorm(0, 100)`
+- Weakly informative: `beta_trt ~ dnorm(0, 5)`
+- Sceptical (shrinks toward no effect): `beta_trt ~ dnorm(0, 1)`
+
+Keep everything else identical.
+
+## What to watch
+
+- Does the **posterior mean** of the effect move?
+- Does the **95% CI** widen or shift across 0?
+- A conclusion that flips with a reasonable prior is **fragile** and worth
+  flagging; one that holds across priors is **robust**.
+
+## Recording in the browser
+
+Use the recorder below — it saves your runs **in your browser** (no account
+needed) and exports a **CSV** so the room can compare. This answers a common
+question: yes, you can log and download results entirely client-side.
+
+## Your task
+
+Run the model under at least two priors and record each result. Discuss: is the
+acidification effect robust to the prior?

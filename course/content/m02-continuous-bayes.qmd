@@ -1,0 +1,34 @@
+# Bayes for a continuous parameter
+
+Last module the parameter took one of three values. Now it is **continuous**: the
+mean jaw length $\mu$ of a fish species could be *any* number. The logic is
+identical, but the sum in the denominator becomes an **integral**.
+
+## The same theorem, continuous version
+
+$$
+p(\mu \mid y) = \frac{p(y \mid \mu)\,p(\mu)}{\displaystyle\int p(y \mid \mu)\,p(\mu)\,d\mu}
+$$
+
+We measure a handful of jaws with a known measurement error (a fixed standard
+deviation $\sigma$). The **likelihood** $p(y\mid\mu)$ peaks near the sample mean;
+the **prior** $p(\mu)$ encodes what we expected beforehand.
+
+## Why the integral?
+
+The denominator sums `prior × likelihood` over *every possible* $\mu$. With a
+continuous parameter there are infinitely many values, so we cannot add them up
+one by one. Instead we **chop the $\mu$-axis into thin slices**, add up
+`prior × likelihood × (slice width)`, and let the slices get thinner and
+thinner. That limit *is* the integral.
+
+The good news: to find the **most probable** value — the **maximum a posteriori
+(MAP)** estimate — we do not even need the denominator. It is a constant that
+does not depend on $\mu$, so the peak of `prior × likelihood` is the peak of the
+posterior.
+
+## Your task
+
+Drag the slider to the peak of the posterior (purple). Watch how the prior (cyan)
+and likelihood (orange) combine. Then switch to a tighter prior and find the new
+MAP — the prior pulls the answer toward itself.

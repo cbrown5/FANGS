@@ -1,0 +1,35 @@
+# The idea of random effects
+
+You sampled fish at **12 reefs**. Reefs differ, and observations from the same
+reef are more alike than observations from different reefs. Ignoring that
+structure underestimates your uncertainty. **Random effects** handle it.
+
+## Three ways to treat groups
+
+- **Complete pooling** — one intercept for all reefs. Ignores reef differences.
+- **No pooling** — a separate, independent intercept per reef. Wastes
+  information; noisy for reefs with little data.
+- **Partial pooling (random effects)** — reef intercepts are drawn from a shared
+  distribution. Reefs **borrow strength** from each other.
+
+$$
+b_j \sim \text{Normal}(0,\ \sigma_b), \qquad
+\mu_i = \alpha + b_{\text{reef}[i]} + \dots
+$$
+
+## Shrinkage
+
+Partial pooling pulls each reef's estimate **toward the overall mean**, and it
+pulls hardest on reefs with **little data** (which are the least trustworthy on
+their own). The amount of pooling is learned from the data through the
+group-level SD $\sigma_b$:
+
+- small $\sigma_b$ → reefs are similar → strong pooling;
+- large $\sigma_b$ → reefs genuinely differ → little pooling.
+
+This is the core of **mixed-effects models** — fixed effects for the population,
+random effects for the groups.
+
+## Your task
+
+Answer the concept quiz below before we fit one.

@@ -1,0 +1,44 @@
+# Gaussian regression: jaw length ~ body length
+
+Now we add a **predictor**. Larger fish tend to have larger jaws — let's model
+jaw length as a linear function of body length.
+
+## The model
+
+$$
+\text{jaw}_i \sim \text{Normal}(\mu_i,\ \sigma), \qquad
+\mu_i = \alpha + \beta\,\text{body}_i
+$$
+
+In FANGS:
+
+```
+model {
+  for (i in 1:N) {
+    jaw[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + beta * body[i]
+  }
+  alpha ~ dnorm(0, 50)
+  beta  ~ dnorm(0, 10)
+  sigma ~ dunif(0, 50)
+}
+```
+
+- $\alpha$ — intercept (jaw length at body length 0; often not meaningful, but
+  needed).
+- $\beta$ — **slope**: extra jaw length per unit body length. This is usually the
+  scientific quantity of interest.
+- FANGS rescales predictors internally for efficient sampling and back-transforms
+  for you, so you can interpret $\beta$ on the original scale.
+
+## Reading the result
+
+Check the **Predictions** tab: it overlays the posterior mean regression line and
+its 95% band on the data. The **Summary** tab gives the posterior for $\beta$ —
+if its 95% CI excludes 0, body length credibly predicts jaw length.
+
+## Your task
+
+Fit this model to `jaw-length.csv` in FANGS, then enter your posterior means for
+$\alpha$ and $\beta$. From here on, the challenge is simply: **fit it correctly
+and check your answer.**

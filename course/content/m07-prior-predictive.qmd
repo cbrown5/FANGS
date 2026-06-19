@@ -1,0 +1,29 @@
+# Prior predictive checks
+
+Before fitting, ask: **do my priors imply sensible data?** A prior predictive
+check answers this by simulating fake datasets from the priors *alone* — no
+observed data involved.
+
+## How it works
+
+1. Draw parameter values from their priors.
+2. Push them through the model to simulate a dataset.
+3. Repeat many times and look at the spread of simulated data.
+
+If your "fish lengths" range from $-400$ to $600$ mm, your priors are absurd —
+they put weight on impossible values. Tighten them.
+
+## In FANGS
+
+Use the **Prior Check** tab. It runs the model forward from the priors with the
+likelihood switched off, so you see exactly what your priors predict before the
+data has any say.
+
+This is the natural companion to the σ-prior work you just did: a vague
+`dnorm(0, 1000)` on an intercept looks harmless until you see the data it
+implies.
+
+## Your task
+
+Run a prior check on your fish-length model. Then answer the question below about
+interpreting an obviously-too-vague prior.

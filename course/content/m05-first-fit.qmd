@@ -1,0 +1,29 @@
+# Fit your first model in FANGS
+
+Time to put it together in the real app. From here on you work in **FANGS
+itself** — open it with the link in the header (or the button in the challenge).
+
+## The FANGS workflow
+
+1. **Load data.** Drag your CSV onto the upload area, or use *Load Example*.
+   Check the **Data** tab to confirm it read correctly.
+2. **Write the model** in the editor (left panel). Use the intercept-only
+   fish-length model from the previous module.
+3. **Set the constants.** Tell FANGS the number of observations `N`.
+4. **Set sampler settings:** chains, samples, burn-in, thinning. Start with the
+   defaults (3 chains, 2000 samples).
+5. **Run.** Watch the **Trace** tab fill in live, then read the
+   **Posteriors** and **Summary** tabs.
+
+## What to look for
+
+- The **trace plots** should look like fuzzy caterpillars with the chains
+  overlapping — that means they agree.
+- The **summary table** gives the posterior mean, SD, and a 95% credible
+  interval for each parameter.
+
+## Your task
+
+Fit the intercept-only model to `fish-length.csv`. Then come back here and enter
+your posterior means for $\alpha$ (the mean length) and $\sigma$ (the SD). The
+challenge checks them against the reference fit.

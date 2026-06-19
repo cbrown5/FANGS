@@ -1,0 +1,39 @@
+# Bayes' theorem with discrete models
+
+Bayesian inference is just bookkeeping with probability. We start with what we
+believe *before* seeing data (the **prior**), multiply by how well each
+hypothesis explains the data (the **likelihood**), and renormalise to get what
+we believe *after* (the **posterior**).
+
+## A marine example
+
+An acoustic tag pings and is picked up by receivers, but the detection pattern
+is ambiguous: the fish could have come from the **North**, **Mid**, or **South**
+reef. From past tracking we know how likely that detection pattern is from each
+reef — these are the **likelihoods**.
+
+## The theorem, term by term
+
+$$
+\underbrace{P(\text{reef} \mid \text{data})}_{\text{posterior}}
+=
+\frac{
+  \overbrace{P(\text{data} \mid \text{reef})}^{\text{likelihood}}\;
+  \overbrace{P(\text{reef})}^{\text{prior}}
+}{
+  \underbrace{\sum_{r} P(\text{data} \mid \text{reef}_r)\,P(\text{reef}_r)}_{\text{denominator}}
+}
+$$
+
+- The **numerator** for each reef is just `prior × likelihood`.
+- The **denominator** is *the sum of the numerators across all reefs*. It is the
+  total probability of the data, and it is what makes the posterior add to 1.
+
+That second point is the key idea: **the denominator is not a separate mystery
+quantity — it is built from the same numerators you already computed.**
+
+## Your task
+
+In the challenge below, fill in the numerator for each reef, then the
+denominator (the sum), then each posterior. Then switch the prior and watch the
+posterior change — same data, different starting beliefs.

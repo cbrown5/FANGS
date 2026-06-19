@@ -1,0 +1,39 @@
+# Binomial with a 3-level factor
+
+What if the predictor is a category with **more than two** levels — say three
+sites: **A**, **B**, **C**? You cannot code three groups with a single 0/1
+column. You need a small **design matrix**.
+
+## Reference (dummy) coding
+
+Pick one level as the **reference** (say A). Create an indicator for each of the
+others:
+
+| Site | `is_B` | `is_C` |
+|------|--------|--------|
+| A    | 0 | 0 |
+| B    | 1 | 0 |
+| C    | 0 | 1 |
+
+$$
+\text{logit}(p_i) = \alpha + \beta_2\,\text{is\_B}_i + \beta_3\,\text{is\_C}_i
+$$
+
+- $\alpha$ — log-odds for the **reference** site A.
+- $\beta_2$ — difference (B **vs** A).
+- $\beta_3$ — difference (C **vs** A).
+
+There is **no separate coefficient for A** — it is absorbed into the intercept.
+That is why $k$ levels need $k-1$ indicator columns.
+
+## In FANGS
+
+If your CSV has a text `site` column, FANGS encodes it to integers; you can build
+the indicators in the model, or use a coefficient vector indexed by site. The key
+idea to take away is *what each coefficient means relative to the reference*.
+
+## Your task
+
+Fit the 3-level model to `presence.csv` and check the reference log-odds $\alpha$
+and the two contrasts $\beta_2$, $\beta_3$. Make sure you can say which site each
+one compares against.

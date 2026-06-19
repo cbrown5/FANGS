@@ -1,0 +1,31 @@
+# Posterior predictive checks
+
+You fit a model — but does it actually reproduce the data? A **posterior
+predictive check (PPC)** answers this by simulating new datasets from the
+*fitted* model and comparing them to what you observed.
+
+## Prior vs posterior predictive
+
+- **Prior** predictive (Module 7): simulate from the priors *before* fitting —
+  "are my assumptions sane?"
+- **Posterior** predictive (now): simulate from the posterior *after* fitting —
+  "does the fitted model look like reality?"
+
+## How to read it
+
+In FANGS' **PPC** tab you see your observed data against a fan of simulated
+datasets:
+
+- If the observed data sit comfortably **within** the simulated spread, the
+  model captures the key features. Good.
+- If the observed data fall in the **far tail** of every replicate — too skewed,
+  too over-dispersed, wrong shape — the model is missing something. That is a
+  prompt to change the model (e.g. a different distribution or extra predictor).
+
+A PPC will not tell you the model is *true*, only whether it is *adequate* for
+the features you check.
+
+## Your task
+
+Open the PPC tab for your jaw-length fit, then answer the interpretation
+questions below.

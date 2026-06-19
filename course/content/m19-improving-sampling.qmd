@@ -1,0 +1,40 @@
+# Improving sampling: priors & reparameterisation
+
+Sometimes the chains misbehave — high R-hat, tiny ESS, trace plots that wander or
+stick. Often the model is fine but **badly parameterised** for the sampler. Here
+are the two most useful fixes.
+
+## 1. Sensible priors
+
+A wildly vague prior (e.g. `dnorm(0, 1000)` on a coefficient) creates a flat,
+sprawling posterior that the sampler struggles to explore, and can let
+parameters trade off against each other. **Weakly informative** priors —
+scaled to the problem — usually mix far better *and* are more honest. Try
+tightening a vague prior and watch R-hat and ESS improve.
+
+## 2. Reparameterisation
+
+In hierarchical models the group SD $\sigma_b$ and the group effects $b_j$ are
+strongly coupled, creating a funnel-shaped posterior that is hard to sample
+(the "centred" parameterisation). A **non-centred** form decouples them:
+
+```
+for (j in 1:J) {
+  z[j] ~ dnorm(0, 1)
+  b[j] <- sigma.b * z[j]
+}
+```
+
+Same model, much friendlier geometry — chains for $\sigma_b$ mix dramatically
+better.
+
+## Diagnose, then fix
+
+1. Spot the problem in the **Summary** (R-hat, ESS) and **Trace** tabs.
+2. Apply a fix (tighter prior, or non-centred form).
+3. Refit and confirm the diagnostics improved.
+
+## Your task
+
+Take a poorly-mixing fit, improve it, and **record before/after** the worst
+R-hat and minimum ESS in the table below.
