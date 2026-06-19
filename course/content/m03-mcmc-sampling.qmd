@@ -1,7 +1,7 @@
 # Sampling the posterior with MCMC
 
 Finding the *peak* of the posterior was easy. But we usually want the **whole
-distribution** — the mean, the spread, a 95% interval. For real models the
+distribution** — the mean, the spread, a 95% interval. For many real models the
 integral in the denominator is impossible to do by hand.
 
 **Markov chain Monte Carlo (MCMC)** sidesteps it. Instead of computing the

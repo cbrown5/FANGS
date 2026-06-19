@@ -35,11 +35,28 @@ The parser must handle the following BUGS language constructs:
 2. GLMs: Poisson (log link), Binomial/Bernoulli (logit link)
 3. Mixed-effects versions of the above with random intercepts (nested hierarchical design)
 
-## Project Structure (Target)
+## Project Structure
 
 ```
 FANGS/
 ├── index.html              # Main entry point
+├── assets/                 # Static assets (hex logo, images)
+├── data/                   # Example datasets
+│   ├── example.csv         # Default example dataset
+│   ├── example-unscaled.csv
+│   ├── bernoulli-example.csv
+│   └── poisson-example.csv
+├── paper/                  # Draft paper and blog post
+│   ├── fangs-paper.md
+│   ├── fangs-blog.md
+│   └── instructions-for-agent.md
+├── plans/                  # Architecture decision notes
+│   └── dnorm-sd-parameterisation.md
+├── results/                # Reference JSON posteriors (binomial, poisson)
+├── scripts/                # Build scripts
+│   ├── build-course.js
+│   ├── build-popups-bundle.js
+│   └── lib/render-content.js
 ├── src/
 │   ├── app.js              # App initialization and UI orchestration
 │   ├── parser/
@@ -47,39 +64,57 @@ FANGS/
 │   │   ├── parser.js       # AST builder from tokens
 │   │   └── model-graph.js  # Build DAG from AST
 │   ├── samplers/
-│   │   ├── gibbs.js        # Main Gibbs sampler loop
-│   │   ├── conjugate.js    # Conjugate update rules
+│   │   ├── gibbs.js        # Main Gibbs sampler loop (includes conjugate updates)
 │   │   ├── slice.js        # Slice sampler fallback
-│   │   └── initialize.js   # Chain initialization strategies
+│   │   ├── initialize.js   # Chain initialization strategies
+│   │   └── sampler-worker.js  # Web Worker wrapper for background sampling
 │   ├── data/
-│   │   ├── csv-loader.js   # CSV parsing and validation
-│   │   └── default-data.js # Built-in example dataset
+│   │   ├── csv-loader.js       # CSV parsing and validation
+│   │   ├── default-data.js     # Built-in example dataset
+│   │   └── predictor-scaling.js # Internal predictor rescaling utilities
 │   ├── ui/
-│   │   ├── editor.js       # Model text editor
-│   │   ├── data-upload.js  # Drag-and-drop file upload
-│   │   ├── settings.js     # Sampler settings panel
-│   │   ├── trace-plot.js   # Live chain trace plots
-│   │   ├── density-plot.js # Posterior density plots
-│   │   ├── summary-table.js# Posterior summaries (quantiles, Rhat)
-│   │   ├── ppc-plot.js     # Posterior predictive check
-│   │   └── popups.js       # Educational pop-up system
+│   │   ├── editor.js           # Model text editor
+│   │   ├── settings.js         # Sampler settings panel
+│   │   ├── trace-plot.js       # Live chain trace plots
+│   │   ├── density-plot.js     # Posterior density plots
+│   │   ├── summary-table.js    # Posterior summaries (quantiles, Rhat)
+│   │   ├── ppc-plot.js         # Posterior predictive check
+│   │   ├── predictions-plot.js # Regression line with 95% CI
+│   │   ├── scatter-plot.js     # Joint posterior scatterplot
+│   │   ├── data-table.js       # Data tab table view
+│   │   └── popups.js           # Educational pop-up system
+│   ├── content/
+│   │   ├── popups-bundle.js    # Compiled popup HTML fallback (committed)
+│   │   └── popups/             # 21 Quarto .qmd popup sources
 │   └── utils/
-│       ├── math.js         # Statistical math helpers
-│       ├── distributions.js# Distribution log-densities and samplers
-│       └── diagnostics.js  # Rhat, ESS, convergence checks
+│       ├── math.js             # Statistical math helpers
+│       ├── distributions.js    # Distribution log-densities and samplers
+│       └── diagnostics.js      # Rhat, ESS, convergence checks
 ├── tests/
-│   ├── r-reference/        # R scripts using nimble for reference results
+│   ├── r-reference/            # R scripts using nimble for reference results
 │   │   ├── linear-model.R
 │   │   ├── poisson-glm.R
 │   │   ├── binomial-glm.R
-│   │   └── mixed-effects.R
-│   ├── parser.test.js      # Parser unit tests
-│   ├── samplers.test.js    # Sampler correctness tests
+│   │   ├── mixed-effects.R
+│   │   ├── benchmark.R
+│   │   ├── compare-nimble-fangs.R
+│   │   ├── compare-nimble-fangs-poisson.R
+│   │   ├── generate-default-data.R
+│   │   ├── R/                  # Shared R utilities
+│   │   ├── nimble-models/      # .bugs model files
+│   │   ├── results/            # Reference JSON + benchmark CSVs/plots
+│   │   └── beta-comparison/    # Beta distribution comparison workflow
+│   ├── bench/
+│   │   └── fangs-cli.mjs       # CLI benchmark harness
+│   ├── parser.test.js
 │   ├── distributions.test.js
-│   └── integration.test.js # End-to-end model fitting tests
-├── data/
-│   └── example.csv         # Default example dataset
-├── instructions-for-agent.md
+│   ├── integration.test.js     # End-to-end model fitting tests
+│   ├── predictor-scaling.test.js
+│   ├── course-challenges.test.js
+│   ├── course-smoke.mjs        # Course page smoke test
+│   └── popup-e2e.mjs           # Popup end-to-end test
+├── development-notes.md        # Informal dev log / scratch notes
+├── PROGRESS.md                 # Implementation progress tracker
 ├── CLAUDE.md
 ├── README.md
 └── LICENSE
@@ -153,7 +188,10 @@ npx serve .
 # Prerequisite: Quarto must be installed (https://quarto.org)
 npm run build:popups
 
-# Start: build popups then serve
+# Render course module .qmd files and regenerate the course bundle
+npm run build:course
+
+# Start: build popups + course, then serve
 npm start
 
 # Run tests
@@ -182,10 +220,11 @@ The dashboard has:
 
 ## Pop-up system
 
-`src/ui/popups.js` implemented. 17 Quarto `.qmd` source files in `src/content/popups/`
+`src/ui/popups.js` implemented. 21 Quarto `.qmd` source files in `src/content/popups/`
 cover MCMC, Gibbs sampling, chains, burn-in, thinning, trace plots, R-hat, ESS,
-posteriors, priors, credible intervals, PPC, prior check, standard deviation (σ), and
-mixed-effects models. `?` trigger buttons are attached via `data-popup` HTML
+posteriors, priors, credible intervals, PPC, prior check, standard deviation (σ),
+mixed-effects models, log/logit links, overdispersion, precision, predictor scaling,
+and the posteriors/summary tabs. `?` trigger buttons are attached via `data-popup` HTML
 attributes and programmatically on summary table column headers.
 
 ### Popup content pipeline
@@ -217,3 +256,81 @@ src/content/popups-bundle.js             ← fallback bundle (committed to git)
 4. Commit `.qmd` + updated `popups-bundle.js`
 
 **Prerequisites:** [Quarto](https://quarto.org) must be installed as a system tool to run `build:popups`. The committed `popups-bundle.js` means the app works for users without Quarto installed.
+
+## Course
+
+A standalone 1-day hands-on workshop (`course/`) built on top of the FANGS app, teaching Bayesian inference for mixed-effects models with marine-ecology examples. Full implementation plan and progress tracking live in `course/course-plan.md` and `course/course-progress.md`.
+
+### Structure
+
+```
+course/
+├── index.html          # Landing page: session → module navigation
+├── course.js           # Loads rendered module HTML; mounts challenge widgets
+├── course.css          # Shared styling
+├── modules.js          # Single source of truth: session grouping, module order, challenge wiring
+├── content/            # Module prose authored as Quarto .qmd (same pipeline as popups)
+│   ├── m01-*.qmd … m20-*.qmd
+│   ├── _rendered/      # git-ignored, produced by npm run build:course
+│   └── course-bundle.js  # fallback for file:// mode (committed to git)
+├── challenges/         # ES-module interactive widgets
+│   ├── challenge-base.js    # shared mount/submit/check/persistence framework
+│   ├── numeric.js           # tolerance comparison helpers
+│   ├── discrete-bayes.js    # M1: Bayes table widget
+│   ├── map-slider.js        # M2: MAP slider on canvas
+│   ├── mcmc-animation.js    # M3: animated Metropolis sampler
+│   ├── code-validator.js    # M4: parser-backed syntax checker
+│   ├── quiz.js              # M10, M17: multiple-choice/matching
+│   ├── results-recorder.js  # M12: localStorage table + CSV download
+│   └── answer-check.js      # generic fit-and-compare (M5 onward)
+└── data/               # Marine datasets (user-supplied CSVs)
+```
+
+### Curriculum overview (6 sessions, 20 modules)
+
+| Session | Modules | Theme |
+|---------|---------|-------|
+| 1 | M1–M3 | Bayesian thinking from scratch (all embedded JS challenges) |
+| 2 | M4–M7 | First models in FANGS |
+| 3 | M8–M10 | Regression & model checking |
+| 4 | M11–M12 | Factors & design matrices |
+| 5 | M13–M16 | Generalised linear models (Poisson, Binomial) |
+| 6 | M17–M20 | Random effects & summative challenge |
+
+`[EMBEDDED]` modules use interactive JS widgets on the course page. `[FANGS]` modules have students work in the live app then verify via an `answer-check` widget.
+
+### Content pipeline (same pattern as popups)
+
+```
+course/content/<id>.qmd          ← author here
+        │  npm run build:course
+        ▼
+course/content/_rendered/<id>.html   ← git-ignored
+        │
+        ├─ fetch() at runtime
+        │
+course/content/course-bundle.js      ← fallback (committed)
+```
+
+**Building:** `npm run build:course` (or `npm start` to build everything and serve).
+
+**Adding a module:**
+1. Add an entry to `MODULES` in `course/modules.js`
+2. Create `course/content/<id>.qmd`
+3. Run `npm run build:course`
+4. Commit `.qmd` + updated `course-bundle.js`
+
+### Datasets
+
+User-supplied CSVs in `course/data/`. For each `answer-check` module, fit the model once in FANGS (or via `tests/r-reference/`) and paste the reference posterior mean + 95% CI into that module's `config.params` in `modules.js`. Until reference values are filled in, modules run in **self-report mode**.
+
+| CSV | Used by modules | Status |
+|-----|----------------|--------|
+| `fish-lengths.csv` | M5, M6, M7 | present |
+| `jaw-length.csv` | M2, M8, M9 | missing |
+| `clownfish-oa.csv` | M11, M12 | present |
+| `fish-counts.csv` | M13, M14 | missing |
+| `presence.csv` | M15, M16 | missing |
+| `random-effects.csv` | M18, M20 | missing |
+
+Note: `clownfish-oa.csv` replaces the originally planned `oa-study.csv`. Four datasets still need to be added.

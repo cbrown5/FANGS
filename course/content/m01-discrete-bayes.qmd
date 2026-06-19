@@ -32,6 +32,37 @@ $$
 That second point is the key idea: **the denominator is not a separate mystery
 quantity — it is built from the same numerators you already computed.**
 
+## Survey weight as a prior
+
+In fisheries and marine ecology, survey data often come with a **survey weight**
+— a number that reflects how much effort was spent sampling each area, or how
+representative each observation is of the population. This weight is a natural
+candidate for the prior.
+
+Suppose the three reefs were surveyed unevenly: the North reef was sampled on
+60 % of survey trips, the Mid reef on 30 %, and the South reef on 10 %. Before
+you even look at the acoustic data, you already know a fish is *more likely* to
+come from the North reef simply because it was sampled more heavily. The survey
+weight encodes that prior belief.
+
+Setting $P(\text{reef}) \propto \text{survey weight}$ is then a principled
+choice: you are saying "my prior is proportional to how often I looked there."
+When the acoustic evidence is strong, the data will still dominate and the
+posterior will differ from the prior. When the evidence is weak or ambiguous,
+the posterior will stay close to the survey weight — exactly the behaviour you
+want.
+
+This connection appears throughout Bayesian ecology:
+
+| Prior | What it encodes |
+|-------|----------------|
+| Uniform ($P = 1/n$ for each option) | Complete ignorance — all hypotheses equally plausible |
+| Survey weight | Sampling effort — some areas observed more than others |
+| Historical detection rate | Past experience about where animals are found |
+
+The choice of prior is *an explicit modelling decision*. Stating
+it as a survey weight makes that decision transparent and auditable.
+
 ## Your task
 
 In the challenge below, fill in the numerator for each reef, then the
