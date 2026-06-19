@@ -67,3 +67,5 @@ course/content/.quarto/
 
 # Documents
 paper/
+# Claude Code harness (worktrees, local state)
+.claude/
