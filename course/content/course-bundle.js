@@ -24,6 +24,38 @@ $$</span></p>
 <li>The <strong>denominator</strong> is <em>the sum of the numerators across all reefs</em>. It is the total probability of the data, and it is what makes the posterior add to 1.</li>
 </ul>
 <p>That second point is the key idea: <strong>the denominator is not a separate mystery quantity — it is built from the same numerators you already computed.</strong></p>
+<h2 id="survey-weight-as-a-prior">Survey weight as a prior</h2>
+<p>In fisheries and marine ecology, survey data often come with a <strong>survey weight</strong> — a number that reflects how much effort was spent sampling each area, or how representative each observation is of the population. This weight is a natural candidate for the prior.</p>
+<p>Suppose the three reefs were surveyed unevenly: the North reef was sampled on 60 % of survey trips, the Mid reef on 30 %, and the South reef on 10 %. Before you even look at the acoustic data, you already know a fish is <em>more likely</em> to come from the North reef simply because it was sampled more heavily. The survey weight encodes that prior belief.</p>
+<p>Setting <span class="math inline"><em>P</em>(reef) ∝ survey weight</span> is then a principled choice: you are saying “my prior is proportional to how often I looked there.” When the acoustic evidence is strong, the data will still dominate and the posterior will differ from the prior. When the evidence is weak or ambiguous, the posterior will stay close to the survey weight — exactly the behaviour you want.</p>
+<p>This connection appears throughout Bayesian ecology:</p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 69%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Prior</th>
+<th>What it encodes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Uniform (<span class="math inline"><em>P</em> = 1/<em>n</em></span> for each option)</td>
+<td>Complete ignorance — all hypotheses equally plausible</td>
+</tr>
+<tr class="even">
+<td>Survey weight</td>
+<td>Sampling effort — some areas observed more than others</td>
+</tr>
+<tr class="odd">
+<td>Historical detection rate</td>
+<td>Past experience about where animals are found</td>
+</tr>
+</tbody>
+</table>
+<p>The choice of prior is <em>an explicit modelling decision</em>. Stating it as a survey weight makes that decision transparent and auditable.</p>
 <h2 id="your-task">Your task</h2>
 <p>In the challenge below, fill in the numerator for each reef, then the denominator (the sum), then each posterior. Then switch the prior and watch the posterior change — same data, different starting beliefs.</p>
 </body></html>`,
@@ -41,7 +73,7 @@ $$</span></p>
 <p>Drag the slider to the peak of the posterior (purple). Watch how the prior (cyan) and likelihood (orange) combine. Then switch to a tighter prior and find the new MAP — the prior pulls the answer toward itself.</p>
 </body></html>`,
   'm03-mcmc-sampling': `<html><head></head><body><h1 id="sampling-the-posterior-with-mcmc">Sampling the posterior with MCMC</h1>
-<p>Finding the <em>peak</em> of the posterior was easy. But we usually want the <strong>whole distribution</strong> — the mean, the spread, a 95% interval. For real models the integral in the denominator is impossible to do by hand.</p>
+<p>Finding the <em>peak</em> of the posterior was easy. But we usually want the <strong>whole distribution</strong> — the mean, the spread, a 95% interval. For many real models the integral in the denominator is impossible to do by hand.</p>
 <p><strong>Markov chain Monte Carlo (MCMC)</strong> sidesteps it. Instead of computing the posterior, we <strong>draw samples</strong> from it. With enough samples we can approximate any summary we like just by counting.</p>
 <h2 id="the-metropolis-recipe">The Metropolis recipe</h2>
 <ol type="1">

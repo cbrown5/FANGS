@@ -14,7 +14,7 @@ npm run build:course
 npx serve .
 ```
 
-Then open <http://localhost:3000/course/> (port may vary).
+Then open <http://localhost:3000/course/> (note slash at end is needed, port may vary).
 
 The course works in `file://` mode too: the build emits
 `course/content/course-bundle.js` as a fallback when `fetch()` is unavailable.

@@ -76,18 +76,9 @@ The `course-bundle.js` fallback (for `file://` mode) is also committed.
 
 ## What is not done (open items for the author)
 
-### Missing datasets
+### Align datasets with modules 
 
-Five CSVs still need to be placed in `course/data/` before the hands-on FANGS modules will work:
-
-| File | Used by | Expected columns |
-|------|---------|-----------------|
-| `oa-study.csv` | M11, M12 | response column, `treatment` (2-level factor) |
-| `fish-counts.csv` | M13, M14 | `count` (response), predictor(s), factors `A` and `B` |
-| `presence.csv` | M15, M16 | `present` (0/1), continuous predictor `x`, 3-level `site` factor |
-| `random-effects.csv` | M18, M20 | response/count, predictor(s), factors, `group`/`reef` grouping column |
-
-Note: `fish-lengths.csv` exists but `modules.js` references `jaw-length.csv` for M8/M9 and `fish-length.csv` for M5/M6/M7. These need to be reconciled — either rename the file or update `modules.js` to point to the real columns in `fish-lengths.csv`.
+update `modules.js` to point to the real columns in `fish-lengths.csv`.
 
 ### Missing reference posterior values
 
@@ -106,12 +97,18 @@ Affected modules: **M5, M8, M11, M13, M14, M15, M16, M18, M20**
 
 Until these are filled in, those challenges fall back to self-report mode (they accept any number and mark the student done).
 
+### Re-write modules
+
+Make less technical. Bring in more stories and details of the case-studies. 
+
+### M3 - slow down sampler
+
+Sampler game is too fast, a bit hard to see, find way to slow it down. 
+
 ### Verification not yet done
 
 Per the plan's verification checklist, these have **not been manually tested yet**:
 
-- [ ] `npm run build:course` runs without error (Quarto installed)
-- [ ] `npx serve .`, open `course/index.html` — all 20 modules load
 - [ ] M1: wrong cells rejected; correct cells pass under both prior presets
 - [ ] M2: MAP slider lights green only near the true argmax; prior switch moves the peak
 - [ ] M3: sampler animates; ESS check gates the green light
