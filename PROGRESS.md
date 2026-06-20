@@ -51,6 +51,8 @@ All core modules are implemented and 253 tests pass.
 ### USER todo
 - Add figures from benchmark.R on timing from tests/results to the paper
 - test poisson gamma 
+- Re-write course modules
+- Check all course apps and modify as neccessary
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper. I think there are still some mentions of conjugates
 - Confirm number of tests is what is said in the paper
@@ -65,10 +67,9 @@ All core modules are implemented and 253 tests pass.
 
 
 ### Claude todo
-- [x] Move pop-up for 'predictor-scaling.md' so it appears just below the RUN button
-- [x] Remove the 'Predictions' tab (but keep the PPC tab ). Prediction from covariate doesn't work for complex models.
-- [x] Remove the div that shows the red stop light on the 'Joint' tab. If the model hasn't run just show the message "Run the model to see the joint distribution of parameters"
-- [x] PPC tab: observer vs predicted plot doesnt show for poisson amd binomial models. works for other models — root cause: PPC was hardcoded to response var `y`; now uses the model's actual response (e.g. `y_count`, `y_bin`).
+- [ ] Increase font size for 'Predictors auto-scaled for sampling' message
+- [ ] Fix bug with syntax error. We get a pop-up and error message. However the model code text then shows a duplicate of the code overlaid the window with teh model box, so it is hard to edit the model. This disappears if you refresh, but then you lose edits to th emodel. 
+- [ ] Implement prediction tab design 
 
 
 
