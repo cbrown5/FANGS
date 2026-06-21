@@ -581,7 +581,7 @@ export class PredictionsPlot {
         const pv = {};
         for (const name of paramNames) pv[name] = this._samples[name][d];
         let fitted;
-        try { fitted = graph.computeMarginalFittedMeans(pv); } catch (_) { continue; }
+        try { fitted = graph.computeFittedMeans(pv); } catch (_) { continue; }
         const fa = fitted[this._responseVar] ?? fitted[Object.keys(fitted)[0]] ?? [];
         if (fa.length > 0 && isFinite(fa[0])) draws.push(fa[0]);
       }

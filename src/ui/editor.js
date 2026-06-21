@@ -92,6 +92,7 @@ export class ModelEditor {
       pointer-events: none;
       overflow: hidden;
       z-index: 0;
+      color: transparent;
       font-family: ${getComputedStyle(this.el).fontFamily};
       font-size: ${getComputedStyle(this.el).fontSize};
       line-height: ${getComputedStyle(this.el).lineHeight};
