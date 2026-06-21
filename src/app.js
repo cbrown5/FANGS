@@ -21,7 +21,8 @@ import { parseCSV, prepareDataColumns } from './data/csv-loader.js';
 import { detectScalableColumns, applyColumnScaling, backTransformSamples } from './data/predictor-scaling.js';
 import { renderDataTable } from './ui/data-table.js';
 import { initPopups, attachPopupTrigger, showErrorModal } from './ui/popups.js';
-import { ScatterPlot }    from './ui/scatter-plot.js';
+import { ScatterPlot }       from './ui/scatter-plot.js';
+import { PredictionsPlot }  from './ui/predictions-plot.js';
 
 // ------------------------------------------------------------------ //
 // Bootstrap                                                            //
@@ -38,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const summary  = new SummaryTable(document.getElementById('summary-container'), attachPopupTrigger);
   const ppc         = new PPCPlot(document.getElementById('ppc-container'));
   const settings = new SamplerSettings(document.getElementById('settings-panel'));
-  const scatter  = new ScatterPlot(document.getElementById('joint-container'));
+  const scatter      = new ScatterPlot(document.getElementById('joint-container'));
+  const predictions  = new PredictionsPlot(document.getElementById('predictions-container'));
 
   // -- Initialise educational popups --
   initPopups();
@@ -295,6 +297,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btn.dataset.tab === 'posteriors') density.render();
       // Trigger scatter re-render when switching to Joint tab
       if (btn.dataset.tab === 'joint') scatter.render();
+      // Trigger predictions re-render when switching to Predictions tab
+      if (btn.dataset.tab === 'predictions') predictions.render();
     });
   });
 
@@ -351,6 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     density.clear();
     summary.clear();
     scatter.clear();
+    predictions.clear();
     posteriorSamples = {};
     setProgress(0);
     setStatus('Starting sampler…', 'running');
@@ -379,13 +384,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tracePane) tracePane.classList.add('active');
 
     // Parse the CSV data
-    let dataColumns, dataN, dataJ, originalDataColumns, scalingParams;
+    let dataColumns, dataN, dataJ, originalDataColumns, scalingParams, capturedFactorMaps;
     try {
       const parsedRows = parseCSV(loadedData);
       if (parsedRows.length === 0) throw new Error('Dataset is empty');
       const { columns, factorMaps } = prepareDataColumns(parsedRows);
       dataN = parsedRows.length;
       originalDataColumns = columns;
+      capturedFactorMaps = factorMaps;
       // Count unique group levels if a 'group' column is present
       dataJ = columns.group
         ? new Set(Array.from(columns.group)).size
@@ -432,6 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const capturedDataN               = dataN;
     const capturedDataJ               = dataJ;
     const capturedDataConstants       = getModelConstants();
+    // capturedFactorMaps is set during CSV parsing above
 
     // Per-chain progress (0–1); displayed as average across all chains.
     const nChains = cfg.nChains;
@@ -502,6 +509,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         scatter.setSamplesMap(posteriorSamples);
+
+        predictions.update({
+          samples:     posteriorSamples,
+          modelSource: capturedModelCode,
+          columns:     capturedOriginalDataColumns,
+          factorMaps:  capturedFactorMaps ?? {},
+          dataJ:       capturedDataJ,
+          responseVar,
+        });
 
         btnDownload.disabled = false;
         summaryWorker = null;
