@@ -1,31 +1,30 @@
 # Writing models in BUGS/JAGS syntax
 
-So far the computer has done the writing for you. Now you take over. FANGS reads
-models written in the **BUGS/JAGS language** — a compact way of describing a model
-that reads almost exactly like the maths you would scribble on paper. You state
-how the data and parameters relate, and the sampler works out how to fit it.
+BUGS and JAGS (Just Another Gibbs Sampler) were two of early software packages that made Bayesian modelling more accessible to a broader audience of scientists. JAGS is still in use today. The R package NIMBLE also makes use of the BUGS/JAGS language. 
+
+One of the ways they made this software more accessible was by inventing a simple language for describing models. The algorithms would then interpret that language and figure out how to fit the model with general purpose samplers. 
+
+FANGS reads models written in the **BUGS/JAGS language** — a  compact way of describing a model that reads almost exactly like the maths you would scribble on paper. You state how the data and parameters relate, and the sampler works out how to fit it.
 
 ## The building blocks
 
 There are really only four pieces to learn:
 
-- **Stochastic nodes** use `~`, read aloud as *"is distributed as"*. This is how
-  you say a quantity is random:
+- **Stochastic nodes** use `~`, read aloud as *"is sampled from the distribution"*. For example: 
   `jaw[i] ~ dnorm(mu, sigma)`
-- **Deterministic nodes** use `<-`, read as *"is calculated as"*. This is for
-  quantities you compute exactly from others:
+means "the jaw length of fish i is sampled from a normal distribution with mean `mu` and standard deviation `sigma`." In this case `jaw[i]` is a data point and `jaw` is a column in our dataframe, so the model will fit the parameters to this data. But stochastic nodes can also be parameters. Which brings us to... 
+- **Priors** are also stochastic nodes placed on the parameters themselves: `alpha ~ dnorm(0, 5)` 
+- **Deterministic nodes** use `<-`, read as *"is calculated as"*. This is for   quantities you compute exactly from others, like: 
   `mu[i] <- alpha + beta * body[i]`
+which is a linear equation for the mean jaw length of fish i,  based on its body length and two parameters `alpha` and `beta`. 
 - **Loops** repeat a statement over every fish in the dataset:
   `for (i in 1:N) { ... }`
-- **Priors** are just stochastic nodes placed on the parameters themselves:
-  `alpha ~ dnorm(0, 5)`
 
 That is the whole grammar. Everything else is built from these four.
 
 ## A minimal frogfish model
 
-Here is the smallest useful model: the jaw lengths of one species scatter around a
-common mean `mu`, with spread `sigma`.
+Here is the smallest useful model: the jaw lengths of one species scatter around a common mean `mu`, with spread `sigma`.
 
 ```
 model {
@@ -37,18 +36,14 @@ model {
 }
 ```
 
-Read it top to bottom: *every measured `length` is normally distributed around a shared `mu`; our prior belief is that `mu` sits somewhere around 40 mm; and the spread `sigma` is somewhere between 0 and 50 mm.*
+Read it top to bottom: *every measured `length` is normally distributed around a shared `mu` (mean); our prior belief is that `mu` sits somewhere around 40 mm; and the spread `sigma` is somewhere between 0 and 50 mm.*
 
-## The one thing that trips everyone up
+## A key difference between FANGS and the classic JAGS syntax
 
-FANGS describes the normal distribution by its **standard deviation**, not its
-precision: `dnorm(mean, SD)`. Most textbooks and classic JAGS/BUGS code instead
-use precision, $\tau = 1/\sigma^2$. So if you copy a model from a textbook, you
-must convert: $\sigma = 1/\sqrt{\tau}$. Forgetting this is the single most common
-source of "why is my fit nonsense?" — so it is worth burning into memory now.
+FANGS describes the normal distribution by its **standard deviation**, not its precision: `dnorm(mean, SD)`. Most textbooks and classic JAGS/BUGS code instead use precision, $\tau = 1/\sigma^2$. So if you copy a model from a textbook, you must convert: $\sigma = 1/\sqrt{\tau}$. Forgetting this is the single most common source of "why is my fit nonsense?". 
+
+Many modern Bayesian software packages, are now using the SD, because it is more intuitive and easier to set priors on. NIMBLE for instance let's the user choose which parameterisation they prefer. 
 
 ## Your task
 
-The model in the challenge has a deliberate **syntax error**. Fix it so the parser
-accepts it. The error message points you to the exact line and column — let it do
-the work.
+The model in the challenge has a deliberate **syntax error**. Fix it so the parser accepts it. The error message points you to the exact line and column — let it do the work.

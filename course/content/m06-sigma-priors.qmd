@@ -1,42 +1,22 @@
 # Choosing a prior for σ
 
-Every parameter in a Bayesian model needs a prior — and that includes the spread,
-$\sigma$. People give a lot of thought to the prior on the mean and then forget
-about $\sigma$, but it deserves the same care. The one rule it must obey: a
-standard deviation can never be negative, so its prior has to live entirely on the
-positive side of zero.
+Every parameter in a Bayesian model needs a prior — and that includes the standard deviation, $\sigma$. Experienced statisticians give a lot of thought to the priors on dispersion parameters like the standard deviation. The one rule it must obey: a standard deviation can never be negative, so its prior has to live entirely on the positive side of zero.
 
 ## Common choices
 
-- `sigma ~ dunif(0, U)` — flat between 0 and some generous ceiling `U`. Simple and
-  honest, but you have to pick `U` large enough that it never clips the posterior.
-  For our frogfish body lengths (which run up to ~250 mm), something like
-  `dunif(0, 100)` gives the spread plenty of room.
-- A **half-normal** via truncation: `sigma ~ dnorm(0, 10) T(0, )` — piles most of
-  its belief on small values and gently discourages enormous ones.
-- `sigma ~ dexp(rate)` — another positive, light-tailed option that fades smoothly
-  toward larger values.
+- `sigma ~ dunif(0, U)` — flat probabilit distribution between 0 and some generous ceiling `U`. Simple, but you have to pick `U` large enough that it never clips the posterior.
+For our frogfish body lengths (which run up to ~250 mm), something like  `dunif(0, 100)` gives the spread plenty of room.
+- `sigma ~ dexp(rate)` — another positive, light-tailed option that fades smoothly toward larger values. A smooth tail rather than a jagged edge like in `dunif` can lead to more efficient sampling. The sampler can explore the tail of the distribution without worrying about hitting a hard ceiling. A rate of `0.05` gives a mean of 20 mm, which is a reasonable starting point for our frogfish data. 
+- In the literature you might also see other choices for priors like the Cauchy distribution or the half-normal distribution. These are all valid choices, but FANGS does not support them at the moment. We will stick with simple options here. 
 
-## Why σ is special in FANGS
+## What if other scientists disagree with your choice of prior?
 
-Because FANGS describes `dnorm` by its **standard deviation**, the normal $\sigma$
-has **no conjugate update** — there is no neat closed-form recipe to draw it in one
-step. So FANGS quietly falls back to a **slice sampler** for it. You never see this
-happening, but it explains why $\sigma$ occasionally needs a few more iterations to
-settle than the mean does.
+The best way to address this is to show them how much (or how little) the prior moves things. If your posterior is very different under a different, reasonable prior, then you have a problem — and you need to be transparent about it. If your posterior is pretty much the same under different priors, then you can be confident that your results are robust to the choice of prior. 
 
-## Does the prior actually matter?
-
-Often, surprisingly little. With plenty of data the likelihood takes over and the
-prior barely nudges the posterior. With only a handful of observations the prior
-carries more weight. The honest way to find out which situation you are in is not
-to argue about it — it is to **try two priors and compare the answers.**
+Most standard models have conventions for priors that are widely accepted in the field. If you deviate from those conventions, you should be prepared to justify your choice — and to show how much (or how little) it moves things. 
 
 ## Your task
 
 Refit your frogfish body-length model from `fish-lengths.csv` under
-**two different priors for $\sigma$** (for example `dunif(0, 100)` versus a
-truncated half-normal).
-Record the posterior mean and 95% CI for $\sigma$ in the table below for each run.
-Two completed rows unlocks the module — and shows you, first-hand, how much (or how
-little) the prior moved things.
+**two different priors for $\sigma$** (for example `dunif(0, 100)` versus a truncated half-normal). Record the posterior mean and 95% CI for $\sigma$ in the table below for each run.
+Two completed rows unlocks the module, and shows you, first-hand, how much (or how little) the prior moved things.

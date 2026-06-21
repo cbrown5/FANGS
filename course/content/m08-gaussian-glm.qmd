@@ -1,14 +1,11 @@
 # Gaussian regression: jaw length ~ body length
 
-Now we add a **predictor**. A frogfish that swallows prey whole lives and dies by
-the size of its mouth, and bigger fish tend to have bigger jaws. Do they? With the
-same `fish-lengths.csv` you already know, we can ask directly:
+Now we add a **predictor**. A frogfish that swallows prey whole lives and dies by the size of its mouth, and bigger fish tend to have bigger jaws. Do they? With the same `fish-lengths.csv` you already know, we can ask directly:
 **as body length grows, how much does jaw length grow with it?**
 
 ## The model
 
-We treat each species' jaw length as scattering around a line drawn through body
-length:
+We treat each species' jaw length as scattering around a line drawn through body length:
 
 $$
 \text{jaw}_i \sim \text{Normal}(\mu_i,\ \sigma), \qquad
@@ -29,24 +26,22 @@ model {
 }
 ```
 
-- $\alpha$ — the **intercept**: predicted jaw length at body length 0. Not
-  biologically meaningful on its own (there are no 0 mm fish), but the line needs
-  a starting height.
-- $\beta$ — the **slope**: extra mm of jaw for each extra mm of body. *This* is the
-  number the biology is about. A slope near 0.35, say, would mean jaw length is
-  about a third of body length across these species.
-- FANGS rescales predictors internally for efficient sampling and back-transforms
-  the results, so you can read $\beta$ straight off on the original mm scale.
+- $\alpha$ — the **intercept**: predicted jaw length at body length 0. Not biologically meaningful on its own (there are no 0 mm fish), but the line needs a starting height.
+- $\beta$ — the **slope**: extra mm of jaw for each extra mm of body. *This* is the number the biology is about. A slope near 0.35, say, would mean jaw length is about a third of body length across these species.
+- FANGS rescales predictors internally for efficient sampling and back-transforms the results, so you can read $\beta$ straight off  in the original mm scale.
+
+Check [Module 5](course/#m05-first-fit) for tips on debugging if you get an error. 
 
 ## Reading the result
 
-Open the **Predictions** tab: it draws the posterior-mean regression line and its
-95% band straight over the data points, so you can see the fit at a glance. Then
-the **Summary** tab gives the posterior for $\beta$ — if its 95% credible interval
-sits entirely above 0, then bigger frogfish credibly have bigger jaws.
+Check the **Posterior** tab first to see the histograms for $\alpha$ and $\beta$. The mean of $\beta$ is the best guess for how much jaw length grows with body length, and the 95% credible interval gives a range of plausible values. If the interval sits entirely above 0, then bigger frogfish credibly have bigger jaws. 
+
+You are also looking for a nice even distribution here, if the histogram is very lumpy or has a long tail, it may be a sign of a sampling problem. More on this later. 
+
+Then the **Summary** tab gives the posterior for $\beta$ — if its 95% credible interval sits entirely above 0, then bigger frogfish credibly have bigger jaws. Save those values for the challenge at the end of the module. 
+
+Open the **Predictions** tab: it draws the posterior-mean regression line and its 95% band straight over the data points, so you can see how jaw length changes with body length across the different species. 
 
 ## Your task
 
-Fit this model to `fish-lengths.csv` in FANGS (jaw length on body length), then
-enter your posterior means for $\alpha$ and $\beta$. From here on the rhythm is
-always the same: **set up the model, fit it carefully, check your answer.**
+Fit this model to `fish-lengths.csv` in FANGS (jaw length on body length), then enter your posterior means for $\alpha$ and $\beta$. From here on the rhythm is always the same: **set up the model, fit it carefully, check your answer.**

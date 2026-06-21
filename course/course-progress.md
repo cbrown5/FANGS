@@ -76,6 +76,16 @@ The `course-bundle.js` fallback (for `file://` mode) is also committed.
 
 ## What is not done (open items for the author)
 
+### Module updates
+
+Add M00 - An initial module that is an introduction to the course, including the recommendation to use a desktop or a large screen over a mobile, how FANGS was made etc... (draw on the 'About' page). 
+Add a further reading page. Note, include bayesian workflow paper, among others... 
+
+M04 - add three tabs with three syntax challenges. Make them a little bit more complex, such that the student has to complete more syntax. 
+
+M07 - Use a challenge like in M06, where the user has to enter Means and 95% CIs for `alpha` for different priors, but this time from the 'Prior check' tab
+
+
 ### Missing reference posterior values
 
 All `answer-check` modules in `modules.js` have placeholder zeros in their `config.params`:
@@ -89,7 +99,7 @@ For each FANGS module, the author needs to:
 2. Read the posterior means and 95% CIs from the Summary tab
 3. Paste the real values into `modules.js`
 
-Affected modules: **M5, M8, M11, M13, M14, M15, M16, M18, M20**
+Modules left to-do: **M11, M13, M14, M15, M16, M18, M20**
 
 Until these are filled in, those challenges fall back to self-report mode (they accept any number and mark the student done).
 

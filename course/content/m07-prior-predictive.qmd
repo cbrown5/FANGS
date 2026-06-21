@@ -1,10 +1,7 @@
 # Prior predictive checks
 
-Before fitting anything, it pays to ask a blunt question:
-**do my priors imply sensible data?** It is easy to write down a prior that looks
-innocent and quietly believes in impossible fish. A prior predictive check catches
-this by simulating
-whole fake datasets from the priors *alone* — the real measurements never enter.
+Before fitting anything, it pays to ask:
+**do my priors imply sensible data?** It is easy to write down a prior that looks innocent and quietly believes in impossible fish. A prior predictive check catches this by simulating whole fake datasets from the priors *alone*. The real data are not used in the simulation. 
 
 ## How it works
 
@@ -12,22 +9,17 @@ whole fake datasets from the priors *alone* — the real measurements never ente
 2. Push those values through the model to simulate a dataset.
 3. Repeat many times and look at the spread of simulated data.
 
-If your simulated "frogfish body lengths" come out spanning $-400$ to $600$ mm,
-something is wrong: real frogfish are never negative, and a half-metre frogfish is
-a monster. A prior that produces those values is putting belief on the impossible.
-Tighten it.
+If your simulated "frogfish jaw lengths" come out spanning $-400$ to $600$ mm, something is wrong: real frogfish can't have negative jaw lengths, and a half-metre frogfish is a monster. A prior that produces those values is putting belief on the impossible. 
+Tighten it or use a different distribution until the prior predictive check shows you something that looks like real frogfish. 
 
 ## In FANGS
 
-Use the **Prior Check** tab. It runs the model forward from the priors with the
-likelihood switched off, so you see exactly what your assumptions predict *before*
-the data gets any vote.
+Use the **Prior Check** tab. It runs the model forward from the priors with the likelihood switched off, so you see exactly what your assumptions predict *before* the data gets any vote.
 
-This is the natural partner to the $\sigma$-prior work you just did. A vague-looking
-`dnorm(0, 1000)` on the mean body length seems harmless on the page — until the
-prior check shows you the absurd fish it implies.
+This is the natural partner to the $\sigma$-prior work you just did. A vague-looking `dnorm(0, 1000)` on the mean body length seems harmless on the page — until the prior check shows you the absurd fish it implies.
+
+Note that the posterior histograms in FANGS fit a smoother over the histograms, so sometimes may look like smooth curves that deviate into negative space for prior that is meant to be positive only. But if you check the Prior summary you should see no negative values in the prior samples.
 
 ## Your task
 
-Run a prior check on your frogfish body-length model. Then answer the question
-below about how to read an obviously-too-vague prior.
+Run a prior check on your frogfish body-length model. Then answer the question below about how to read an obviously-too-vague prior.

@@ -1,20 +1,14 @@
 # Sampling the posterior with MCMC
 
-Finding the single *peak* of the posterior was easy. But the peak alone rarely
-answers an ecological question. We want the **whole distribution**: the average
-jaw length, how uncertain it is, a range we are 95% sure it falls in. And for most
-real models — many parameters, awkward shapes — that integral in the denominator
-simply cannot be done by hand.
+Finding the single *peak* of the posterior was easy. But the peak alone doesn't tell us how certain we are in that answer. One of the main features of Bayesian analyses is that we can do book keeping on multiple sources of uncertainty and account for that when we make our final (posterior) prediction for a quantity. 
 
-**Markov chain Monte Carlo (MCMC)** is the clever way around the problem. Instead
-of *calculating* the posterior, we **draw samples from it** — like dipping a net
-in again and again. Pile up enough samples and you can read off any summary you
-want just by looking at the pile.
+We want to know the **whole distribution**: the average jaw length, how uncertain it is, a range we are 95% sure it falls in (or whatever % we care to choose, 95% is just a convention). And for most real models — many parameters, awkward shapes — that integral in the denominator simply cannot be done by hand.
+
+**Markov chain Monte Carlo (MCMC)** is the clever way around the problem. Instead of *calculating* the posterior, we **draw samples from it** — like dipping a net in again and again until we get the shape of the posterior. Pile up enough samples and their histogram will be a good approximation of the shape of the posterior. That means we can then calculate summary statistics on the collection of samples, like the mean, median and quantiles. The quantiles we call 'credible intervals' — the Bayesian version of confidence intervals.
 
 ## The Metropolis recipe
 
-Think of an explorer wandering the landscape of possible jaw lengths, spending
-more time where the posterior is high:
+Think of an deep sea submarine wandering the ocean floor, spending more time where the posterior is high, eventually it will have a good map of the bathymetry (height of the seafloor). The MCMC algorithm is a recipe for how to move that submarine for any posterior landscape. The most basic version is called the **Metropolis algorithm**:
 
 1. Start somewhere — anywhere.
 2. **Propose** a small random step to a nearby value.
@@ -23,10 +17,9 @@ more time where the posterior is high:
    what lets the explorer wander out of dead ends and cover the whole landscape.
 4. Repeat thousands of times.
 
-The values the explorer actually visits form a **chain**. Once it has wandered far
-enough to forget where it started, the chain is a fair sample from the posterior.
-Build a histogram of those visited values and you are looking at the posterior
-itself.
+The values the explorer actually visits form a **chain**. Once it has wandered far enough to forget where it started, the chain is a fair sample from the posterior. Build a histogram of those visited values and you are looking at the posterior itself. 
+
+If our chain isn't long enough, the map will look patchy and represent the area we started in, not neccessarily the whole posterior. Likewise, the steps the chain takes need to be carefully calibrated. So setting up the parameters that control the MCMC algorithm is a big part of Bayesian modelling. FANGS will help you with those choices, but you need to understand the trade-offs and make a few choices for yourself. 
 
 ## The tuning trade-off
 
@@ -39,14 +32,18 @@ tune, and it matters a lot:
 - **Too large** → almost every bold leap lands somewhere implausible and gets
   rejected, so the explorer stays stuck in one spot.
 
-We measure how well this is going with the **effective sample size (ESS)**: out of
-all your correlated samples, how many *genuinely independent* draws are they worth?
-A well-tuned chain converts thousands of steps into a healthy ESS; a badly tuned
-one wastes them.
+We measure how well this is going with the **effective sample size (ESS)**: out of all your correlated samples, how many *genuinely independent* draws are they worth? A well-tuned chain converts thousands of steps into a healthy  ESS; a badly tuned one wastes them.
+
+## Sample length
+
+The other tuning parameter is how long to run the chain. The longer you run it, the more samples you get, and the better your approximation of the posterior. But it takes time to run, and there are diminishing returns: the ESS grows with the square root of the number of steps, so doubling your ESS requires quadrupling your steps. 
+
+## Burn-in and thinning
+
+The first few steps of the chain are not a good sample from the posterior, because they are still influenced by where you started. So we throw those away as **burn-in**. The number of burn-in steps is another tuning parameter, but a common rule of thumb is to throw away the first 10% of your chain. 
+
+Thinning is another trick to reduce the dependence between samples. Instead of keeping every step, you keep only every 10th step, for example. This can help if your chain is very autocorrelated, but it also throws away a lot of data, so it is not always the best solution. We will look more into this choice later on. 
 
 ## Your task
 
-Run the sampler on the frogfish jaw-length posterior. Tune the proposal SD and the
-number of steps until the ESS clears the target. Watch what happens at the
-extremes: *both* a tiny and a huge proposal SD wreck the ESS — the sweet spot sits
-in the middle.
+Run the sampler on the frogfish jaw-length posterior. Tune the proposal SD and the number of steps until the ESS clears the target. Watch what happens at the extremes: *both* a tiny and a huge proposal SD wreck the ESS — the sweet spot sits in the middle. Note that when we get to using FANGS it automatically tunes the proposal SD for you, you will just need to decide how many samples to take. 

@@ -1,14 +1,10 @@
 # Fit your first model in FANGS
 
-Enough rehearsal — time to fit a real model to real fish. From here on you work in
-**FANGS itself**. Open it with the link in the header (or the button in the
-challenge) and keep it side by side with this page.
+Time to fit a FANGS model to real data. From here on you work in FANGS itself for the challenges. Open it with the link in the header (or the button in the challenge) and keep it side by side with this page.
 
-## Meet the data
+## The data
 
-The file `fish-lengths.csv` holds body measurements for **42 species of frogfish**
-— those lumpy, camouflaged ambush predators from Module 2. Each row is one species,
-with these columns:
+The file `fish-lengths.csv` holds body measurements for **42 species of frogfish** — camouflaged ambush predators most famous for the many species that have lures dangling over their mouths. Each row is one species, with these columns:
 
 - `Tree_name` — the species name (e.g. *Antennarius_commerson*).
 - `Standard_length` — body length in mm, the snout-to-tail-base measurement
@@ -16,33 +12,42 @@ with these columns:
 - `Lower_jaw_length` — jaw length in mm (we will use this in a later module).
 - `Mouth_width` — mouth width in mm.
 
-For now we ignore the predictors and ask the simplest possible question:
-**across these species, what is the typical body length, and how much do species vary?**
-That is an intercept-only model:
+Frogfish are known for their short bodies and big mouths. You need to have a big mouth if you are an ambush predator, so you can grab whatever morsel swims by. But how big are their mouths, and how much do they vary across species? We will answer that question in the next module.
+
+For now we ignore the predictors and ask the question:
+**across these species, what is the typical jaw length, and how much do species vary?**
+
+A model of just a mean is sometimes called an 'intercept-only model'. Later we will add other predictors to make it into a linear regression model. The intercept-only model for jaw length looks like this:
 
 ```
 model {
   for (i in 1:N) {
-    Standard_length[i] ~ dnorm(alpha, sigma)
+    Lower_jaw_length[i] ~ dnorm(alpha, sigma)
   }
   alpha ~ dnorm(100, 50)
   sigma ~ dunif(0, 100)
 }
 ```
 
-Here `alpha` is the average body length and `sigma` is how widely species spread
-around it.
+Pay attention to the different elements of the model that we covered in the lsat module:
+- The `for` loop says that each observation of `Lower_jaw_length` is drawn from a normal distribution with mean `alpha` and standard deviation `sigma`.
+- `dnorm()` is distribution we are using to model the likelihood of the jaw length data (a stochastic node).
+- We have two priors, one for `alpha` and one for `sigma`. These are also stochastic nodes, but this time on parameters, not the raw data. 
+
+Here `alpha` will be our estimate of the average jaw length and `sigma` is our estimate for widely species spread around the mean.
 
 ## The FANGS workflow
 
 1. **Load data.** Drag `fish-lengths.csv` onto the upload area. Check the **Data**
    tab to confirm it read in correctly.
-2. **Write the model** in the editor on the left (the intercept-only model above).
-3. **Set the constants.** Tell FANGS the number of observations `N`.
+2. **Write the model** in the editor on the left (the intercept-only model above). Keep the Data tab open so you can refer to the variable names as you type. 
+3. **Check the constants.** Check FANGS has the correct number of observations `N`. This is automatically set, so if its not what you expect, check your data upload and the variable names in your model. 
 4. **Set sampler settings:** chains, samples, burn-in, thinning. The defaults
    (3 chains, 2000 samples) are a fine starting point.
 5. **Run.** Watch the **Trace** tab fill in live, then read the **Posteriors** and
-   **Summary** tabs.
+   **Summary** tabs. 
+
+You can also check the **Posteriors** tab to see the posterior distributions fill in as the sampler runs. 
 
 ## What to look for
 
@@ -51,8 +56,17 @@ around it.
 - The **Summary** table gives the posterior mean, SD, and a 95% credible interval
   for each parameter.
 
+## Debugging tips 
+
+If you get an error: 
+- Check the **Console** tab for error messages. They can be cryptic, but they often point to the line of code that is causing the problem.
+- Check the spelling of variable names. FANGS is case-sensitive, so `Lower_jaw_length` is not the same as `lower_jaw_length`.
+- Check for consistency of parameter names. If you use `alpha` in the likelihood, make sure you use `alpha` in the priors, not `apha` or something else.
+- Make sure you close all the brackets, including the `for` loop and the `model` block. 
+- Check you have put indices where they belong. The likelihood should have `Lower_jaw_length[i]` and the loop should be `for (i in 1:N)`. If you forget the `[i]` in the likelihood, you are trying to model the whole vector of jaw lengths as a single number and you will get nonsense results. 
+
 ## Your task
 
 Fit the intercept-only model to `fish-lengths.csv`. Then come back here and enter
-your posterior means for $\alpha$ (the mean body length) and $\sigma$ (the
+your posterior means for $\alpha$ (the mean jaw length) and $\sigma$ (the
 species-to-species spread). The challenge checks them against the reference fit.

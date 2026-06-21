@@ -1,9 +1,6 @@
 # Bayes' theorem with discrete models
 
-Here is the whole idea of Bayesian inference in one sentence:
-**start with what you already believe, then update it in proportion to how well the new data fit.**
-Nothing more mysterious than that. The maths below is just careful bookkeeping
-for that update.
+Bayesian inference works on the idea of **starting with what you already believe, then updating those beliefs in proportion to how well the new data fit your model.**
 
 You begin with a belief held *before* the data arrive — the **prior**. You ask how
 well each explanation accounts for what you saw — the **likelihood**. Multiply the
