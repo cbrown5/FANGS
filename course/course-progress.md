@@ -86,6 +86,7 @@ M04 - add three tabs with three syntax challenges. Make them a little bit more c
 M07 - Use a challenge like in M06, where the user has to enter Means and 95% CIs for `alpha` for different priors, but this time from the 'Prior check' tab
 
 
+
 ### Missing reference posterior values
 
 All `answer-check` modules in `modules.js` have placeholder zeros in their `config.params`:
