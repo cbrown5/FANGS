@@ -1,0 +1,36 @@
+---
+title: "Regression Predictions"
+format: html
+---
+
+# Regression Predictions
+
+The **Predictions tab** shows how the expected response changes across the range of a chosen predictor, with a 95% credible interval ribbon.
+
+## How it works
+
+After sampling, FANGS sweeps a **focal covariate** from its minimum to its maximum value, plugging each grid point into the fitted model and collecting the resulting expected response across posterior draws. The ribbon shows the 2.5% and 97.5% quantiles of those draws.
+
+## Conditional vs marginal predictions
+
+Two prediction modes are available:
+
+**Conditional (hold at mean)** — All other continuous covariates are fixed at their observed means; categorical covariates are fixed at the chosen level. This answers: *"What is the expected response for a typical unit as X varies?"*
+
+**Marginal (average over data)** — Predictions are averaged over the observed distribution of all other covariates. For each grid point, FANGS substitutes that focal value into every observed row and averages the resulting fitted values. This answers: *"What is the population-average response as X varies?"* The two modes agree when other covariates are uncorrelated with the focal predictor.
+
+## Categorical focal covariate
+
+Selecting a factor as the focal covariate produces a **dot-and-CI** plot — one posterior mean with 95% credible interval per factor level.
+
+## Colour by factor
+
+When the focal covariate is continuous, choosing a factor in the **Colour by** dropdown draws a separate prediction ribbon for each factor level. Data points are coloured to match.
+
+## Link scale
+
+For GLMs (Poisson, Binomial) you can toggle **Show link scale** to display predictions on the log or logit scale instead of the natural (response) scale. This is useful for checking linearity and comparing with coefficient estimates.
+
+## Mixed-effects models (RE = 0)
+
+For models with random effects (e.g. `b[group[i]]`), FANGS zeroes out the random effects and shows **population-level** (marginal) predictions. This is the prediction for a new, unobserved group drawn from the random-effects distribution.
