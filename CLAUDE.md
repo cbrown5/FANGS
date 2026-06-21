@@ -286,7 +286,7 @@ course/
 └── data/               # Marine datasets (user-supplied CSVs)
 ```
 
-### Curriculum overview (6 sessions, 20 modules)
+### Curriculum overview (6 sessions, 21 modules)
 
 | Session | Modules | Theme |
 |---------|---------|-------|
@@ -295,7 +295,7 @@ course/
 | 3 | M8–M10 | Regression & model checking |
 | 4 | M11–M12 | Factors & design matrices |
 | 5 | M13–M16 | Generalised linear models (Poisson, Binomial) |
-| 6 | M17–M20 | Random effects & summative challenge |
+| 6 | M17–M21 | Random effects, identifiability & summative challenge |
 
 `[EMBEDDED]` modules use interactive JS widgets on the course page. `[FANGS]` modules have students work in the live app then verify via an `answer-check` widget.
 

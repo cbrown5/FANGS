@@ -1,0 +1,126 @@
+# Model choice, priors & identifiability
+
+So far we have improved sampling by tidying up priors and reparameterising. This
+module pushes the idea one step further and asks a deeper question: **what
+happens when the model itself cannot, in principle, separate two parameters —
+and how can a prior rescue it?**
+
+This is one of the most important ideas in the whole course. A model that a
+classical (maximum-likelihood) analysis would reject as *unidentifiable* can be
+perfectly usable in a Bayesian analysis — *provided* you can bring honest prior
+information to the parameters the data cannot pin down.
+
+## A deliberately broken model
+
+Consider a simple linear regression, but with **two intercepts** instead of one:
+
+```
+model {
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + alpha2 + beta * x[i]
+  }
+  alpha  ~ dnorm(0, 5)
+  alpha2 ~ dnorm(0, 5)
+  beta   ~ dnorm(0, 5)
+  sigma  ~ dunif(0, 100)
+}
+```
+
+Look closely at the mean: `alpha` and `alpha2` *only ever appear added
+together*. The data see the sum $\alpha + \alpha_2$ — never the two pieces on
+their own. Any increase in `alpha` can be exactly cancelled by an equal decrease
+in `alpha2` with **no change to the fit**. The likelihood is completely flat
+along the ridge
+
+$$\alpha + \alpha_2 = \text{constant}.$$
+
+Statisticians call this a **non-identifiable** (or *aliased*) parameterisation.
+The *sum* is identified; the two *components* are not.
+
+## Your task — part 1: watch the chains fail
+
+1. Load the default example dataset (the built-in `y`, `x` data) in FANGS.
+2. Paste the two-intercept model above and run it with **4 chains**.
+3. Open the **Trace** tab and watch `alpha` and `alpha2`.
+
+You should see them **wander** — slow, drifting, snake-like traces that never
+settle, and that look different in every chain. Now check the **Summary** tab:
+
+- **R-hat** for `alpha` and `alpha2` will be large (well above 1.01) — the
+  chains disagree about where these parameters live.
+- **ESS** will be tiny — successive draws are highly correlated, so thousands of
+  iterations buy you only a handful of effectively independent samples.
+- But look at `beta`, `sigma`, and (if you add it) the derived sum
+  `alpha + alpha2`: these are **well-behaved**. Only the un-identified pieces
+  misbehave.
+
+::: callout-tip
+The data constrain a *line* through $(\alpha, \alpha_2)$ space, not a *point*.
+The sampler is free to slide anywhere along that line, so it does.
+:::
+
+## Your task — part 2: see the bimodality
+
+Open the **Posteriors** tab and look at the density for `alpha` (and `alpha2`).
+Because each chain settles in a different stretch of the ridge and mixes badly,
+the pooled density often looks **lumpy or multi-modal** — two or more bumps
+where you expected one smooth hill. That bimodality is **not a real feature of
+the data**; it is an artefact of a non-identified parameter being explored by
+chains that cannot agree. Compare it with the density of `beta`, which is a
+single clean peak. Recognising "fake" multi-modality like this is a key
+diagnostic skill.
+
+## Your task — part 3: let a prior do the work
+
+Here is the Bayesian punchline. The data cannot separate `alpha` and `alpha2`,
+but a **prior can**. Tighten the prior on `alpha2` step by step and refit each
+time, watching R-hat, ESS, and the posterior shape:
+
+| Step | Prior on `alpha2`      | Prior SD | What it says |
+|------|------------------------|----------|--------------|
+| 1    | `alpha2 ~ dnorm(0, 5)` | 5        | "alpha2 could be almost anything" |
+| 2    | `alpha2 ~ dnorm(0, 1)` | 1        | "alpha2 is probably small" |
+| 3    | `alpha2 ~ dnorm(0, 0.2)`| 0.2     | "alpha2 is very close to 0" |
+
+(Remember: FANGS parameterises `dnorm` by **standard deviation**, so the second
+argument *is* the prior SD — a smaller number means a tighter prior.)
+
+As the prior on `alpha2` tightens, it pins `alpha2` near zero. That **breaks the
+symmetry of the ridge**: with `alpha2` held close to 0, the data can finally
+identify `alpha` (it becomes the ordinary intercept again). Watch what happens:
+
+- The `alpha` trace **stops wandering** and settles.
+- **R-hat falls toward 1.00** and **ESS climbs** by orders of magnitude.
+- The lumpy, bimodal density collapses into a **single clean peak**.
+
+You have not added any data. You have not changed what the data can tell you
+about the *sum*. You have simply supplied **external information** about one
+parameter — and that was enough to make the whole model sample cleanly.
+
+## The big idea
+
+> A model that looks hopeless to a classical, likelihood-only analysis — because
+> the data alone cannot identify every parameter — can be **perfectly usable in
+> a Bayesian analysis** when you have genuine prior information about the
+> parameters the data leave undetermined.
+
+This is a real strength of the Bayesian approach, but it comes with
+responsibility:
+
+- The result now **depends on the prior** you chose for `alpha2`. That is fine
+  *if the prior reflects real knowledge*, and dishonest if you tightened it just
+  to make the sampler behave. Be transparent about where the information came
+  from.
+- Always check **how much the prior moves things** (exactly the prior-sensitivity
+  habit from earlier modules). For an identified parameter the prior barely
+  matters; for a non-identified one it does **all** the work — so say so.
+
+## Record your runs
+
+Refit the two-intercept model under **at least the three priors on `alpha2`**
+in the table above. For each run, record the prior SD, the worst R-hat (of
+`alpha`/`alpha2`), the minimum ESS, and a quick note on the posterior shape
+(*ridge / bimodal / single peak*). Two or more rows unlock the module — and give
+you a first-hand record of a prior turning an unidentifiable model into a
+well-behaved one.

@@ -26,7 +26,7 @@ async function go(hash) {
 
 // 1. Shell + nav
 await go('m01-discrete-bayes');
-assert(await page.locator('.nav-module').count() === 20, 'nav lists 20 modules');
+assert(await page.locator('.nav-module').count() === 21, 'nav lists 21 modules');
 assert(await page.locator('.nav-session').count() === 6, 'nav has 6 sessions');
 assert((await page.locator('.module-prose h1').first().innerText()).includes('Bayes'), 'M1 prose renders');
 

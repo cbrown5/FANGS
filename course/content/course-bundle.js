@@ -5,7 +5,7 @@
 
 export const COURSE_CONTENT = {
   'm01-discrete-bayes': `<h1>Bayes' theorem with discrete models</h1>
-<p>Here is the whole idea of Bayesian inference in one sentence: <strong>start with what you already believe, then update it in proportion to how well the new data fit.</strong> Nothing more mysterious than that. The maths below is just careful bookkeeping for that update.</p>
+<p>Bayesian inference works on the idea of <strong>starting with what you already believe, then updating those beliefs in proportion to how well the new data fit your model.</strong></p>
 <p>You begin with a belief held <em>before</em> the data arrive — the <strong>prior</strong>. You ask how well each explanation accounts for what you saw — the <strong>likelihood</strong>. Multiply the two, tidy up so the numbers add to one, and you have your belief <em>after</em> the data — the <strong>posterior</strong>.</p>
 <h2>A fish that could have come from three reefs</h2>
 <p>Imagine you are tracking fish on a reef system with acoustic tags. A tagged fish swims past a line of underwater receivers and leaves a trail of detections. From the pattern of pings you want to know one thing: <strong>which reef did this fish come from — North, Mid, or South?</strong></p>
@@ -59,10 +59,11 @@ export const COURSE_CONTENT = {
 <h2>Your task</h2>
 <p>Drag the slider to the peak of the posterior (purple). Watch how the prior (cyan) and likelihood (orange) combine into it. Then switch to a tighter prior and find the new MAP — notice how a confident prior tugs the answer toward itself.</p>`,
   'm03-mcmc-sampling': `<h1>Sampling the posterior with MCMC</h1>
-<p>Finding the single <em>peak</em> of the posterior was easy. But the peak alone rarely answers an ecological question. We want the <strong>whole distribution</strong>: the average jaw length, how uncertain it is, a range we are 95% sure it falls in. And for most real models — many parameters, awkward shapes — that integral in the denominator simply cannot be done by hand.</p>
-<p><strong>Markov chain Monte Carlo (MCMC)</strong> is the clever way around the problem. Instead of <em>calculating</em> the posterior, we <strong>draw samples from it</strong> — like dipping a net in again and again. Pile up enough samples and you can read off any summary you want just by looking at the pile.</p>
+<p>Finding the single <em>peak</em> of the posterior was easy. But the peak alone doesn't tell us how certain we are in that answer. One of the main features of Bayesian analyses is that we can do book keeping on multiple sources of uncertainty and account for that when we make our final (posterior) prediction for a quantity. </p>
+<p>We want to know the <strong>whole distribution</strong>: the average jaw length, how uncertain it is, a range we are 95% sure it falls in (or whatever % we care to choose, 95% is just a convention). And for most real models — many parameters, awkward shapes — that integral in the denominator simply cannot be done by hand.</p>
+<p><strong>Markov chain Monte Carlo (MCMC)</strong> is the clever way around the problem. Instead of <em>calculating</em> the posterior, we <strong>draw samples from it</strong> — like dipping a net in again and again until we get the shape of the posterior. Pile up enough samples and their histogram will be a good approximation of the shape of the posterior. That means we can then calculate summary statistics on the collection of samples, like the mean, median and quantiles. The quantiles we call 'credible intervals' — the Bayesian version of confidence intervals.</p>
 <h2>The Metropolis recipe</h2>
-<p>Think of an explorer wandering the landscape of possible jaw lengths, spending more time where the posterior is high:</p>
+<p>Think of an deep sea submarine wandering the ocean floor, spending more time where the posterior is high, eventually it will have a good map of the bathymetry (height of the seafloor). The MCMC algorithm is a recipe for how to move that submarine for any posterior landscape. The most basic version is called the <strong>Metropolis algorithm</strong>:</p>
 <ol>
 <li>Start somewhere — anywhere.</li>
 <li><strong>Propose</strong> a small random step to a nearby value.</li>
@@ -72,7 +73,8 @@ export const COURSE_CONTENT = {
 <ol>
 <li>Repeat thousands of times.</li>
 </ol>
-<p>The values the explorer actually visits form a <strong>chain</strong>. Once it has wandered far enough to forget where it started, the chain is a fair sample from the posterior. Build a histogram of those visited values and you are looking at the posterior itself.</p>
+<p>The values the explorer actually visits form a <strong>chain</strong>. Once it has wandered far enough to forget where it started, the chain is a fair sample from the posterior. Build a histogram of those visited values and you are looking at the posterior itself. </p>
+<p>If our chain isn't long enough, the map will look patchy and represent the area we started in, not neccessarily the whole posterior. Likewise, the steps the chain takes need to be carefully calibrated. So setting up the parameters that control the MCMC algorithm is a big part of Bayesian modelling. FANGS will help you with those choices, but you need to understand the trade-offs and make a few choices for yourself. </p>
 <h2>The tuning trade-off</h2>
 <p>The size of each proposed step — the <strong>proposal step size</strong> — is the thing you tune, and it matters a lot:</p>
 <ul>
@@ -83,29 +85,33 @@ export const COURSE_CONTENT = {
 <li><strong>Too large</strong> → almost every bold leap lands somewhere implausible and gets</li>
 </ul>
 <p>  rejected, so the explorer stays stuck in one spot.</p>
-<p>We measure how well this is going with the <strong>effective sample size (ESS)</strong>: out of all your correlated samples, how many <em>genuinely independent</em> draws are they worth? A well-tuned chain converts thousands of steps into a healthy ESS; a badly tuned one wastes them.</p>
+<p>We measure how well this is going with the <strong>effective sample size (ESS)</strong>: out of all your correlated samples, how many <em>genuinely independent</em> draws are they worth? A well-tuned chain converts thousands of steps into a healthy  ESS; a badly tuned one wastes them.</p>
+<h2>Sample length</h2>
+<p>The other tuning parameter is how long to run the chain. The longer you run it, the more samples you get, and the better your approximation of the posterior. But it takes time to run, and there are diminishing returns: the ESS grows with the square root of the number of steps, so doubling your ESS requires quadrupling your steps. </p>
+<h2>Burn-in and thinning</h2>
+<p>The first few steps of the chain are not a good sample from the posterior, because they are still influenced by where you started. So we throw those away as <strong>burn-in</strong>. The number of burn-in steps is another tuning parameter, but a common rule of thumb is to throw away the first 10% of your chain. </p>
+<p>Thinning is another trick to reduce the dependence between samples. Instead of keeping every step, you keep only every 10th step, for example. This can help if your chain is very autocorrelated, but it also throws away a lot of data, so it is not always the best solution. We will look more into this choice later on. </p>
 <h2>Your task</h2>
-<p>Run the sampler on the frogfish jaw-length posterior. Tune the proposal SD and the number of steps until the ESS clears the target. Watch what happens at the extremes: <em>both</em> a tiny and a huge proposal SD wreck the ESS — the sweet spot sits in the middle.</p>`,
+<p>Run the sampler on the frogfish jaw-length posterior. Tune the proposal SD and the number of steps until the ESS clears the target. Watch what happens at the extremes: <em>both</em> a tiny and a huge proposal SD wreck the ESS — the sweet spot sits in the middle. Note that when we get to using FANGS it automatically tunes the proposal SD for you, you will just need to decide how many samples to take. </p>`,
   'm04-model-syntax': `<h1>Writing models in BUGS/JAGS syntax</h1>
-<p>So far the computer has done the writing for you. Now you take over. FANGS reads models written in the <strong>BUGS/JAGS language</strong> — a compact way of describing a model that reads almost exactly like the maths you would scribble on paper. You state how the data and parameters relate, and the sampler works out how to fit it.</p>
+<p>BUGS and JAGS (Just Another Gibbs Sampler) were two of early software packages that made Bayesian modelling more accessible to a broader audience of scientists. JAGS is still in use today. The R package NIMBLE also makes use of the BUGS/JAGS language. </p>
+<p>One of the ways they made this software more accessible was by inventing a simple language for describing models. The algorithms would then interpret that language and figure out how to fit the model with general purpose samplers. </p>
+<p>FANGS reads models written in the <strong>BUGS/JAGS language</strong> — a  compact way of describing a model that reads almost exactly like the maths you would scribble on paper. You state how the data and parameters relate, and the sampler works out how to fit it.</p>
 <h2>The building blocks</h2>
 <p>There are really only four pieces to learn:</p>
 <ul>
-<li><strong>Stochastic nodes</strong> use <code>~</code>, read aloud as <em>&quot;is distributed as&quot;</em>. This is how</li>
+<li><strong>Stochastic nodes</strong> use <code>~</code>, read aloud as <em>&quot;is sampled from the distribution&quot;</em>. For example: </li>
 </ul>
-<p>  you say a quantity is random:   <code>jaw[i] ~ dnorm(mu, sigma)</code></p>
+<p>  <code>jaw[i] ~ dnorm(mu, sigma)</code> means &quot;the jaw length of fish i is sampled from a normal distribution with mean <code>mu</code> and standard deviation <code>sigma</code>.&quot; In this case <code>jaw[i]</code> is a data point and <code>jaw</code> is a column in our dataframe, so the model will fit the parameters to this data. But stochastic nodes can also be parameters. Which brings us to... </p>
 <ul>
-<li><strong>Deterministic nodes</strong> use <code>&lt;-</code>, read as <em>&quot;is calculated as&quot;</em>. This is for</li>
+<li><strong>Priors</strong> are also stochastic nodes placed on the parameters themselves: <code>alpha ~ dnorm(0, 5)</code> </li>
+<li><strong>Deterministic nodes</strong> use <code>&lt;-</code>, read as <em>&quot;is calculated as&quot;</em>. This is for   quantities you compute exactly from others, like: </li>
 </ul>
-<p>  quantities you compute exactly from others:   <code>mu[i] &lt;- alpha + beta * body[i]</code></p>
+<p>  <code>mu[i] &lt;- alpha + beta * body[i]</code> which is a linear equation for the mean jaw length of fish i,  based on its body length and two parameters <code>alpha</code> and <code>beta</code>. </p>
 <ul>
 <li><strong>Loops</strong> repeat a statement over every fish in the dataset:</li>
 </ul>
 <p>  <code>for (i in 1:N) { ... }</code></p>
-<ul>
-<li><strong>Priors</strong> are just stochastic nodes placed on the parameters themselves:</li>
-</ul>
-<p>  <code>alpha ~ dnorm(0, 5)</code></p>
 <p>That is the whole grammar. Everything else is built from these four.</p>
 <h2>A minimal frogfish model</h2>
 <p>Here is the smallest useful model: the jaw lengths of one species scatter around a common mean <code>mu</code>, with spread <code>sigma</code>.</p>
@@ -116,15 +122,16 @@ export const COURSE_CONTENT = {
   mu ~ dnorm(40, 20)
   sigma ~ dunif(0, 50)
 }</code></pre>
-<p>Read it top to bottom: <em>every measured <code>length</code> is normally distributed around a shared <code>mu</code>; our prior belief is that <code>mu</code> sits somewhere around 40 mm; and the spread <code>sigma</code> is somewhere between 0 and 50 mm.</em></p>
-<h2>The one thing that trips everyone up</h2>
-<p>FANGS describes the normal distribution by its <strong>standard deviation</strong>, not its precision: <code>dnorm(mean, SD)</code>. Most textbooks and classic JAGS/BUGS code instead use precision, <span class="math inline">\\(\\tau = 1/\\sigma^2\\)</span>. So if you copy a model from a textbook, you must convert: <span class="math inline">\\(\\sigma = 1/\\sqrt{\\tau}\\)</span>. Forgetting this is the single most common source of &quot;why is my fit nonsense?&quot; — so it is worth burning into memory now.</p>
+<p>Read it top to bottom: <em>every measured <code>length</code> is normally distributed around a shared <code>mu</code> (mean); our prior belief is that <code>mu</code> sits somewhere around 40 mm; and the spread <code>sigma</code> is somewhere between 0 and 50 mm.</em></p>
+<h2>A key difference between FANGS and the classic JAGS syntax</h2>
+<p>FANGS describes the normal distribution by its <strong>standard deviation</strong>, not its precision: <code>dnorm(mean, SD)</code>. Most textbooks and classic JAGS/BUGS code instead use precision, <span class="math inline">\\(\\tau = 1/\\sigma^2\\)</span>. So if you copy a model from a textbook, you must convert: <span class="math inline">\\(\\sigma = 1/\\sqrt{\\tau}\\)</span>. Forgetting this is the single most common source of &quot;why is my fit nonsense?&quot;. </p>
+<p>Many modern Bayesian software packages, are now using the SD, because it is more intuitive and easier to set priors on. NIMBLE for instance let's the user choose which parameterisation they prefer. </p>
 <h2>Your task</h2>
 <p>The model in the challenge has a deliberate <strong>syntax error</strong>. Fix it so the parser accepts it. The error message points you to the exact line and column — let it do the work.</p>`,
   'm05-first-fit': `<h1>Fit your first model in FANGS</h1>
-<p>Enough rehearsal — time to fit a real model to real fish. From here on you work in <strong>FANGS itself</strong>. Open it with the link in the header (or the button in the challenge) and keep it side by side with this page.</p>
-<h2>Meet the data</h2>
-<p>The file <code>fish-lengths.csv</code> holds body measurements for <strong>42 species of frogfish</strong> — those lumpy, camouflaged ambush predators from Module 2. Each row is one species, with these columns:</p>
+<p>Time to fit a FANGS model to real data. From here on you work in FANGS itself for the challenges. Open it with the link in the header (or the button in the challenge) and keep it side by side with this page.</p>
+<h2>The data</h2>
+<p>The file <code>fish-lengths.csv</code> holds body measurements for <strong>42 species of frogfish</strong> — camouflaged ambush predators most famous for the many species that have lures dangling over their mouths. Each row is one species, with these columns:</p>
 <ul>
 <li><code>Tree_name</code> — the species name (e.g. <em>Antennarius_commerson</em>).</li>
 <li><code>Standard_length</code> — body length in mm, the snout-to-tail-base measurement</li>
@@ -134,30 +141,39 @@ export const COURSE_CONTENT = {
 <li><code>Lower_jaw_length</code> — jaw length in mm (we will use this in a later module).</li>
 <li><code>Mouth_width</code> — mouth width in mm.</li>
 </ul>
-<p>For now we ignore the predictors and ask the simplest possible question: <strong>across these species, what is the typical body length, and how much do species vary?</strong> That is an intercept-only model:</p>
+<p>Frogfish are known for their short bodies and big mouths. You need to have a big mouth if you are an ambush predator, so you can grab whatever morsel swims by. But how big are their mouths, and how much do they vary across species? We will answer that question in the next module.</p>
+<p>For now we ignore the predictors and ask the question: <strong>across these species, what is the typical jaw length, and how much do species vary?</strong></p>
+<p>A model of just a mean is sometimes called an 'intercept-only model'. Later we will add other predictors to make it into a linear regression model. The intercept-only model for jaw length looks like this:</p>
 <pre><code>model {
   for (i in 1:N) {
-    Standard_length[i] ~ dnorm(alpha, sigma)
+    Lower_jaw_length[i] ~ dnorm(alpha, sigma)
   }
   alpha ~ dnorm(100, 50)
   sigma ~ dunif(0, 100)
 }</code></pre>
-<p>Here <code>alpha</code> is the average body length and <code>sigma</code> is how widely species spread around it.</p>
+<p>Pay attention to the different elements of the model that we covered in the lsat module:</p>
+<ul>
+<li>The <code>for</code> loop says that each observation of <code>Lower_jaw_length</code> is drawn from a normal distribution with mean <code>alpha</code> and standard deviation <code>sigma</code>.</li>
+<li><code>dnorm()</code> is distribution we are using to model the likelihood of the jaw length data (a stochastic node).</li>
+<li>We have two priors, one for <code>alpha</code> and one for <code>sigma</code>. These are also stochastic nodes, but this time on parameters, not the raw data. </li>
+</ul>
+<p>Here <code>alpha</code> will be our estimate of the average jaw length and <code>sigma</code> is our estimate for widely species spread around the mean.</p>
 <h2>The FANGS workflow</h2>
 <ol>
 <li><strong>Load data.</strong> Drag <code>fish-lengths.csv</code> onto the upload area. Check the <strong>Data</strong></li>
 </ol>
 <p>   tab to confirm it read in correctly.</p>
 <ol>
-<li><strong>Write the model</strong> in the editor on the left (the intercept-only model above).</li>
-<li><strong>Set the constants.</strong> Tell FANGS the number of observations <code>N</code>.</li>
+<li><strong>Write the model</strong> in the editor on the left (the intercept-only model above). Keep the Data tab open so you can refer to the variable names as you type. </li>
+<li><strong>Check the constants.</strong> Check FANGS has the correct number of observations <code>N</code>. This is automatically set, so if its not what you expect, check your data upload and the variable names in your model. </li>
 <li><strong>Set sampler settings:</strong> chains, samples, burn-in, thinning. The defaults</li>
 </ol>
 <p>   (3 chains, 2000 samples) are a fine starting point.</p>
 <ol>
 <li><strong>Run.</strong> Watch the <strong>Trace</strong> tab fill in live, then read the <strong>Posteriors</strong> and</li>
 </ol>
-<p>   <strong>Summary</strong> tabs.</p>
+<p>   <strong>Summary</strong> tabs. </p>
+<p>You can also check the <strong>Posteriors</strong> tab to see the posterior distributions fill in as the sampler runs. </p>
 <h2>What to look for</h2>
 <ul>
 <li>The <strong>trace plots</strong> should look like fuzzy caterpillars with the chains</li>
@@ -167,41 +183,46 @@ export const COURSE_CONTENT = {
 <li>The <strong>Summary</strong> table gives the posterior mean, SD, and a 95% credible interval</li>
 </ul>
 <p>  for each parameter.</p>
+<h2>Debugging tips </h2>
+<p>If you get an error: </p>
+<ul>
+<li>Check the <strong>Console</strong> tab for error messages. They can be cryptic, but they often point to the line of code that is causing the problem.</li>
+<li>Check the spelling of variable names. FANGS is case-sensitive, so <code>Lower_jaw_length</code> is not the same as <code>lower_jaw_length</code>.</li>
+<li>Check for consistency of parameter names. If you use <code>alpha</code> in the likelihood, make sure you use <code>alpha</code> in the priors, not <code>apha</code> or something else.</li>
+<li>Make sure you close all the brackets, including the <code>for</code> loop and the <code>model</code> block. </li>
+<li>Check you have put indices where they belong. The likelihood should have <code>Lower_jaw_length[i]</code> and the loop should be <code>for (i in 1:N)</code>. If you forget the <code>[i]</code> in the likelihood, you are trying to model the whole vector of jaw lengths as a single number and you will get nonsense results. </li>
+</ul>
 <h2>Your task</h2>
-<p>Fit the intercept-only model to <code>fish-lengths.csv</code>. Then come back here and enter your posterior means for <span class="math inline">\\(\\alpha\\)</span> (the mean body length) and <span class="math inline">\\(\\sigma\\)</span> (the species-to-species spread). The challenge checks them against the reference fit.</p>`,
+<p>Fit the intercept-only model to <code>fish-lengths.csv</code>. Then come back here and enter your posterior means for <span class="math inline">\\(\\alpha\\)</span> (the mean jaw length) and <span class="math inline">\\(\\sigma\\)</span> (the species-to-species spread). The challenge checks them against the reference fit.</p>`,
   'm06-sigma-priors': `<h1>Choosing a prior for σ</h1>
-<p>Every parameter in a Bayesian model needs a prior — and that includes the spread, <span class="math inline">\\(\\sigma\\)</span>. People give a lot of thought to the prior on the mean and then forget about <span class="math inline">\\(\\sigma\\)</span>, but it deserves the same care. The one rule it must obey: a standard deviation can never be negative, so its prior has to live entirely on the positive side of zero.</p>
+<p>Every parameter in a Bayesian model needs a prior — and that includes the standard deviation, <span class="math inline">\\(\\sigma\\)</span>. Experienced statisticians give a lot of thought to the priors on dispersion parameters like the standard deviation. The one rule it must obey: a standard deviation can never be negative, so its prior has to live entirely on the positive side of zero.</p>
 <h2>Common choices</h2>
 <ul>
-<li><code>sigma ~ dunif(0, U)</code> — flat between 0 and some generous ceiling <code>U</code>. Simple and</li>
+<li><code>sigma ~ dunif(0, U)</code> — flat probabilit distribution between 0 and some generous ceiling <code>U</code>. Simple, but you have to pick <code>U</code> large enough that it never clips the posterior.</li>
 </ul>
-<p>  honest, but you have to pick <code>U</code> large enough that it never clips the posterior.   For our frogfish body lengths (which run up to ~250 mm), something like   <code>dunif(0, 100)</code> gives the spread plenty of room.</p>
+<p>For our frogfish body lengths (which run up to ~250 mm), something like  <code>dunif(0, 100)</code> gives the spread plenty of room.</p>
 <ul>
-<li>A <strong>half-normal</strong> via truncation: <code>sigma ~ dnorm(0, 10) T(0, )</code> — piles most of</li>
+<li><code>sigma ~ dexp(rate)</code> — another positive, light-tailed option that fades smoothly toward larger values. A smooth tail rather than a jagged edge like in <code>dunif</code> can lead to more efficient sampling. The sampler can explore the tail of the distribution without worrying about hitting a hard ceiling. A rate of <code>0.05</code> gives a mean of 20 mm, which is a reasonable starting point for our frogfish data. </li>
+<li>In the literature you might also see other choices for priors like the Cauchy distribution or the half-normal distribution. These are all valid choices, but FANGS does not support them at the moment. We will stick with simple options here. </li>
 </ul>
-<p>  its belief on small values and gently discourages enormous ones.</p>
-<ul>
-<li><code>sigma ~ dexp(rate)</code> — another positive, light-tailed option that fades smoothly</li>
-</ul>
-<p>  toward larger values.</p>
-<h2>Why σ is special in FANGS</h2>
-<p>Because FANGS describes <code>dnorm</code> by its <strong>standard deviation</strong>, the normal <span class="math inline">\\(\\sigma\\)</span> has <strong>no conjugate update</strong> — there is no neat closed-form recipe to draw it in one step. So FANGS quietly falls back to a <strong>slice sampler</strong> for it. You never see this happening, but it explains why <span class="math inline">\\(\\sigma\\)</span> occasionally needs a few more iterations to settle than the mean does.</p>
-<h2>Does the prior actually matter?</h2>
-<p>Often, surprisingly little. With plenty of data the likelihood takes over and the prior barely nudges the posterior. With only a handful of observations the prior carries more weight. The honest way to find out which situation you are in is not to argue about it — it is to <strong>try two priors and compare the answers.</strong></p>
+<h2>What if other scientists disagree with your choice of prior?</h2>
+<p>The best way to address this is to show them how much (or how little) the prior moves things. If your posterior is very different under a different, reasonable prior, then you have a problem — and you need to be transparent about it. If your posterior is pretty much the same under different priors, then you can be confident that your results are robust to the choice of prior. </p>
+<p>Most standard models have conventions for priors that are widely accepted in the field. If you deviate from those conventions, you should be prepared to justify your choice — and to show how much (or how little) it moves things. </p>
 <h2>Your task</h2>
-<p>Refit your frogfish body-length model from <code>fish-lengths.csv</code> under <strong>two different priors for <span class="math inline">\\(\\sigma\\)</span></strong> (for example <code>dunif(0, 100)</code> versus a truncated half-normal). Record the posterior mean and 95% CI for <span class="math inline">\\(\\sigma\\)</span> in the table below for each run. Two completed rows unlocks the module — and shows you, first-hand, how much (or how little) the prior moved things.</p>`,
+<p>Refit your frogfish body-length model from <code>fish-lengths.csv</code> under <strong>two different priors for <span class="math inline">\\(\\sigma\\)</span></strong> (for example <code>dunif(0, 100)</code> versus a truncated half-normal). Record the posterior mean and 95% CI for <span class="math inline">\\(\\sigma\\)</span> in the table below for each run. Two completed rows unlocks the module, and shows you, first-hand, how much (or how little) the prior moved things.</p>`,
   'm07-prior-predictive': `<h1>Prior predictive checks</h1>
-<p>Before fitting anything, it pays to ask a blunt question: <strong>do my priors imply sensible data?</strong> It is easy to write down a prior that looks innocent and quietly believes in impossible fish. A prior predictive check catches this by simulating whole fake datasets from the priors <em>alone</em> — the real measurements never enter.</p>
+<p>Before fitting anything, it pays to ask: <strong>do my priors imply sensible data?</strong> It is easy to write down a prior that looks innocent and quietly believes in impossible fish. A prior predictive check catches this by simulating whole fake datasets from the priors <em>alone</em>. The real data are not used in the simulation. </p>
 <h2>How it works</h2>
 <ol>
 <li>Draw parameter values from their priors.</li>
 <li>Push those values through the model to simulate a dataset.</li>
 <li>Repeat many times and look at the spread of simulated data.</li>
 </ol>
-<p>If your simulated &quot;frogfish body lengths&quot; come out spanning <span class="math inline">\\(-400\\)</span> to <span class="math inline">\\(600\\)</span> mm, something is wrong: real frogfish are never negative, and a half-metre frogfish is a monster. A prior that produces those values is putting belief on the impossible. Tighten it.</p>
+<p>If your simulated &quot;frogfish jaw lengths&quot; come out spanning <span class="math inline">\\(-400\\)</span> to <span class="math inline">\\(600\\)</span> mm, something is wrong: real frogfish can't have negative jaw lengths, and a half-metre frogfish is a monster. A prior that produces those values is putting belief on the impossible.  Tighten it or use a different distribution until the prior predictive check shows you something that looks like real frogfish. </p>
 <h2>In FANGS</h2>
 <p>Use the <strong>Prior Check</strong> tab. It runs the model forward from the priors with the likelihood switched off, so you see exactly what your assumptions predict <em>before</em> the data gets any vote.</p>
 <p>This is the natural partner to the <span class="math inline">\\(\\sigma\\)</span>-prior work you just did. A vague-looking <code>dnorm(0, 1000)</code> on the mean body length seems harmless on the page — until the prior check shows you the absurd fish it implies.</p>
+<p>Note that the posterior histograms in FANGS fit a smoother over the histograms, so sometimes may look like smooth curves that deviate into negative space for prior that is meant to be positive only. But if you check the Prior summary you should see no negative values in the prior samples.</p>
 <h2>Your task</h2>
 <p>Run a prior check on your frogfish body-length model. Then answer the question below about how to read an obviously-too-vague prior.</p>`,
   'm08-gaussian-glm': `<h1>Gaussian regression: jaw length ~ body length</h1>
@@ -221,19 +242,16 @@ export const COURSE_CONTENT = {
   sigma ~ dunif(0, 50)
 }</code></pre>
 <ul>
-<li><span class="math inline">\\(\\alpha\\)</span> — the <strong>intercept</strong>: predicted jaw length at body length 0. Not</li>
+<li><span class="math inline">\\(\\alpha\\)</span> — the <strong>intercept</strong>: predicted jaw length at body length 0. Not biologically meaningful on its own (there are no 0 mm fish), but the line needs a starting height.</li>
+<li><span class="math inline">\\(\\beta\\)</span> — the <strong>slope</strong>: extra mm of jaw for each extra mm of body. <em>This</em> is the number the biology is about. A slope near 0.35, say, would mean jaw length is about a third of body length across these species.</li>
+<li>FANGS rescales predictors internally for efficient sampling and back-transforms the results, so you can read <span class="math inline">\\(\\beta\\)</span> straight off  in the original mm scale.</li>
 </ul>
-<p>  biologically meaningful on its own (there are no 0 mm fish), but the line needs   a starting height.</p>
-<ul>
-<li><span class="math inline">\\(\\beta\\)</span> — the <strong>slope</strong>: extra mm of jaw for each extra mm of body. <em>This</em> is the</li>
-</ul>
-<p>  number the biology is about. A slope near 0.35, say, would mean jaw length is   about a third of body length across these species.</p>
-<ul>
-<li>FANGS rescales predictors internally for efficient sampling and back-transforms</li>
-</ul>
-<p>  the results, so you can read <span class="math inline">\\(\\beta\\)</span> straight off on the original mm scale.</p>
+<p>Check <a href="course/#m05-first-fit">Module 5</a> for tips on debugging if you get an error. </p>
 <h2>Reading the result</h2>
-<p>Open the <strong>Predictions</strong> tab: it draws the posterior-mean regression line and its 95% band straight over the data points, so you can see the fit at a glance. Then the <strong>Summary</strong> tab gives the posterior for <span class="math inline">\\(\\beta\\)</span> — if its 95% credible interval sits entirely above 0, then bigger frogfish credibly have bigger jaws.</p>
+<p>Check the <strong>Posterior</strong> tab first to see the histograms for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span>. The mean of <span class="math inline">\\(\\beta\\)</span> is the best guess for how much jaw length grows with body length, and the 95% credible interval gives a range of plausible values. If the interval sits entirely above 0, then bigger frogfish credibly have bigger jaws. </p>
+<p>You are also looking for a nice even distribution here, if the histogram is very lumpy or has a long tail, it may be a sign of a sampling problem. More on this later. </p>
+<p>Then the <strong>Summary</strong> tab gives the posterior for <span class="math inline">\\(\\beta\\)</span> — if its 95% credible interval sits entirely above 0, then bigger frogfish credibly have bigger jaws. Save those values for the challenge at the end of the module. </p>
+<p>Open the <strong>Predictions</strong> tab: it draws the posterior-mean regression line and its 95% band straight over the data points, so you can see how jaw length changes with body length across the different species. </p>
 <h2>Your task</h2>
 <p>Fit this model to <code>fish-lengths.csv</code> in FANGS (jaw length on body length), then enter your posterior means for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span>. From here on the rhythm is always the same: <strong>set up the model, fit it carefully, check your answer.</strong></p>`,
   'm09-posterior-predictive': `<h1>Posterior predictive checks</h1>
@@ -489,7 +507,78 @@ b_j \\sim \\text{Normal}(0,\\ \\sigma_b)\\]</div>
 </ol>
 <h2>Your task</h2>
 <p>Take a poorly-mixing fit, improve it, and <strong>record before/after</strong> the worst R-hat and minimum ESS in the table below.</p>`,
-  'm20-summative': `<h1>Summative challenge: multi-factor Poisson with random effects</h1>
+  'm20-identifiability-priors': `<h1>Model choice, priors &amp; identifiability</h1>
+<p>So far we have improved sampling by tidying up priors and reparameterising. This module pushes the idea one step further and asks a deeper question: **what happens when the model itself cannot, in principle, separate two parameters — and how can a prior rescue it?**</p>
+<p>This is one of the most important ideas in the whole course. A model that a classical (maximum-likelihood) analysis would reject as <em>unidentifiable</em> can be perfectly usable in a Bayesian analysis — <em>provided</em> you can bring honest prior information to the parameters the data cannot pin down.</p>
+<h2>A deliberately broken model</h2>
+<p>Consider a simple linear regression, but with <strong>two intercepts</strong> instead of one:</p>
+<pre><code>model {
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], sigma)
+    mu[i] &lt;- alpha + alpha2 + beta * x[i]
+  }
+  alpha  ~ dnorm(0, 5)
+  alpha2 ~ dnorm(0, 5)
+  beta   ~ dnorm(0, 5)
+  sigma  ~ dunif(0, 100)
+}</code></pre>
+<p>Look closely at the mean: <code>alpha</code> and <code>alpha2</code> *only ever appear added together*. The data see the sum <span class="math inline">\\(\\alpha + \\alpha_2\\)</span> — never the two pieces on their own. Any increase in <code>alpha</code> can be exactly cancelled by an equal decrease in <code>alpha2</code> with <strong>no change to the fit</strong>. The likelihood is completely flat along the ridge</p>
+<div class="math display">\\[\\alpha + \\alpha_2 = \\text{constant}.\\]</div>
+<p>Statisticians call this a <strong>non-identifiable</strong> (or <em>aliased</em>) parameterisation. The <em>sum</em> is identified; the two <em>components</em> are not.</p>
+<h2>Your task — part 1: watch the chains fail</h2>
+<ol>
+<li>Load the default example dataset (the built-in <code>y</code>, <code>x</code> data) in FANGS.</li>
+<li>Paste the two-intercept model above and run it with <strong>4 chains</strong>.</li>
+<li>Open the <strong>Trace</strong> tab and watch <code>alpha</code> and <code>alpha2</code>.</li>
+</ol>
+<p>You should see them <strong>wander</strong> — slow, drifting, snake-like traces that never settle, and that look different in every chain. Now check the <strong>Summary</strong> tab:</p>
+<ul>
+<li><strong>R-hat</strong> for <code>alpha</code> and <code>alpha2</code> will be large (well above 1.01) — the</li>
+</ul>
+<p>  chains disagree about where these parameters live.</p>
+<ul>
+<li><strong>ESS</strong> will be tiny — successive draws are highly correlated, so thousands of</li>
+</ul>
+<p>  iterations buy you only a handful of effectively independent samples.</p>
+<ul>
+<li>But look at <code>beta</code>, <code>sigma</code>, and (if you add it) the derived sum</li>
+</ul>
+<p>  <code>alpha + alpha2</code>: these are <strong>well-behaved</strong>. Only the un-identified pieces   misbehave.</p>
+<p>::: callout-tip The data constrain a <em>line</em> through <span class="math inline">\\((\\alpha, \\alpha_2)\\)</span> space, not a <em>point</em>. The sampler is free to slide anywhere along that line, so it does. :::</p>
+<h2>Your task — part 2: see the bimodality</h2>
+<p>Open the <strong>Posteriors</strong> tab and look at the density for <code>alpha</code> (and <code>alpha2</code>). Because each chain settles in a different stretch of the ridge and mixes badly, the pooled density often looks <strong>lumpy or multi-modal</strong> — two or more bumps where you expected one smooth hill. That bimodality is **not a real feature of the data**; it is an artefact of a non-identified parameter being explored by chains that cannot agree. Compare it with the density of <code>beta</code>, which is a single clean peak. Recognising &quot;fake&quot; multi-modality like this is a key diagnostic skill.</p>
+<h2>Your task — part 3: let a prior do the work</h2>
+<p>Here is the Bayesian punchline. The data cannot separate <code>alpha</code> and <code>alpha2</code>, but a <strong>prior can</strong>. Tighten the prior on <code>alpha2</code> step by step and refit each time, watching R-hat, ESS, and the posterior shape:</p>
+<table>
+<thead><tr><th>Step</th><th>Prior on <code>alpha2</code></th><th>Prior SD</th><th>What it says</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>alpha2 ~ dnorm(0, 5)</code></td><td>5</td><td>&quot;alpha2 could be almost anything&quot;</td></tr>
+<tr><td>2</td><td><code>alpha2 ~ dnorm(0, 1)</code></td><td>1</td><td>&quot;alpha2 is probably small&quot;</td></tr>
+<tr><td>3</td><td><code>alpha2 ~ dnorm(0, 0.2)</code></td><td>0.2</td><td>&quot;alpha2 is very close to 0&quot;</td></tr>
+</tbody>
+</table>
+<p>(Remember: FANGS parameterises <code>dnorm</code> by <strong>standard deviation</strong>, so the second argument <em>is</em> the prior SD — a smaller number means a tighter prior.)</p>
+<p>As the prior on <code>alpha2</code> tightens, it pins <code>alpha2</code> near zero. That **breaks the symmetry of the ridge**: with <code>alpha2</code> held close to 0, the data can finally identify <code>alpha</code> (it becomes the ordinary intercept again). Watch what happens:</p>
+<ul>
+<li>The <code>alpha</code> trace <strong>stops wandering</strong> and settles.</li>
+<li><strong>R-hat falls toward 1.00</strong> and <strong>ESS climbs</strong> by orders of magnitude.</li>
+<li>The lumpy, bimodal density collapses into a <strong>single clean peak</strong>.</li>
+</ul>
+<p>You have not added any data. You have not changed what the data can tell you about the <em>sum</em>. You have simply supplied <strong>external information</strong> about one parameter — and that was enough to make the whole model sample cleanly.</p>
+<h2>The big idea</h2>
+<p>&gt; A model that looks hopeless to a classical, likelihood-only analysis — because &gt; the data alone cannot identify every parameter — can be **perfectly usable in &gt; a Bayesian analysis** when you have genuine prior information about the &gt; parameters the data leave undetermined.</p>
+<p>This is a real strength of the Bayesian approach, but it comes with responsibility:</p>
+<ul>
+<li>The result now <strong>depends on the prior</strong> you chose for <code>alpha2</code>. That is fine</li>
+</ul>
+<p>  <em>if the prior reflects real knowledge</em>, and dishonest if you tightened it just   to make the sampler behave. Be transparent about where the information came   from.</p>
+<ul>
+<li>Always check <strong>how much the prior moves things</strong> (exactly the prior-sensitivity</li>
+</ul>
+<p>  habit from earlier modules). For an identified parameter the prior barely   matters; for a non-identified one it does <strong>all</strong> the work — so say so.</p>
+<h2>Record your runs</h2>
+<p>Refit the two-intercept model under <strong>at least the three priors on <code>alpha2</code></strong> in the table above. For each run, record the prior SD, the worst R-hat (of <code>alpha</code>/<code>alpha2</code>), the minimum ESS, and a quick note on the posterior shape (<em>ridge / bimodal / single peak</em>). Two or more rows unlock the module — and give you a first-hand record of a prior turning an unidentifiable model into a well-behaved one.</p>`,
+  'm21-summative': `<h1>Summative challenge: multi-factor Poisson with random effects</h1>
 <p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: count data, a log link, multiple factors, and random effects for grouping.</p>
 <h2>The scenario</h2>
 <p>Fish <strong>counts</strong> were recorded across sites, under two experimental factors (e.g. habitat and season), with multiple <strong>reefs</strong> sampled per condition. You want the factor effects while accounting for reef-to-reef variation.</p>

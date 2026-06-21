@@ -23,7 +23,7 @@ export const SESSIONS = [
   { id: 's3', title: 'Session 3 · Regression & model checking', minutes: 75 },
   { id: 's4', title: 'Session 4 · Factors & design matrices', minutes: 70 },
   { id: 's5', title: 'Session 5 · Generalised linear models', minutes: 90 },
-  { id: 's6', title: 'Session 6 · Random effects & bringing it together', minutes: 75 },
+  { id: 's6', title: 'Session 6 · Random effects & bringing it together', minutes: 90 },
 ];
 
 export const MODULES = [
@@ -328,7 +328,16 @@ export const MODULES = [
     },
   },
   {
-    id: 'm20-summative', session: 's6', num: 20,
+    id: 'm20-identifiability-priors', session: 's6', num: 20,
+    title: 'Model choice, priors & identifiability', mode: 'fangs',
+    challenge: 'recorder',
+    config: {
+      storeKey: 'm20-identifiability-priors',
+      columns: ['Prior SD on alpha2', 'Worst R-hat (alpha/alpha2)', 'Min ESS', 'Posterior shape (ridge/bimodal/peak)'],
+    },
+  },
+  {
+    id: 'm21-summative', session: 's6', num: 21,
     title: 'Summative challenge: multi-factor Poisson with random effects', mode: 'fangs',
     challenge: 'answer-check',
     config: {
