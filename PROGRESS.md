@@ -70,7 +70,7 @@ All core modules are implemented and 253 tests pass.
 - Get rid of predictions page. Could replace with custom code parser to make predictions? 
 
 ### User course todo
-Have re-written modules M03 to M09. Need to continue working on M10, add some models that have bad mixing. 
+Have re-written modules M03 to M10. Need to continue working on M11, check example therein. 
 
 
 ### Claude todo
