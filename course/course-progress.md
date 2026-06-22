@@ -4,7 +4,7 @@ _Last updated: 2026-06-19 (dataset alignment, M1–M9 rewrite, M3 sampler slowdo
 
 ## Summary
 
-The course scaffold is **fully implemented** across all 20 modules. Infrastructure, challenge widgets, content prose, and navigation are all in place. The primary remaining work is **supplying real marine datasets** and **pinning reference posterior values** in `modules.js`.
+The course scaffold is **fully implemented** across all 21 modules. Infrastructure, challenge widgets, content prose, and navigation are all in place. The primary remaining work is **supplying real marine datasets** and **pinning reference posterior values** in `modules.js`.
 
 ---
 
@@ -15,7 +15,7 @@ The course scaffold is **fully implemented** across all 20 modules. Infrastructu
 | Item | Status | File(s) |
 |------|--------|---------|
 | Landing page + navigation | ✅ Done | `course/index.html`, `course/course.js` |
-| Session/module registry | ✅ Done | `course/modules.js` (all 20 modules wired) |
+| Session/module registry | ✅ Done | `course/modules.js` (all 21 modules wired) |
 | Course CSS (Dracula theme) | ✅ Done | `course/course.css` |
 | Content loader (fetch + bundle fallback) | ✅ Done | `course/course.js` |
 | KaTeX math rendering | ✅ Done | loaded dynamically in `course.js` |
@@ -33,13 +33,13 @@ The course scaffold is **fully implemented** across all 20 modules. Infrastructu
 | `map-slider.js` — canvas prior/likelihood/posterior + MAP slider | M2 | ✅ Done |
 | `mcmc-animation.js` — animated Metropolis + live histogram + ESS check | M3 | ✅ Done |
 | `code-validator.js` — real Lexer→Parser syntax check with line/col errors | M4 | ✅ Done |
-| `answer-check.js` — fit-in-FANGS then enter posterior means (+ self-report fallback) | M5,8,11,13–16,18,20 | ✅ Done |
-| `results-recorder.js` — localStorage table + CSV download | M6,12,19 | ✅ Done |
+| `answer-check.js` — fit-in-FANGS then enter posterior means (+ self-report fallback) | M5,8,11,13–16,18,21 | ✅ Done |
+| `results-recorder.js` — localStorage table + CSV download | M6,12,19,20 | ✅ Done |
 | `quiz.js` — multiple-choice concept checks | M7,9,10,17 | ✅ Done |
 
 ### Module prose (`.qmd` source + rendered HTML)
 
-All 20 `.qmd` files are authored and rendered to `content/_rendered/`:
+All 21 `.qmd` files are authored and rendered to `content/_rendered/`:
 
 | Session | Module | Title |
 |---------|--------|-------|
@@ -62,7 +62,8 @@ All 20 `.qmd` files are authored and rendered to `content/_rendered/`:
 | S6 | M17 | The idea of random effects |
 | S6 | M18 | Fit a random-effects model |
 | S6 | M19 | Improving sampling: priors & reparameterisation |
-| S6 | M20 | Summative challenge: multi-factor Poisson with random effects |
+| S6 | M20 | Model choice, priors & identifiability |
+| S6 | M21 | Summative challenge: multi-factor Poisson with random effects |
 
 The `course-bundle.js` fallback (for `file://` mode) is also committed.
 
@@ -100,7 +101,7 @@ For each FANGS module, the author needs to:
 2. Read the posterior means and 95% CIs from the Summary tab
 3. Paste the real values into `modules.js`
 
-Modules left to-do: **M11, M13, M14, M15, M16, M18, M20**
+Modules left to-do: **M11, M13, M14, M15, M16, M18, M21**
 
 Until these are filled in, those challenges fall back to self-report mode (they accept any number and mark the student done).
 
@@ -128,7 +129,7 @@ fell back to the built-in Markdown converter in `scripts/lib/render-content.js`.
 This is a supported path: it emits HTML fragments with `\(...\)` / `\[...\]` /
 `$$...$$` math delimiters that the runtime KaTeX auto-render in `course.js`
 resolves client-side. The build ran cleanly and `course-bundle.js` was
-regenerated (all 20 entries non-empty, file passes `node --check`).
+regenerated (all 21 entries non-empty, file passes `node --check`).
 
 Because the previously committed bundle had been produced by Quarto (full
 `<html>` documents with heading ids), regenerating via the converter reflows the
