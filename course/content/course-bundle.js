@@ -4,116 +4,123 @@
 // This bundle is a fallback for when fetch() is unavailable (e.g. file:// protocol).
 
 export const COURSE_CONTENT = {
-  'm01-discrete-bayes': `<h1>Bayes' theorem with discrete models</h1>
+  'm01-discrete-bayes': `<html><head></head><body><h1 id="bayes-theorem-with-discrete-models">Bayes’ theorem with discrete models</h1>
 <p>Bayesian inference works on the idea of <strong>starting with what you already believe, then updating those beliefs in proportion to how well the new data fit your model.</strong></p>
 <p>You begin with a belief held <em>before</em> the data arrive — the <strong>prior</strong>. You ask how well each explanation accounts for what you saw — the <strong>likelihood</strong>. Multiply the two, tidy up so the numbers add to one, and you have your belief <em>after</em> the data — the <strong>posterior</strong>.</p>
-<h2>A fish that could have come from three reefs</h2>
+<h2 id="a-fish-that-could-have-come-from-three-reefs">A fish that could have come from three reefs</h2>
 <p>Imagine you are tracking fish on a reef system with acoustic tags. A tagged fish swims past a line of underwater receivers and leaves a trail of detections. From the pattern of pings you want to know one thing: <strong>which reef did this fish come from — North, Mid, or South?</strong></p>
 <p>The detections are not a clean answer. The same trail could plausibly have been left by a fish from any of the three reefs — just with different odds. From years of past tracking you know roughly how often <em>this particular</em> detection pattern shows up for fish from each reef. Those three numbers are your <strong>likelihoods</strong>: how well each reef explains the data.</p>
-<h2>The theorem, term by term</h2>
-<div class="math display">\\[\\underbrace{P(\\text{reef} \\mid \\text{data})}_{\\text{posterior}}
+<h2 id="the-theorem-term-by-term">The theorem, term by term</h2>
+<p><span class="math display">$$
+\\underbrace{P(\\text{reef} \\mid \\text{data})}_{\\text{posterior}}
 =
 \\frac{
   \\overbrace{P(\\text{data} \\mid \\text{reef})}^{\\text{likelihood}}\\;
   \\overbrace{P(\\text{reef})}^{\\text{prior}}
 }{
   \\underbrace{\\sum_{r} P(\\text{data} \\mid \\text{reef}_r)\\,P(\\text{reef}_r)}_{\\text{denominator}}
-}\\]</div>
+}
+$$</span></p>
 <p>It looks busier than it is. Read it as three small steps:</p>
 <ul>
-<li>The <strong>numerator</strong> for each reef is just <code>prior × likelihood</code> — your belief in</li>
+<li>The <strong>numerator</strong> for each reef is just <code>prior × likelihood</code> — your belief in that reef, weighted by how well it explains the trail.</li>
+<li>The <strong>denominator</strong> is <em>the sum of those numerators across all three reefs</em>. It is the total probability of seeing this trail at all, and dividing by it is what forces the three posteriors to add up to 1.</li>
 </ul>
-<p>  that reef, weighted by how well it explains the trail.</p>
-<ul>
-<li>The <strong>denominator</strong> is <em>the sum of those numerators across all three reefs</em>. It</li>
-</ul>
-<p>  is the total probability of seeing this trail at all, and dividing by it is what   forces the three posteriors to add up to 1.</p>
 <p>That second point is the part people overthink. <strong>The denominator is not some extra quantity you have to go and find — it is just the numerators you already worked out, added together.</strong></p>
-<h2>Where does the prior come from? A survey weight</h2>
+<h2 id="where-does-the-prior-come-from-a-survey-weight">Where does the prior come from? A survey weight</h2>
 <p>In fisheries and marine ecology, surveys are rarely spread evenly. Some reefs get visited on most trips; others get a glance once a season. That uneven effort is recorded as a <strong>survey weight</strong> — a number saying how much of your sampling went where. It turns out to be a very natural prior.</p>
-<p>Suppose the boat reached the North reef on 60% of trips, the Mid reef on 30%, and the South reef on only 10%. Before you look at a single ping, you already have a reason to lean North: that is simply where you spent most of your effort, so that is where most of your tagged fish are likely to be. Setting <span class="math inline">\\(P(\\text{reef}) \\propto \\text{survey weight}\\)</span> writes that reasoning down honestly: <em>&quot;my prior is proportional to how often I actually looked there.&quot;</em></p>
+<p>Suppose the boat reached the North reef on 60% of trips, the Mid reef on 30%, and the South reef on only 10%. Before you look at a single ping, you already have a reason to lean North: that is simply where you spent most of your effort, so that is where most of your tagged fish are likely to be. Setting <span class="math inline"><em>P</em>(reef) ∝ survey weight</span> writes that reasoning down honestly: <em>“my prior is proportional to how often I actually looked there.”</em></p>
 <p>The beauty is that the data still get their say. When the acoustic evidence points clearly to one reef, it will overrule the survey weight and the posterior shifts. When the evidence is murky, the posterior stays close to the survey weight — which is exactly the cautious behaviour you want.</p>
 <p>This pattern shows up everywhere in ecology:</p>
-<table>
-<thead><tr><th>Prior</th><th>What it encodes</th></tr></thead>
+<table class="caption-top">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 69%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Prior</th>
+<th>What it encodes</th>
+</tr>
+</thead>
 <tbody>
-<tr><td>Uniform (<span class="math inline">\\(P = 1/n\\)</span> for each option)</td><td>Complete ignorance — every option equally plausible</td></tr>
-<tr><td>Survey weight</td><td>Sampling effort — some places watched more than others</td></tr>
-<tr><td>Historical detection rate</td><td>Past experience about where animals turn up</td></tr>
+<tr class="odd">
+<td>Uniform (<span class="math inline"><em>P</em> = 1/<em>n</em></span> for each option)</td>
+<td>Complete ignorance — every option equally plausible</td>
+</tr>
+<tr class="even">
+<td>Survey weight</td>
+<td>Sampling effort — some places watched more than others</td>
+</tr>
+<tr class="odd">
+<td>Historical detection rate</td>
+<td>Past experience about where animals turn up</td>
+</tr>
 </tbody>
 </table>
 <p>The point is that choosing a prior is <em>a modelling decision you make out loud</em>. Calling it a survey weight makes that decision easy to explain and easy to defend.</p>
-<h2>Your task</h2>
-<p>In the challenge below, fill in the numerator for each reef, then the denominator (their sum), then each posterior. Then switch the prior and watch the posterior move — same fish, same pings, different starting beliefs.</p>`,
-  'm02-continuous-bayes': `<h1>Bayes for a continuous parameter</h1>
+<h2 id="your-task">Your task</h2>
+<p>In the challenge below, fill in the numerator for each reef, then the denominator (their sum), then each posterior. Then switch the prior and watch the posterior move — same fish, same pings, different starting beliefs.</p>
+</body></html>`,
+  'm02-continuous-bayes': `<html><head></head><body><h1 id="bayes-for-a-continuous-parameter">Bayes for a continuous parameter</h1>
 <p>In the last module the answer was one of three reefs — a short list. Real ecological questions are usually not like that. <strong>How long is the jaw of this frogfish species, on average?</strong> The answer is a number that could land <em>anywhere</em> on a continuous scale. The Bayesian logic does not change at all; only the sum in the denominator turns into an integral.</p>
-<h2>A frogfish with a very big mouth</h2>
-<p>Frogfish are ambush predators. They sit camouflaged on the reef and strike by opening an enormous mouth that swallows prey whole — so jaw size genuinely matters for what a species can eat. Say you measure the lower jaw of seven individuals from one species. Your measuring is a little noisy (a known measurement error, a fixed standard deviation <span class="math inline">\\(\\sigma\\)</span>), and the readings scatter around some true species mean <span class="math inline">\\(\\mu\\)</span> that you would love to pin down.</p>
-<p>That unknown mean <span class="math inline">\\(\\mu\\)</span> is now a <strong>continuous</strong> parameter. It could be 38 mm, or 41.6 mm, or anything in between.</p>
-<h2>The same theorem, continuous version</h2>
-<div class="math display">\\[p(\\mu \\mid y) = \\frac{p(y \\mid \\mu)\\,p(\\mu)}{\\displaystyle\\int p(y \\mid \\mu)\\,p(\\mu)\\,d\\mu}\\]</div>
-<p>It is the same recipe as before. The <strong>likelihood</strong> <span class="math inline">\\(p(y\\mid\\mu)\\)</span> is largest near the average of your seven measurements — that is the value of <span class="math inline">\\(\\mu\\)</span> that best explains the readings. The <strong>prior</strong> <span class="math inline">\\(p(\\mu)\\)</span> says what jaw lengths you found plausible before measuring anything.</p>
-<h2>Why the integral?</h2>
-<p>The denominator still adds up <code>prior × likelihood</code> over every value <span class="math inline">\\(\\mu\\)</span> could take. But now there are infinitely many such values, so you cannot list them and add them one by one. Instead you <strong>slice the <span class="math inline">\\(\\mu\\)</span>-axis into thin strips</strong>, add up <code>prior × likelihood × (strip width)</code>, and imagine the strips getting thinner and thinner without end. That limiting sum <em>is</em> the integral. Same bookkeeping, finer grid.</p>
-<p>Here is a shortcut that saves a lot of effort. To find the <strong>single most probable</strong> value — the <strong>maximum a posteriori (MAP)</strong> estimate — you do not need the denominator at all. It is just a constant that does not depend on <span class="math inline">\\(\\mu\\)</span>, so the peak of <code>prior × likelihood</code> sits at exactly the same place as the peak of the full posterior.</p>
-<h2>Your task</h2>
-<p>Drag the slider to the peak of the posterior (purple). Watch how the prior (cyan) and likelihood (orange) combine into it. Then switch to a tighter prior and find the new MAP — notice how a confident prior tugs the answer toward itself.</p>`,
-  'm03-mcmc-sampling': `<h1>Sampling the posterior with MCMC</h1>
-<p>Finding the single <em>peak</em> of the posterior was easy. But the peak alone doesn't tell us how certain we are in that answer. One of the main features of Bayesian analyses is that we can do book keeping on multiple sources of uncertainty and account for that when we make our final (posterior) prediction for a quantity. </p>
+<h2 id="a-frogfish-with-a-very-big-mouth">A frogfish with a very big mouth</h2>
+<p>Frogfish are ambush predators. They sit camouflaged on the reef and strike by opening an enormous mouth that swallows prey whole — so jaw size genuinely matters for what a species can eat. Say you measure the lower jaw of seven individuals from one species. Your measuring is a little noisy (a known measurement error, a fixed standard deviation <span class="math inline"><em>σ</em></span>), and the readings scatter around some true species mean <span class="math inline"><em>μ</em></span> that you would love to pin down.</p>
+<p>That unknown mean <span class="math inline"><em>μ</em></span> is now a <strong>continuous</strong> parameter. It could be 38 mm, or 41.6 mm, or anything in between.</p>
+<h2 id="the-same-theorem-continuous-version">The same theorem, continuous version</h2>
+<p><span class="math display">$$
+p(\\mu \\mid y) = \\frac{p(y \\mid \\mu)\\,p(\\mu)}{\\displaystyle\\int p(y \\mid \\mu)\\,p(\\mu)\\,d\\mu}
+$$</span></p>
+<p>It is the same recipe as before. The <strong>likelihood</strong> <span class="math inline"><em>p</em>(<em>y</em> ∣ <em>μ</em>)</span> is largest near the average of your seven measurements — that is the value of <span class="math inline"><em>μ</em></span> that best explains the readings. The <strong>prior</strong> <span class="math inline"><em>p</em>(<em>μ</em>)</span> says what jaw lengths you found plausible before measuring anything.</p>
+<h2 id="why-the-integral">Why the integral?</h2>
+<p>The denominator still adds up <code>prior × likelihood</code> over every value <span class="math inline"><em>μ</em></span> could take. But now there are infinitely many such values, so you cannot list them and add them one by one. Instead you <strong>slice the <span class="math inline"><em>μ</em></span>-axis into thin strips</strong>, add up <code>prior × likelihood × (strip width)</code>, and imagine the strips getting thinner and thinner without end. That limiting sum <em>is</em> the integral. Same bookkeeping, finer grid.</p>
+<p>Here is a shortcut that saves a lot of effort. To find the <strong>single most probable</strong> value — the <strong>maximum a posteriori (MAP)</strong> estimate — you do not need the denominator at all. It is just a constant that does not depend on <span class="math inline"><em>μ</em></span>, so the peak of <code>prior × likelihood</code> sits at exactly the same place as the peak of the full posterior.</p>
+<h2 id="your-task">Your task</h2>
+<p>Drag the slider to the peak of the posterior (purple). Watch how the prior (cyan) and likelihood (orange) combine into it. Then switch to a tighter prior and find the new MAP — notice how a confident prior tugs the answer toward itself.</p>
+</body></html>`,
+  'm03-mcmc-sampling': `<html><head></head><body><h1 id="sampling-the-posterior-with-mcmc">Sampling the posterior with MCMC</h1>
+<p>Finding the single <em>peak</em> of the posterior was easy. But the peak alone doesn’t tell us how certain we are in that answer. One of the main features of Bayesian analyses is that we can do book keeping on multiple sources of uncertainty and account for that when we make our final (posterior) prediction for a quantity.</p>
 <p>We want to know the <strong>whole distribution</strong>: the average jaw length, how uncertain it is, a range we are 95% sure it falls in (or whatever % we care to choose, 95% is just a convention). And for most real models — many parameters, awkward shapes — that integral in the denominator simply cannot be done by hand.</p>
-<p><strong>Markov chain Monte Carlo (MCMC)</strong> is the clever way around the problem. Instead of <em>calculating</em> the posterior, we <strong>draw samples from it</strong> — like dipping a net in again and again until we get the shape of the posterior. Pile up enough samples and their histogram will be a good approximation of the shape of the posterior. That means we can then calculate summary statistics on the collection of samples, like the mean, median and quantiles. The quantiles we call 'credible intervals' — the Bayesian version of confidence intervals.</p>
-<h2>The Metropolis recipe</h2>
+<p><strong>Markov chain Monte Carlo (MCMC)</strong> is the clever way around the problem. Instead of <em>calculating</em> the posterior, we <strong>draw samples from it</strong> — like dipping a net in again and again until we get the shape of the posterior. Pile up enough samples and their histogram will be a good approximation of the shape of the posterior. That means we can then calculate summary statistics on the collection of samples, like the mean, median and quantiles. The quantiles we call ‘credible intervals’ — the Bayesian version of confidence intervals.</p>
+<h2 id="the-metropolis-recipe">The Metropolis recipe</h2>
 <p>Think of an deep sea submarine wandering the ocean floor, spending more time where the posterior is high, eventually it will have a good map of the bathymetry (height of the seafloor). The MCMC algorithm is a recipe for how to move that submarine for any posterior landscape. The most basic version is called the <strong>Metropolis algorithm</strong>:</p>
-<ol>
+<ol type="1">
 <li>Start somewhere — anywhere.</li>
 <li><strong>Propose</strong> a small random step to a nearby value.</li>
-<li><strong>Accept or reject</strong> the step based on the ratio of posterior heights. Uphill</li>
-</ol>
-<p>   moves are usually taken; downhill moves are <em>sometimes</em> taken too, which is    what lets the explorer wander out of dead ends and cover the whole landscape.</p>
-<ol>
+<li><strong>Accept or reject</strong> the step based on the ratio of posterior heights. Uphill moves are usually taken; downhill moves are <em>sometimes</em> taken too, which is what lets the explorer wander out of dead ends and cover the whole landscape.</li>
 <li>Repeat thousands of times.</li>
 </ol>
-<p>The values the explorer actually visits form a <strong>chain</strong>. Once it has wandered far enough to forget where it started, the chain is a fair sample from the posterior. Build a histogram of those visited values and you are looking at the posterior itself. </p>
-<p>If our chain isn't long enough, the map will look patchy and represent the area we started in, not neccessarily the whole posterior. Likewise, the steps the chain takes need to be carefully calibrated. So setting up the parameters that control the MCMC algorithm is a big part of Bayesian modelling. FANGS will help you with those choices, but you need to understand the trade-offs and make a few choices for yourself. </p>
-<h2>The tuning trade-off</h2>
+<p>The values the explorer actually visits form a <strong>chain</strong>. Once it has wandered far enough to forget where it started, the chain is a fair sample from the posterior. Build a histogram of those visited values and you are looking at the posterior itself.</p>
+<p>If our chain isn’t long enough, the map will look patchy and represent the area we started in, not neccessarily the whole posterior. Likewise, the steps the chain takes need to be carefully calibrated. So setting up the parameters that control the MCMC algorithm is a big part of Bayesian modelling. FANGS will help you with those choices, but you need to understand the trade-offs and make a few choices for yourself.</p>
+<h2 id="the-tuning-trade-off">The tuning trade-off</h2>
 <p>The size of each proposed step — the <strong>proposal step size</strong> — is the thing you tune, and it matters a lot:</p>
 <ul>
-<li><strong>Too small</strong> → the explorer shuffles forward in tiny steps. Neighbouring</li>
+<li><strong>Too small</strong> → the explorer shuffles forward in tiny steps. Neighbouring samples are nearly identical (high autocorrelation) and you learn almost nothing new per step.</li>
+<li><strong>Too large</strong> → almost every bold leap lands somewhere implausible and gets rejected, so the explorer stays stuck in one spot.</li>
 </ul>
-<p>  samples are nearly identical (high autocorrelation) and you learn almost nothing   new per step.</p>
-<ul>
-<li><strong>Too large</strong> → almost every bold leap lands somewhere implausible and gets</li>
-</ul>
-<p>  rejected, so the explorer stays stuck in one spot.</p>
-<p>We measure how well this is going with the <strong>effective sample size (ESS)</strong>: out of all your correlated samples, how many <em>genuinely independent</em> draws are they worth? A well-tuned chain converts thousands of steps into a healthy  ESS; a badly tuned one wastes them.</p>
-<h2>Sample length</h2>
-<p>The other tuning parameter is how long to run the chain. The longer you run it, the more samples you get, and the better your approximation of the posterior. But it takes time to run, and there are diminishing returns: the ESS grows with the square root of the number of steps, so doubling your ESS requires quadrupling your steps. </p>
-<h2>Burn-in and thinning</h2>
-<p>The first few steps of the chain are not a good sample from the posterior, because they are still influenced by where you started. So we throw those away as <strong>burn-in</strong>. The number of burn-in steps is another tuning parameter, but a common rule of thumb is to throw away the first 10% of your chain. </p>
-<p>Thinning is another trick to reduce the dependence between samples. Instead of keeping every step, you keep only every 10th step, for example. This can help if your chain is very autocorrelated, but it also throws away a lot of data, so it is not always the best solution. We will look more into this choice later on. </p>
-<h2>Your task</h2>
-<p>Run the sampler on the frogfish jaw-length posterior. Tune the proposal SD and the number of steps until the ESS clears the target. Watch what happens at the extremes: <em>both</em> a tiny and a huge proposal SD wreck the ESS — the sweet spot sits in the middle. Note that when we get to using FANGS it automatically tunes the proposal SD for you, you will just need to decide how many samples to take. </p>`,
-  'm04-model-syntax': `<h1>Writing models in BUGS/JAGS syntax</h1>
-<p>BUGS and JAGS (Just Another Gibbs Sampler) were two of early software packages that made Bayesian modelling more accessible to a broader audience of scientists. JAGS is still in use today. The R package NIMBLE also makes use of the BUGS/JAGS language. </p>
-<p>One of the ways they made this software more accessible was by inventing a simple language for describing models. The algorithms would then interpret that language and figure out how to fit the model with general purpose samplers. </p>
-<p>FANGS reads models written in the <strong>BUGS/JAGS language</strong> — a  compact way of describing a model that reads almost exactly like the maths you would scribble on paper. You state how the data and parameters relate, and the sampler works out how to fit it.</p>
-<h2>The building blocks</h2>
+<p>We measure how well this is going with the <strong>effective sample size (ESS)</strong>: out of all your correlated samples, how many <em>genuinely independent</em> draws are they worth? A well-tuned chain converts thousands of steps into a healthy ESS; a badly tuned one wastes them.</p>
+<h2 id="sample-length">Sample length</h2>
+<p>The other tuning parameter is how long to run the chain. The longer you run it, the more samples you get, and the better your approximation of the posterior. But it takes time to run, and there are diminishing returns: the ESS grows with the square root of the number of steps, so doubling your ESS requires quadrupling your steps.</p>
+<h2 id="burn-in-and-thinning">Burn-in and thinning</h2>
+<p>The first few steps of the chain are not a good sample from the posterior, because they are still influenced by where you started. So we throw those away as <strong>burn-in</strong>. The number of burn-in steps is another tuning parameter, but a common rule of thumb is to throw away the first 10% of your chain.</p>
+<p>Thinning is another trick to reduce the dependence between samples. Instead of keeping every step, you keep only every 10th step, for example. This can help if your chain is very autocorrelated, but it also throws away a lot of data, so it is not always the best solution. We will look more into this choice later on.</p>
+<h2 id="your-task">Your task</h2>
+<p>Run the sampler on the frogfish jaw-length posterior. Tune the proposal SD and the number of steps until the ESS clears the target. Watch what happens at the extremes: <em>both</em> a tiny and a huge proposal SD wreck the ESS — the sweet spot sits in the middle. Note that when we get to using FANGS it automatically tunes the proposal SD for you, you will just need to decide how many samples to take.</p>
+</body></html>`,
+  'm04-model-syntax': `<html><head></head><body><h1 id="writing-models-in-bugsjags-syntax">Writing models in BUGS/JAGS syntax</h1>
+<p>BUGS and JAGS (Just Another Gibbs Sampler) were two of early software packages that made Bayesian modelling more accessible to a broader audience of scientists. JAGS is still in use today. The R package NIMBLE also makes use of the BUGS/JAGS language.</p>
+<p>One of the ways they made this software more accessible was by inventing a simple language for describing models. The algorithms would then interpret that language and figure out how to fit the model with general purpose samplers.</p>
+<p>FANGS reads models written in the <strong>BUGS/JAGS language</strong> — a compact way of describing a model that reads almost exactly like the maths you would scribble on paper. You state how the data and parameters relate, and the sampler works out how to fit it.</p>
+<h2 id="the-building-blocks">The building blocks</h2>
 <p>There are really only four pieces to learn:</p>
 <ul>
-<li><strong>Stochastic nodes</strong> use <code>~</code>, read aloud as <em>&quot;is sampled from the distribution&quot;</em>. For example: </li>
+<li><strong>Stochastic nodes</strong> use <code>~</code>, read aloud as <em>“is sampled from the distribution”</em>. For example: <code>jaw[i] ~ dnorm(mu, sigma)</code> means “the jaw length of fish i is sampled from a normal distribution with mean <code>mu</code> and standard deviation <code>sigma</code>.” In this case <code>jaw[i]</code> is a data point and <code>jaw</code> is a column in our dataframe, so the model will fit the parameters to this data. But stochastic nodes can also be parameters. Which brings us to…</li>
+<li><strong>Priors</strong> are also stochastic nodes placed on the parameters themselves: <code>alpha ~ dnorm(0, 5)</code></li>
+<li><strong>Deterministic nodes</strong> use <code>&lt;-</code>, read as <em>“is calculated as”</em>. This is for quantities you compute exactly from others, like: <code>mu[i] &lt;- alpha + beta * body[i]</code> which is a linear equation for the mean jaw length of fish i, based on its body length and two parameters <code>alpha</code> and <code>beta</code>.</li>
+<li><strong>Loops</strong> repeat a statement over every fish in the dataset: <code>for (i in 1:N) { ... }</code></li>
 </ul>
-<p>  <code>jaw[i] ~ dnorm(mu, sigma)</code> means &quot;the jaw length of fish i is sampled from a normal distribution with mean <code>mu</code> and standard deviation <code>sigma</code>.&quot; In this case <code>jaw[i]</code> is a data point and <code>jaw</code> is a column in our dataframe, so the model will fit the parameters to this data. But stochastic nodes can also be parameters. Which brings us to... </p>
-<ul>
-<li><strong>Priors</strong> are also stochastic nodes placed on the parameters themselves: <code>alpha ~ dnorm(0, 5)</code> </li>
-<li><strong>Deterministic nodes</strong> use <code>&lt;-</code>, read as <em>&quot;is calculated as&quot;</em>. This is for   quantities you compute exactly from others, like: </li>
-</ul>
-<p>  <code>mu[i] &lt;- alpha + beta * body[i]</code> which is a linear equation for the mean jaw length of fish i,  based on its body length and two parameters <code>alpha</code> and <code>beta</code>. </p>
-<ul>
-<li><strong>Loops</strong> repeat a statement over every fish in the dataset:</li>
-</ul>
-<p>  <code>for (i in 1:N) { ... }</code></p>
 <p>That is the whole grammar. Everything else is built from these four.</p>
-<h2>A minimal frogfish model</h2>
+<h2 id="a-minimal-frogfish-model">A minimal frogfish model</h2>
 <p>Here is the smallest useful model: the jaw lengths of one species scatter around a common mean <code>mu</code>, with spread <code>sigma</code>.</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -123,27 +130,25 @@ export const COURSE_CONTENT = {
   sigma ~ dunif(0, 50)
 }</code></pre>
 <p>Read it top to bottom: <em>every measured <code>length</code> is normally distributed around a shared <code>mu</code> (mean); our prior belief is that <code>mu</code> sits somewhere around 40 mm; and the spread <code>sigma</code> is somewhere between 0 and 50 mm.</em></p>
-<h2>A key difference between FANGS and the classic JAGS syntax</h2>
-<p>FANGS describes the normal distribution by its <strong>standard deviation</strong>, not its precision: <code>dnorm(mean, SD)</code>. Most textbooks and classic JAGS/BUGS code instead use precision, <span class="math inline">\\(\\tau = 1/\\sigma^2\\)</span>. So if you copy a model from a textbook, you must convert: <span class="math inline">\\(\\sigma = 1/\\sqrt{\\tau}\\)</span>. Forgetting this is the single most common source of &quot;why is my fit nonsense?&quot;. </p>
-<p>Many modern Bayesian software packages, are now using the SD, because it is more intuitive and easier to set priors on. NIMBLE for instance let's the user choose which parameterisation they prefer. </p>
-<h2>Your task</h2>
-<p>The model in the challenge has a deliberate <strong>syntax error</strong>. Fix it so the parser accepts it. The error message points you to the exact line and column — let it do the work.</p>`,
-  'm05-first-fit': `<h1>Fit your first model in FANGS</h1>
+<h2 id="a-key-difference-between-fangs-and-the-classic-jags-syntax">A key difference between FANGS and the classic JAGS syntax</h2>
+<p>FANGS describes the normal distribution by its <strong>standard deviation</strong>, not its precision: <code>dnorm(mean, SD)</code>. Most textbooks and classic JAGS/BUGS code instead use precision, <span class="math inline"><em>τ</em> = 1/<em>σ</em><sup>2</sup></span>. So if you copy a model from a textbook, you must convert: <span class="math inline">$\\sigma = 1/\\sqrt{\\tau}$</span>. Forgetting this is the single most common source of “why is my fit nonsense?”.</p>
+<p>Many modern Bayesian software packages, are now using the SD, because it is more intuitive and easier to set priors on. NIMBLE for instance let’s the user choose which parameterisation they prefer.</p>
+<h2 id="your-task">Your task</h2>
+<p>The model in the challenge has a deliberate <strong>syntax error</strong>. Fix it so the parser accepts it. The error message points you to the exact line and column — let it do the work.</p>
+</body></html>`,
+  'm05-first-fit': `<html><head></head><body><h1 id="fit-your-first-model-in-fangs">Fit your first model in FANGS</h1>
 <p>Time to fit a FANGS model to real data. From here on you work in FANGS itself for the challenges. Open it with the link in the header (or the button in the challenge) and keep it side by side with this page.</p>
-<h2>The data</h2>
+<h2 id="the-data">The data</h2>
 <p>The file <code>fish-lengths.csv</code> holds body measurements for <strong>42 species of frogfish</strong> — camouflaged ambush predators most famous for the many species that have lures dangling over their mouths. Each row is one species, with these columns:</p>
 <ul>
-<li><code>Tree_name</code> — the species name (e.g. <em>Antennarius_commerson</em>).</li>
-<li><code>Standard_length</code> — body length in mm, the snout-to-tail-base measurement</li>
-</ul>
-<p>  ecologists use as a standard size.</p>
-<ul>
+<li><code>Tree_name</code> — the species name (e.g.&nbsp;<em>Antennarius_commerson</em>).</li>
+<li><code>Standard_length</code> — body length in mm, the snout-to-tail-base measurement ecologists use as a standard size.</li>
 <li><code>Lower_jaw_length</code> — jaw length in mm (we will use this in a later module).</li>
 <li><code>Mouth_width</code> — mouth width in mm.</li>
 </ul>
 <p>Frogfish are known for their short bodies and big mouths. You need to have a big mouth if you are an ambush predator, so you can grab whatever morsel swims by. But how big are their mouths, and how much do they vary across species? We will answer that question in the next module.</p>
 <p>For now we ignore the predictors and ask the question: <strong>across these species, what is the typical jaw length, and how much do species vary?</strong></p>
-<p>A model of just a mean is sometimes called an 'intercept-only model'. Later we will add other predictors to make it into a linear regression model. The intercept-only model for jaw length looks like this:</p>
+<p>A model of just a mean is sometimes called an ‘intercept-only model’. Later we will add other predictors to make it into a linear regression model. The intercept-only model for jaw length looks like this:</p>
 <pre><code>model {
   for (i in 1:N) {
     Lower_jaw_length[i] ~ dnorm(alpha, sigma)
@@ -151,86 +156,63 @@ export const COURSE_CONTENT = {
   alpha ~ dnorm(100, 50)
   sigma ~ dunif(0, 100)
 }</code></pre>
-<p>Pay attention to the different elements of the model that we covered in the lsat module:</p>
-<ul>
-<li>The <code>for</code> loop says that each observation of <code>Lower_jaw_length</code> is drawn from a normal distribution with mean <code>alpha</code> and standard deviation <code>sigma</code>.</li>
-<li><code>dnorm()</code> is distribution we are using to model the likelihood of the jaw length data (a stochastic node).</li>
-<li>We have two priors, one for <code>alpha</code> and one for <code>sigma</code>. These are also stochastic nodes, but this time on parameters, not the raw data. </li>
-</ul>
+<p>Pay attention to the different elements of the model that we covered in the lsat module: - The <code>for</code> loop says that each observation of <code>Lower_jaw_length</code> is drawn from a normal distribution with mean <code>alpha</code> and standard deviation <code>sigma</code>. - <code>dnorm()</code> is distribution we are using to model the likelihood of the jaw length data (a stochastic node). - We have two priors, one for <code>alpha</code> and one for <code>sigma</code>. These are also stochastic nodes, but this time on parameters, not the raw data.</p>
 <p>Here <code>alpha</code> will be our estimate of the average jaw length and <code>sigma</code> is our estimate for widely species spread around the mean.</p>
-<h2>The FANGS workflow</h2>
-<ol>
-<li><strong>Load data.</strong> Drag <code>fish-lengths.csv</code> onto the upload area. Check the <strong>Data</strong></li>
+<h2 id="the-fangs-workflow">The FANGS workflow</h2>
+<ol type="1">
+<li><strong>Load data.</strong> Drag <code>fish-lengths.csv</code> onto the upload area. Check the <strong>Data</strong> tab to confirm it read in correctly.</li>
+<li><strong>Write the model</strong> in the editor on the left (the intercept-only model above). Keep the Data tab open so you can refer to the variable names as you type.</li>
+<li><strong>Check the constants.</strong> Check FANGS has the correct number of observations <code>N</code>. This is automatically set, so if its not what you expect, check your data upload and the variable names in your model.</li>
+<li><strong>Set sampler settings:</strong> chains, samples, burn-in, thinning. The defaults (3 chains, 2000 samples) are a fine starting point.</li>
+<li><strong>Run.</strong> Watch the <strong>Trace</strong> tab fill in live, then read the <strong>Posteriors</strong> and <strong>Summary</strong> tabs.</li>
 </ol>
-<p>   tab to confirm it read in correctly.</p>
-<ol>
-<li><strong>Write the model</strong> in the editor on the left (the intercept-only model above). Keep the Data tab open so you can refer to the variable names as you type. </li>
-<li><strong>Check the constants.</strong> Check FANGS has the correct number of observations <code>N</code>. This is automatically set, so if its not what you expect, check your data upload and the variable names in your model. </li>
-<li><strong>Set sampler settings:</strong> chains, samples, burn-in, thinning. The defaults</li>
-</ol>
-<p>   (3 chains, 2000 samples) are a fine starting point.</p>
-<ol>
-<li><strong>Run.</strong> Watch the <strong>Trace</strong> tab fill in live, then read the <strong>Posteriors</strong> and</li>
-</ol>
-<p>   <strong>Summary</strong> tabs. </p>
-<p>You can also check the <strong>Posteriors</strong> tab to see the posterior distributions fill in as the sampler runs. </p>
-<h2>What to look for</h2>
+<p>You can also check the <strong>Posteriors</strong> tab to see the posterior distributions fill in as the sampler runs.</p>
+<h2 id="what-to-look-for">What to look for</h2>
 <ul>
-<li>The <strong>trace plots</strong> should look like fuzzy caterpillars with the chains</li>
+<li>The <strong>trace plots</strong> should look like fuzzy caterpillars with the chains overlapping — that overlap means the chains agree on the answer.</li>
+<li>The <strong>Summary</strong> table gives the posterior mean, SD, and a 95% credible interval for each parameter.</li>
 </ul>
-<p>  overlapping — that overlap means the chains agree on the answer.</p>
+<h2 id="debugging-tips">Debugging tips</h2>
+<p>If you get an error: - Check the <strong>Console</strong> tab for error messages. They can be cryptic, but they often point to the line of code that is causing the problem. - Check the spelling of variable names. FANGS is case-sensitive, so <code>Lower_jaw_length</code> is not the same as <code>lower_jaw_length</code>. - Check for consistency of parameter names. If you use <code>alpha</code> in the likelihood, make sure you use <code>alpha</code> in the priors, not <code>apha</code> or something else. - Make sure you close all the brackets, including the <code>for</code> loop and the <code>model</code> block. - Check you have put indices where they belong. The likelihood should have <code>Lower_jaw_length[i]</code> and the loop should be <code>for (i in 1:N)</code>. If you forget the <code>[i]</code> in the likelihood, you are trying to model the whole vector of jaw lengths as a single number and you will get nonsense results.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the intercept-only model to <code>fish-lengths.csv</code>. Then come back here and enter your posterior means for <span class="math inline"><em>α</em></span> (the mean jaw length) and <span class="math inline"><em>σ</em></span> (the species-to-species spread). The challenge checks them against the reference fit.</p>
+</body></html>`,
+  'm06-sigma-priors': `<html><head></head><body><h1 id="choosing-a-prior-for-σ">Choosing a prior for σ</h1>
+<p>Every parameter in a Bayesian model needs a prior — and that includes the standard deviation, <span class="math inline"><em>σ</em></span>. Experienced statisticians give a lot of thought to the priors on dispersion parameters like the standard deviation. The one rule it must obey: a standard deviation can never be negative, so its prior has to live entirely on the positive side of zero.</p>
+<h2 id="common-choices">Common choices</h2>
 <ul>
-<li>The <strong>Summary</strong> table gives the posterior mean, SD, and a 95% credible interval</li>
+<li><code>sigma ~ dunif(0, U)</code> — flat probabilit distribution between 0 and some generous ceiling <code>U</code>. Simple, but you have to pick <code>U</code> large enough that it never clips the posterior. For our frogfish body lengths (which run up to ~250 mm), something like <code>dunif(0, 100)</code> gives the spread plenty of room.</li>
+<li><code>sigma ~ dexp(rate)</code> — another positive, light-tailed option that fades smoothly toward larger values. A smooth tail rather than a jagged edge like in <code>dunif</code> can lead to more efficient sampling. The sampler can explore the tail of the distribution without worrying about hitting a hard ceiling. A rate of <code>0.05</code> gives a mean of 20 mm, which is a reasonable starting point for our frogfish data.</li>
+<li>In the literature you might also see other choices for priors like the Cauchy distribution or the half-normal distribution. These are all valid choices, but FANGS does not support them at the moment. We will stick with simple options here.</li>
 </ul>
-<p>  for each parameter.</p>
-<h2>Debugging tips </h2>
-<p>If you get an error: </p>
-<ul>
-<li>Check the <strong>Console</strong> tab for error messages. They can be cryptic, but they often point to the line of code that is causing the problem.</li>
-<li>Check the spelling of variable names. FANGS is case-sensitive, so <code>Lower_jaw_length</code> is not the same as <code>lower_jaw_length</code>.</li>
-<li>Check for consistency of parameter names. If you use <code>alpha</code> in the likelihood, make sure you use <code>alpha</code> in the priors, not <code>apha</code> or something else.</li>
-<li>Make sure you close all the brackets, including the <code>for</code> loop and the <code>model</code> block. </li>
-<li>Check you have put indices where they belong. The likelihood should have <code>Lower_jaw_length[i]</code> and the loop should be <code>for (i in 1:N)</code>. If you forget the <code>[i]</code> in the likelihood, you are trying to model the whole vector of jaw lengths as a single number and you will get nonsense results. </li>
-</ul>
-<h2>Your task</h2>
-<p>Fit the intercept-only model to <code>fish-lengths.csv</code>. Then come back here and enter your posterior means for <span class="math inline">\\(\\alpha\\)</span> (the mean jaw length) and <span class="math inline">\\(\\sigma\\)</span> (the species-to-species spread). The challenge checks them against the reference fit.</p>`,
-  'm06-sigma-priors': `<h1>Choosing a prior for σ</h1>
-<p>Every parameter in a Bayesian model needs a prior — and that includes the standard deviation, <span class="math inline">\\(\\sigma\\)</span>. Experienced statisticians give a lot of thought to the priors on dispersion parameters like the standard deviation. The one rule it must obey: a standard deviation can never be negative, so its prior has to live entirely on the positive side of zero.</p>
-<h2>Common choices</h2>
-<ul>
-<li><code>sigma ~ dunif(0, U)</code> — flat probabilit distribution between 0 and some generous ceiling <code>U</code>. Simple, but you have to pick <code>U</code> large enough that it never clips the posterior.</li>
-</ul>
-<p>For our frogfish body lengths (which run up to ~250 mm), something like  <code>dunif(0, 100)</code> gives the spread plenty of room.</p>
-<ul>
-<li><code>sigma ~ dexp(rate)</code> — another positive, light-tailed option that fades smoothly toward larger values. A smooth tail rather than a jagged edge like in <code>dunif</code> can lead to more efficient sampling. The sampler can explore the tail of the distribution without worrying about hitting a hard ceiling. A rate of <code>0.05</code> gives a mean of 20 mm, which is a reasonable starting point for our frogfish data. </li>
-<li>In the literature you might also see other choices for priors like the Cauchy distribution or the half-normal distribution. These are all valid choices, but FANGS does not support them at the moment. We will stick with simple options here. </li>
-</ul>
-<h2>What if other scientists disagree with your choice of prior?</h2>
-<p>The best way to address this is to show them how much (or how little) the prior moves things. If your posterior is very different under a different, reasonable prior, then you have a problem — and you need to be transparent about it. If your posterior is pretty much the same under different priors, then you can be confident that your results are robust to the choice of prior. </p>
-<p>Most standard models have conventions for priors that are widely accepted in the field. If you deviate from those conventions, you should be prepared to justify your choice — and to show how much (or how little) it moves things. </p>
-<h2>Your task</h2>
-<p>Refit your frogfish body-length model from <code>fish-lengths.csv</code> under <strong>two different priors for <span class="math inline">\\(\\sigma\\)</span></strong> (for example <code>dunif(0, 100)</code> versus a truncated half-normal). Record the posterior mean and 95% CI for <span class="math inline">\\(\\sigma\\)</span> in the table below for each run. Two completed rows unlocks the module, and shows you, first-hand, how much (or how little) the prior moved things.</p>`,
-  'm07-prior-predictive': `<h1>Prior predictive checks</h1>
-<p>Before fitting anything, it pays to ask: <strong>do my priors imply sensible data?</strong> It is easy to write down a prior that looks innocent and quietly believes in impossible fish. A prior predictive check catches this by simulating whole fake datasets from the priors <em>alone</em>. The real data are not used in the simulation. </p>
-<h2>How it works</h2>
-<ol>
+<h2 id="what-if-other-scientists-disagree-with-your-choice-of-prior">What if other scientists disagree with your choice of prior?</h2>
+<p>The best way to address this is to show them how much (or how little) the prior moves things. If your posterior is very different under a different, reasonable prior, then you have a problem — and you need to be transparent about it. If your posterior is pretty much the same under different priors, then you can be confident that your results are robust to the choice of prior.</p>
+<p>Most standard models have conventions for priors that are widely accepted in the field. If you deviate from those conventions, you should be prepared to justify your choice — and to show how much (or how little) it moves things.</p>
+<h2 id="your-task">Your task</h2>
+<p>Refit your frogfish body-length model from <code>fish-lengths.csv</code> under <strong>two different priors for <span class="math inline"><em>σ</em></span></strong> (for example <code>dunif(0, 100)</code> versus a truncated half-normal). Record the posterior mean and 95% CI for <span class="math inline"><em>σ</em></span> in the table below for each run. Two completed rows unlocks the module, and shows you, first-hand, how much (or how little) the prior moved things.</p>
+</body></html>`,
+  'm07-prior-predictive': `<html><head></head><body><h1 id="prior-predictive-checks">Prior predictive checks</h1>
+<p>Before fitting anything, it pays to ask: <strong>do my priors imply sensible data?</strong> It is easy to write down a prior that looks innocent and quietly believes in impossible fish. A prior predictive check catches this by simulating whole fake datasets from the priors <em>alone</em>. The real data are not used in the simulation.</p>
+<h2 id="how-it-works">How it works</h2>
+<ol type="1">
 <li>Draw parameter values from their priors.</li>
 <li>Push those values through the model to simulate a dataset.</li>
 <li>Repeat many times and look at the spread of simulated data.</li>
 </ol>
-<p>If your simulated &quot;frogfish jaw lengths&quot; come out spanning <span class="math inline">\\(-400\\)</span> to <span class="math inline">\\(600\\)</span> mm, something is wrong: real frogfish can't have negative jaw lengths, and a half-metre frogfish is a monster. A prior that produces those values is putting belief on the impossible.  Tighten it or use a different distribution until the prior predictive check shows you something that looks like real frogfish. </p>
-<h2>In FANGS</h2>
+<p>If your simulated “frogfish jaw lengths” come out spanning <span class="math inline">−400</span> to <span class="math inline">600</span> mm, something is wrong: real frogfish can’t have negative jaw lengths, and a half-metre frogfish is a monster. A prior that produces those values is putting belief on the impossible. Tighten it or use a different distribution until the prior predictive check shows you something that looks like real frogfish.</p>
+<h2 id="in-fangs">In FANGS</h2>
 <p>Use the <strong>Prior Check</strong> tab. It runs the model forward from the priors with the likelihood switched off, so you see exactly what your assumptions predict <em>before</em> the data gets any vote.</p>
-<p>This is the natural partner to the <span class="math inline">\\(\\sigma\\)</span>-prior work you just did. A vague-looking <code>dnorm(0, 1000)</code> on the mean body length seems harmless on the page — until the prior check shows you the absurd fish it implies.</p>
+<p>This is the natural partner to the <span class="math inline"><em>σ</em></span>-prior work you just did. A vague-looking <code>dnorm(0, 1000)</code> on the mean body length seems harmless on the page — until the prior check shows you the absurd fish it implies.</p>
 <p>Note that the posterior histograms in FANGS fit a smoother over the histograms, so sometimes may look like smooth curves that deviate into negative space for prior that is meant to be positive only. But if you check the Prior summary you should see no negative values in the prior samples.</p>
-<h2>Your task</h2>
-<p>Run a prior check on your frogfish body-length model. Then answer the question below about how to read an obviously-too-vague prior.</p>`,
-  'm08-gaussian-glm': `<h1>Gaussian regression: jaw length ~ body length</h1>
+<h2 id="your-task">Your task</h2>
+<p>Using the model of mean jaw length, try some different priors for <code>alpha</code> and <code>sigma</code> and compare the results of the prior predictive check. For example, you could try a <code>dnorm(0, 100)</code> prior for <code>alpha</code> and a <code>dunif(0, 100)</code> prior for <code>sigma</code>. Then try a more constrained <code>dnorm(100, 5)</code> for <code>alpha</code> and the same <code>dunif(0, 100)</code> for <code>sigma</code>.</p>
+<p>Then answer the questions below:</p>
+</body></html>`,
+  'm08-gaussian-glm': `<html><head></head><body><h1 id="gaussian-regression-jaw-length-body-length">Gaussian regression: jaw length ~ body length</h1>
 <p>Now we add a <strong>predictor</strong>. A frogfish that swallows prey whole lives and dies by the size of its mouth, and bigger fish tend to have bigger jaws. Do they? With the same <code>fish-lengths.csv</code> you already know, we can ask directly: <strong>as body length grows, how much does jaw length grow with it?</strong></p>
-<h2>The model</h2>
-<p>We treat each species' jaw length as scattering around a line drawn through body length:</p>
-<div class="math display">\\[\\text{jaw}_i \\sim \\text{Normal}(\\mu_i,\\ \\sigma), \\qquad
-\\mu_i = \\alpha + \\beta\\,\\text{body}_i\\]</div>
+<h2 id="the-model">The model</h2>
+<p>We treat each species’ jaw length as scattering around a line drawn through body length:</p>
+<p><span class="math display">jaw<sub><em>i</em></sub> ∼ Normal(<em>μ</em><sub><em>i</em></sub>,&nbsp;<em>σ</em>),   <em>μ</em><sub><em>i</em></sub> = <em>α</em> + <em>β</em> body<sub><em>i</em></sub></span></p>
 <p>In FANGS, using the real column names from <code>fish-lengths.csv</code>:</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -242,82 +224,177 @@ export const COURSE_CONTENT = {
   sigma ~ dunif(0, 50)
 }</code></pre>
 <ul>
-<li><span class="math inline">\\(\\alpha\\)</span> — the <strong>intercept</strong>: predicted jaw length at body length 0. Not biologically meaningful on its own (there are no 0 mm fish), but the line needs a starting height.</li>
-<li><span class="math inline">\\(\\beta\\)</span> — the <strong>slope</strong>: extra mm of jaw for each extra mm of body. <em>This</em> is the number the biology is about. A slope near 0.35, say, would mean jaw length is about a third of body length across these species.</li>
-<li>FANGS rescales predictors internally for efficient sampling and back-transforms the results, so you can read <span class="math inline">\\(\\beta\\)</span> straight off  in the original mm scale.</li>
+<li><span class="math inline"><em>α</em></span> — the <strong>intercept</strong>: predicted jaw length at body length 0. Not biologically meaningful on its own (there are no 0 mm fish), but the line needs a starting height.</li>
+<li><span class="math inline"><em>β</em></span> — the <strong>slope</strong>: extra mm of jaw for each extra mm of body. <em>This</em> is the number the biology is about. A slope near 0.35, say, would mean jaw length is about a third of body length across these species.</li>
+<li>FANGS rescales predictors internally for efficient sampling and back-transforms the results, so you can read <span class="math inline"><em>β</em></span> straight off in the original mm scale.</li>
 </ul>
-<p>Check <a href="course/#m05-first-fit">Module 5</a> for tips on debugging if you get an error. </p>
-<h2>Reading the result</h2>
-<p>Check the <strong>Posterior</strong> tab first to see the histograms for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span>. The mean of <span class="math inline">\\(\\beta\\)</span> is the best guess for how much jaw length grows with body length, and the 95% credible interval gives a range of plausible values. If the interval sits entirely above 0, then bigger frogfish credibly have bigger jaws. </p>
-<p>You are also looking for a nice even distribution here, if the histogram is very lumpy or has a long tail, it may be a sign of a sampling problem. More on this later. </p>
-<p>Then the <strong>Summary</strong> tab gives the posterior for <span class="math inline">\\(\\beta\\)</span> — if its 95% credible interval sits entirely above 0, then bigger frogfish credibly have bigger jaws. Save those values for the challenge at the end of the module. </p>
-<p>Open the <strong>Predictions</strong> tab: it draws the posterior-mean regression line and its 95% band straight over the data points, so you can see how jaw length changes with body length across the different species. </p>
-<h2>Your task</h2>
-<p>Fit this model to <code>fish-lengths.csv</code> in FANGS (jaw length on body length), then enter your posterior means for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span>. From here on the rhythm is always the same: <strong>set up the model, fit it carefully, check your answer.</strong></p>`,
-  'm09-posterior-predictive': `<h1>Posterior predictive checks</h1>
-<p>You have a fitted model — but a fit is not the same as a <em>good</em> fit. The model will always draw you a line; the real question is whether that line, with its scatter, could plausibly have produced the frogfish you actually measured. A <strong>posterior predictive check (PPC)</strong> answers exactly this, by simulating fresh datasets from the <em>fitted</em> model and laying them next to the real one.</p>
-<h2>Prior vs posterior predictive</h2>
+<p>Check <a href="course/#m05-first-fit">Module 5</a> for tips on debugging if you get an error.</p>
+<h2 id="reading-the-result">Reading the result</h2>
+<p>Check the <strong>Posterior</strong> tab first to see the histograms for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span>. The mean of <span class="math inline"><em>β</em></span> is the best guess for how much jaw length grows with body length, and the 95% credible interval gives a range of plausible values. If the interval sits entirely above 0, then bigger frogfish credibly have bigger jaws.</p>
+<p>You are also looking for a nice even distribution here, if the histogram is very lumpy or has a long tail, it may be a sign of a sampling problem. More on this later.</p>
+<p>Then the <strong>Summary</strong> tab gives the posterior for <span class="math inline"><em>β</em></span> — if its 95% credible interval sits entirely above 0, then bigger frogfish credibly have bigger jaws. Save those values for the challenge at the end of the module.</p>
+<p>Open the <strong>Predictions</strong> tab: it draws the posterior-mean regression line and its 95% band straight over the data points, so you can see how jaw length changes with body length across the different species.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit this model to <code>fish-lengths.csv</code> in FANGS (jaw length on body length), then enter your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span>. From here on the rhythm is always the same: <strong>set up the model, fit it carefully, check your answer.</strong></p>
+</body></html>`,
+  'm09-posterior-predictive': `<html><head></head><body><h1 id="posterior-predictive-checks">Posterior predictive checks</h1>
+<p>You have fitted a model to data, but we want to to know whether our fitted models is a reasonable representation of the data. The model will always draw you a line; the real question is whether that line, with its scatter, could plausibly have produced the frogfish you actually measured. A <strong>posterior predictive check (PPC)</strong> simulates fresh datasets from the <em>fitted</em> model. We can then compare the simulated data to the real data. The idea is that a reasonable model shoudl simulate data that look like the real data.</p>
+<p>This is similar to the prior predictive check we did earlier, but this time we’re using the model with parameters that have been fit to the data.</p>
+<h2 id="prior-vs-posterior-predictive">Prior vs posterior predictive</h2>
 <p>These two checks bookend the fitting:</p>
 <ul>
-<li><strong>Prior</strong> predictive (Module 7): simulate from the priors <em>before</em> fitting —</li>
+<li><strong>Prior</strong> predictive (Module 7): simulate from the priors <em>before</em> fitting — <em>“are my assumptions even sane?”</em></li>
+<li><strong>Posterior</strong> predictive (now): simulate from the posterior <em>after</em> fitting — <em>“does the fitted model look like reality?”</em></li>
 </ul>
-<p>  <em>&quot;are my assumptions even sane?&quot;</em></p>
-<ul>
-<li><strong>Posterior</strong> predictive (now): simulate from the posterior <em>after</em> fitting —</li>
-</ul>
-<p>  <em>&quot;does the fitted model look like reality?&quot;</em></p>
-<h2>How to read it</h2>
-<p>In FANGS' <strong>PPC</strong> tab you see your observed jaw lengths against a fan of simulated datasets drawn from the fit:</p>
-<ul>
-<li>If the real data sit comfortably <strong>inside</strong> the simulated spread, the model is</li>
-</ul>
-<p>  reproducing the features you care about. That is the result you want.</p>
-<ul>
-<li>If the real data fall in the <strong>far tail</strong> of every replicate — more skewed, more</li>
-</ul>
-<p>  spread out, or just the wrong shape — the model is missing something. That is   your cue to change it: a different distribution, an extra predictor, perhaps   allowing the spread to grow with size.</p>
-<p>A PPC will never certify that a model is <em>true</em> — only whether it is <em>good enough</em> for the features you chose to check. That is a more honest, and more useful, question anyway.</p>
-<h2>Your task</h2>
-<p>Open the PPC tab for your jaw-length-on-body-length fit from <code>fish-lengths.csv</code>, then answer the interpretation questions below.</p>`,
-  'm10-diagnostics': `<h1>MCMC diagnostics: R-hat &amp; ESS</h1>
+<h2 id="how-to-read-it">How to read it</h2>
+<p>In FANGS’ <strong>PPC</strong> tab you see two plots.</p>
+<p>The first plot shows the histogram of data (bars) against the histograms of simulated data (lines). If the real data are very far out in the tail of the simulated data, then the model is not capturing some important feature of the data.</p>
+<p>The second plot shows the real data (points) plotted against the simulated data (points with lines for 95% CIs). We are expecting to see a positive trend line here, meaning that the model predicts higher values of jaw length for species that had longer jaw length. If the real data sit comfortably <strong>inside</strong> the simulated spread, the model is reproducing the features you care about. That is the result you want.</p>
+<p>If the real data fall in the <strong>far tail</strong> of every replicate — more skewed, more spread out, or just the wrong shape — the model is missing something. That is your cue to keep working on the model. It might need a different distribution, an extra predictor, or even a different mathematical relationship between jaw and body length.</p>
+<h2 id="your-task">Your task</h2>
+<p>First, open the PPC tab for your jaw-length-on-body-length fit from <code>fish-lengths.csv</code> and inspect the results.</p>
+<p>Then fit another model. This model I’ve set-up to be a deliberately bad fit: it assumes a fixed known standard deviation of jaw length of 70mm. Update the likelihood for <code>Lower_jaw_length[i]</code> to be:</p>
+<pre><code>Lower_jaw_length[i] ~ dnorm(mu[i], 70)</code></pre>
+<p>How does that change the plots on the PPC tab?</p>
+<p>And remove <code>sigma</code> from the model block, since it’s no longer a parameter.</p>
+<p>Then answer the interpretation questions below.</p>
+</body></html>`,
+  'm10-diagnostics': `<html><head></head><body><h1 id="mcmc-diagnostics-r-hat-ess">MCMC diagnostics: R-hat &amp; ESS</h1>
 <p>MCMC only works if the chains have <strong>converged</strong>. Two numbers tell you whether to trust the output — both are in the <strong>Summary</strong> tab.</p>
-<h2>R-hat (the convergence check)</h2>
+<h2 id="r-hat-the-convergence-check">R-hat (the convergence check)</h2>
 <p>R-hat compares the variation <em>within</em> each chain to the variation <em>between</em> chains. If the chains have converged to the same distribution, these match and:</p>
-<div class="math display">\\[\\hat{R} \\approx 1.0\\]</div>
+<p><span class="math display"><em>R̂</em> ≈ 1.0</span></p>
 <ul>
-<li><span class="math inline">\\(\\hat{R} \\le 1.01\\)</span> — good.</li>
-<li><span class="math inline">\\(\\hat{R} &gt; 1.1\\)</span> — <strong>do not trust it.</strong> The chains disagree. Run longer, or</li>
+<li><span class="math inline"><em>R̂</em> ≤ 1.01</span> — good.</li>
+<li><span class="math inline"><em>R̂</em> &gt; 1.1</span> — <strong>do not trust it.</strong> The chains disagree. Run longer, or reparameterise (Module 19).</li>
 </ul>
-<p>  reparameterise (Module 19).</p>
-<p>In the trace plot, a high R-hat looks like chains exploring different regions instead of overlapping.</p>
-<h2>ESS (the efficiency check)</h2>
+<p>In the trace plot, a high R-hat looks like chains exploring different regions instead of overlapping fuzzy caterpillars.</p>
+<h2 id="ess-the-efficiency-check">ESS (the efficiency check)</h2>
 <p>The <strong>effective sample size</strong> is how many <em>independent</em> draws your correlated chain is worth. 4000 saved samples with ESS = 35 means heavy autocorrelation — your estimates are noisier than the sample count suggests.</p>
+<p>When there is strong autocorrelation the trace plots will look like trend lines that wander off in different directions consistently, instead of fuzzy caterpillars.</p>
 <ul>
-<li>Low ESS → widen the sampler (more samples / thinning) or improve mixing.</li>
+<li>Low ESS → widen the sampler (more samples / thinning) or make changes to the model to improve the randomness of samples.</li>
 </ul>
-<h2>Rule of thumb</h2>
-<p>Glance at <strong>R-hat first</strong> (is it valid?), then <strong>ESS</strong> (is it precise enough?). FANGS highlights problem rows for you.</p>
-<h2>Your task</h2>
-<p>Answer the two diagnostic questions below.</p>`,
-  'm11-single-factor': `<h1>Single-factor linear model &amp; the design matrix</h1>
-<p>Many marine studies compare <strong>groups</strong>: control vs treatment, inshore vs offshore. Here we use an <strong>ocean-acidification (OA)</strong> experiment — fish reared in control vs acidified seawater — and ask whether acidification changes our response (say, growth).</p>
-<h2>Coding a 2-level factor</h2>
-<p>A categorical predictor enters the model through a <strong>design matrix</strong>. With two levels we use a single <strong>0/1 indicator</strong>:</p>
-<table>
-<thead><tr><th>Treatment</th><th>indicator <code>trt</code></th></tr></thead>
+<h2 id="rule-of-thumb">Rule of thumb</h2>
+<p>Glance at <strong>R-hat first</strong> (is it valid?), then <strong>ESS</strong> (is it precise enough?).</p>
+<p>FANGS highlights problem rows for you.</p>
+<h2 id="your-task">Your task</h2>
+<p>Answer the two diagnostic questions below.</p>
+</body></html>`,
+  'm11-identifiability-priors': `<html><head></head><body><h1 id="identifiability-bad-essr-hat-a-case-study">Identifiability &amp; bad ESS/R-hat: a case study</h1>
+<p>You have just learned what R-hat and ESS mean. Now let’s see what <em>really bad</em> values look like — and understand <em>why</em> they occur.</p>
+<p>This module uses a deliberately broken version of the jaw-length regression from Module 8 to illustrate <strong>non-identifiability</strong>: a situation where the data cannot, even in principle, pin down the individual parameters you have asked for.</p>
+<h2 id="a-two-intercept-jaw-length-model">A two-intercept jaw-length model</h2>
+<p>Recall the jaw-length regression:</p>
+<p><span class="math display">Lower_jaw_length<sub><em>i</em></sub> = <em>α</em> + <em>β</em> × Standard_length<sub><em>i</em></sub> + <em>ε</em><sub><em>i</em></sub></span></p>
+<p>Now add a second intercept, <code>alpha2</code>, that does nothing but shadow the first:</p>
+<pre><code>model {
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], sigma)
+    mu[i] &lt;- alpha + alpha2 + beta * x[i]
+  }
+  alpha  ~ dnorm(0, 5)
+  alpha2 ~ dnorm(0, 5)
+  beta   ~ dnorm(0, 5)
+  sigma  ~ dunif(0, 100)
+}</code></pre>
+<p>Use <code>Lower_jaw_length</code> as <code>y</code> and <code>Standard_length</code> as <code>x</code> in FANGS.</p>
+<p>Look closely at the mean: <code>alpha</code> and <code>alpha2</code> <em>only ever appear added together</em>. The data see the sum <span class="math inline"><em>α</em> + <em>α</em><sub>2</sub></span> — never the two pieces individually. Any increase in <code>alpha</code> can be exactly cancelled by an equal decrease in <code>alpha2</code> with <strong>no change to the fit</strong>. The likelihood is completely flat along the ridge</p>
+<p><span class="math display"><em>α</em> + <em>α</em><sub>2</sub> = constant.</span></p>
+<p>This is a <strong>non-identifiable</strong> parameterisation.</p>
+<h2 id="part-1-watch-the-chains-fail">Part 1 — watch the chains fail</h2>
+<ol type="1">
+<li>Load <code>fish-lengths.csv</code> in FANGS, setting <code>y = Lower_jaw_length</code> and <code>x = Standard_length</code>.</li>
+<li>Paste the two-intercept model above and run with <strong>4 chains</strong>.</li>
+<li>Open the <strong>Trace</strong> tab and watch <code>alpha</code> and <code>alpha2</code>.</li>
+</ol>
+<p>You should see them <strong>wander</strong> — slow, drifting traces that never settle, looking different in every chain. Check the <strong>Summary</strong> tab:</p>
+<ul>
+<li><strong>R-hat</strong> for <code>alpha</code> and <code>alpha2</code> will be large (well above 1.01).</li>
+<li><strong>ESS</strong> will be tiny — thousands of iterations buy only a handful of effectively independent samples.</li>
+<li>But <code>beta</code>, <code>sigma</code>, and the <em>sum</em> <code>alpha + alpha2</code> remain <strong>well-behaved</strong>. Only the unidentified pieces misbehave.</li>
+</ul>
+<div>
+<blockquote>
+<p><strong>Tip</strong></p>
+<p>The data constrain a <em>line</em> through <span class="math inline">(<em>α</em>, <em>α</em><sub>2</sub>)</span> space, not a <em>point</em>. The sampler slides freely along that line — so it does.</p>
+</blockquote>
+</div>
+<h2 id="part-2-see-the-bimodality">Part 2 — see the bimodality</h2>
+<p>Open the <strong>Posteriors</strong> tab and look at the density for <code>alpha</code> (and <code>alpha2</code>). Because each chain settles in a different stretch of the ridge and mixes badly, the pooled density often looks <strong>lumpy or multi-modal</strong> — two or more bumps where you expected one smooth hill. That bimodality is <strong>not a real feature of the data</strong>; it is an artefact of the non-identified parameter. Compare it with the density of <code>beta</code>, which is a single clean peak.</p>
+<h2 id="part-3-let-a-prior-rescue-it">Part 3 — let a prior rescue it</h2>
+<p>A <strong>prior can identify what the data cannot</strong>. Tighten the prior on <code>alpha2</code> step by step, refitting each time:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Step</th>
+<th>Prior on <code>alpha2</code></th>
+<th>What it says</th>
+</tr>
+</thead>
 <tbody>
-<tr><td>Control</td><td>0</td></tr>
-<tr><td>Acidified</td><td>1</td></tr>
+<tr class="odd">
+<td>1</td>
+<td><code>alpha2 ~ dnorm(0, 5)</code></td>
+<td>“alpha2 could be almost anything”</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>alpha2 ~ dnorm(0, 1)</code></td>
+<td>“alpha2 is probably small”</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><code>alpha2 ~ dnorm(0, 0.2)</code></td>
+<td>“alpha2 is very close to 0”</td>
+</tr>
 </tbody>
 </table>
-<div class="math display">\\[y_i = \\alpha + \\beta\\,\\text{trt}_i\\]</div>
+<p>As the prior on <code>alpha2</code> tightens, it pins <code>alpha2</code> near zero, breaking the symmetry of the ridge. Watch what happens:</p>
 <ul>
-<li><span class="math inline">\\(\\alpha\\)</span> — the <strong>control</strong> mean (when <code>trt = 0</code>).</li>
-<li><span class="math inline">\\(\\beta\\)</span> — the <strong>difference</strong> for acidified fish (the treatment effect).</li>
+<li>The <code>alpha</code> trace <strong>stops wandering</strong> and settles.</li>
+<li><strong>R-hat falls toward 1.00</strong> and <strong>ESS climbs</strong> by orders of magnitude.</li>
+<li>The lumpy, bimodal density collapses into a <strong>single clean peak</strong>.</li>
 </ul>
-<p>If <span class="math inline">\\(\\beta\\)</span>'s 95% CI excludes 0, acidification credibly shifts the response.</p>
-<h2>In FANGS</h2>
-<p>FANGS auto-encodes a text column like <code>treatment</code> (<code>&quot;control&quot;</code>, <code>&quot;acidified&quot;</code>) into integers for you. You can write the model directly against the indicator, e.g. <code>mu[i] &lt;- alpha + beta * trt[i]</code>.</p>
+<p>You have not added any data. You have simply supplied <strong>external information</strong> about one parameter — and that was enough to make the whole model sample cleanly.</p>
+<h2 id="the-big-idea">The big idea</h2>
+<blockquote>
+<p>A model that looks hopeless to a likelihood-only analysis — because the data alone cannot identify every parameter — can be <strong>perfectly usable in a Bayesian analysis</strong> when you bring genuine prior information to the unidentified parts.</p>
+</blockquote>
+<p>This comes with responsibility: the result now <strong>depends on the prior</strong> you chose for <code>alpha2</code>. That is fine if the prior reflects real knowledge, and dishonest if you tightened it just to make the sampler behave. Be transparent about where the information came from.</p>
+<h2 id="record-your-runs">Record your runs</h2>
+<p>Fit the two-intercept jaw-length model under <strong>at least the three priors on <code>alpha2</code></strong> in the table above. For each run, record the prior SD, the worst R-hat of <code>alpha</code>/<code>alpha2</code>, the minimum ESS, and a quick note on the posterior shape (<em>ridge / bimodal / single peak</em>). Two or more rows unlock the module.</p>
+</body></html>`,
+  'm11-single-factor': `<html><head></head><body><h1 id="single-factor-linear-model-the-design-matrix">Single-factor linear model &amp; the design matrix</h1>
+<p>Many marine studies compare <strong>groups</strong>: control vs treatment, inshore vs offshore. Here we use an <strong>ocean-acidification (OA)</strong> experiment — fish reared in control vs acidified seawater — and ask whether acidification changes our response (say, growth).</p>
+<h2 id="coding-a-2-level-factor">Coding a 2-level factor</h2>
+<p>A categorical predictor enters the model through a <strong>design matrix</strong>. With two levels we use a single <strong>0/1 indicator</strong>:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Treatment</th>
+<th>indicator <code>trt</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Control</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>Acidified</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display"><em>y</em><sub><em>i</em></sub> = <em>α</em> + <em>β</em> trt<sub><em>i</em></sub></span></p>
+<ul>
+<li><span class="math inline"><em>α</em></span> — the <strong>control</strong> mean (when <code>trt = 0</code>).</li>
+<li><span class="math inline"><em>β</em></span> — the <strong>difference</strong> for acidified fish (the treatment effect).</li>
+</ul>
+<p>If <span class="math inline"><em>β</em></span>’s 95% CI excludes 0, acidification credibly shifts the response.</p>
+<h2 id="in-fangs">In FANGS</h2>
+<p>FANGS auto-encodes a text column like <code>treatment</code> (<code>"control"</code>, <code>"acidified"</code>) into integers for you. You can write the model directly against the indicator, e.g.&nbsp;<code>mu[i] &lt;- alpha + beta * trt[i]</code>.</p>
 <pre><code>model {
   for (i in 1:N) {
     y[i] ~ dnorm(mu[i], sigma)
@@ -327,35 +404,77 @@ export const COURSE_CONTENT = {
   beta_trt ~ dnorm(0, 10)
   sigma ~ dunif(0, 50)
 }</code></pre>
-<h2>Your task</h2>
-<p>Fit the single-factor model to <code>oa-study.csv</code> and check your posterior means for the control mean <span class="math inline">\\(\\alpha\\)</span> and the acidification effect.</p>`,
-  'm12-prior-comparison': `<h1>Comparing priors with the OA study</h1>
-<p>How much does your prior on the <strong>treatment effect</strong> change the conclusion? With a small experiment, it can matter — so let's measure it instead of guessing.</p>
-<h2>The experiment</h2>
+<h2 id="your-task">Your task</h2>
+<p>Fit the single-factor model to <code>oa-study.csv</code> and check your posterior means for the control mean <span class="math inline"><em>α</em></span> and the acidification effect.</p>
+</body></html>`,
+  'm12-prior-comparison': `<html><head></head><body><h1 id="comparing-priors-with-the-oa-study">Comparing priors with the OA study</h1>
+<p>How much does your prior on the <strong>treatment effect</strong> change the conclusion? With a small experiment, it can matter — so let’s measure it instead of guessing.</p>
+<h2 id="the-experiment">The experiment</h2>
 <p>Refit the OA model from the previous module several times, changing <strong>only</strong> the prior on the acidification effect <code>beta_trt</code>. For example:</p>
 <ul>
-<li>Vague:   <code>beta_trt ~ dnorm(0, 100)</code></li>
+<li>Vague: <code>beta_trt ~ dnorm(0, 100)</code></li>
 <li>Weakly informative: <code>beta_trt ~ dnorm(0, 5)</code></li>
 <li>Sceptical (shrinks toward no effect): <code>beta_trt ~ dnorm(0, 1)</code></li>
 </ul>
 <p>Keep everything else identical.</p>
-<h2>What to watch</h2>
+<h2 id="what-to-watch">What to watch</h2>
 <ul>
 <li>Does the <strong>posterior mean</strong> of the effect move?</li>
 <li>Does the <strong>95% CI</strong> widen or shift across 0?</li>
-<li>A conclusion that flips with a reasonable prior is <strong>fragile</strong> and worth</li>
+<li>A conclusion that flips with a reasonable prior is <strong>fragile</strong> and worth flagging; one that holds across priors is <strong>robust</strong>.</li>
 </ul>
-<p>  flagging; one that holds across priors is <strong>robust</strong>.</p>
-<h2>Recording in the browser</h2>
+<h2 id="recording-in-the-browser">Recording in the browser</h2>
 <p>Use the recorder below — it saves your runs <strong>in your browser</strong> (no account needed) and exports a <strong>CSV</strong> so the room can compare. This answers a common question: yes, you can log and download results entirely client-side.</p>
-<h2>Your task</h2>
-<p>Run the model under at least two priors and record each result. Discuss: is the acidification effect robust to the prior?</p>`,
-  'm13-poisson': `<h1>Poisson regression with a log link</h1>
+<h2 id="your-task">Your task</h2>
+<p>Run the model under at least two priors and record each result. Discuss: is the acidification effect robust to the prior?</p>
+</body></html>`,
+  'm12-single-factor': `<html><head></head><body><h1 id="single-factor-linear-model-the-design-matrix">Single-factor linear model &amp; the design matrix</h1>
+<p>Many marine studies compare <strong>groups</strong>: control vs treatment, inshore vs offshore. Here we use an <strong>ocean-acidification (OA)</strong> experiment — fish reared in control vs acidified seawater — and ask whether acidification changes our response (say, growth).</p>
+<h2 id="coding-a-2-level-factor">Coding a 2-level factor</h2>
+<p>A categorical predictor enters the model through a <strong>design matrix</strong>. With two levels we use a single <strong>0/1 indicator</strong>:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Treatment</th>
+<th>indicator <code>trt</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Control</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>Acidified</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display"><em>y</em><sub><em>i</em></sub> = <em>α</em> + <em>β</em> trt<sub><em>i</em></sub></span></p>
+<ul>
+<li><span class="math inline"><em>α</em></span> — the <strong>control</strong> mean (when <code>trt = 0</code>).</li>
+<li><span class="math inline"><em>β</em></span> — the <strong>difference</strong> for acidified fish (the treatment effect).</li>
+</ul>
+<p>If <span class="math inline"><em>β</em></span>’s 95% CI excludes 0, acidification credibly shifts the response.</p>
+<h2 id="in-fangs">In FANGS</h2>
+<p>FANGS auto-encodes a text column like <code>treatment</code> (<code>"control"</code>, <code>"acidified"</code>) into integers for you. You can write the model directly against the indicator, e.g.&nbsp;<code>mu[i] &lt;- alpha + beta * trt[i]</code>.</p>
+<pre><code>model {
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], sigma)
+    mu[i] &lt;- alpha + beta_trt * trt[i]
+  }
+  alpha ~ dnorm(0, 50)
+  beta_trt ~ dnorm(0, 10)
+  sigma ~ dunif(0, 50)
+}</code></pre>
+<h2 id="your-task">Your task</h2>
+<p>Fit the single-factor model to <code>oa-study.csv</code> and check your posterior means for the control mean <span class="math inline"><em>α</em></span> and the acidification effect.</p>
+</body></html>`,
+  'm13-poisson': `<html><head></head><body><h1 id="poisson-regression-with-a-log-link">Poisson regression with a log link</h1>
 <p>Counts — fish per transect, eggs per nest, individuals per quadrat — are not Gaussian. They are non-negative integers, and their variance grows with their mean. The <strong>Poisson</strong> distribution is the natural starting point.</p>
-<h2>The model</h2>
-<p>We cannot model the rate <span class="math inline">\\(\\lambda\\)</span> directly with a line, because a line can go negative. Instead we model it on the <strong>log scale</strong> — the <strong>log link</strong>:</p>
-<div class="math display">\\[\\text{count}_i \\sim \\text{Poisson}(\\lambda_i), \\qquad
-\\log(\\lambda_i) = \\alpha + \\beta\\,x_i\\]</div>
+<h2 id="the-model">The model</h2>
+<p>We cannot model the rate <span class="math inline"><em>λ</em></span> directly with a line, because a line can go negative. Instead we model it on the <strong>log scale</strong> — the <strong>log link</strong>:</p>
+<p><span class="math display">count<sub><em>i</em></sub> ∼ Poisson(<em>λ</em><sub><em>i</em></sub>),   log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em> <em>x</em><sub><em>i</em></sub></span></p>
 <p>In FANGS:</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -365,14 +484,36 @@ export const COURSE_CONTENT = {
   alpha ~ dnorm(0, 10)
   beta  ~ dnorm(0, 10)
 }</code></pre>
-<h2>Interpreting on the log scale</h2>
-<p>Coefficients act <strong>multiplicatively</strong> on the count. A slope <span class="math inline">\\(\\beta\\)</span> means each unit of <span class="math inline">\\(x\\)</span> multiplies the expected count by <span class="math inline">\\(e^{\\beta}\\)</span>. So <span class="math inline">\\(\\beta = 0.69\\)</span> roughly <strong>doubles</strong> the count per unit (<span class="math inline">\\(e^{0.69}\\approx 2\\)</span>).</p>
-<h2>Your task</h2>
-<p>Fit the Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span> (both on the log scale).</p>`,
-  'm14-poisson-two-factor': `<h1>Poisson with two factors</h1>
-<p>Real surveys rarely vary one thing at a time. Suppose fish counts depend on both <strong>habitat</strong> (e.g. reef vs seagrass) and <strong>season</strong> (e.g. wet vs dry). We can put both factors in the same Poisson model.</p>
-<h2>The model</h2>
-<div class="math display">\\[\\log(\\lambda_i) = \\alpha + \\beta_A\\,A_i + \\beta_B\\,B_i\\]</div>
+<h2 id="interpreting-on-the-log-scale">Interpreting on the log scale</h2>
+<p>Coefficients act <strong>multiplicatively</strong> on the count. A slope <span class="math inline"><em>β</em></span> means each unit of <span class="math inline"><em>x</em></span> multiplies the expected count by <span class="math inline"><em>e</em><sup><em>β</em></sup></span>. So <span class="math inline"><em>β</em> = 0.69</span> roughly <strong>doubles</strong> the count per unit (<span class="math inline"><em>e</em><sup>0.69</sup> ≈ 2</span>).</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span> (both on the log scale).</p>
+</body></html>`,
+  'm13-prior-comparison': `<html><head></head><body><h1 id="comparing-priors-with-the-oa-study">Comparing priors with the OA study</h1>
+<p>How much does your prior on the <strong>treatment effect</strong> change the conclusion? With a small experiment, it can matter — so let’s measure it instead of guessing.</p>
+<h2 id="the-experiment">The experiment</h2>
+<p>Refit the OA model from the previous module several times, changing <strong>only</strong> the prior on the acidification effect <code>beta_trt</code>. For example:</p>
+<ul>
+<li>Vague: <code>beta_trt ~ dnorm(0, 100)</code></li>
+<li>Weakly informative: <code>beta_trt ~ dnorm(0, 5)</code></li>
+<li>Sceptical (shrinks toward no effect): <code>beta_trt ~ dnorm(0, 1)</code></li>
+</ul>
+<p>Keep everything else identical.</p>
+<h2 id="what-to-watch">What to watch</h2>
+<ul>
+<li>Does the <strong>posterior mean</strong> of the effect move?</li>
+<li>Does the <strong>95% CI</strong> widen or shift across 0?</li>
+<li>A conclusion that flips with a reasonable prior is <strong>fragile</strong> and worth flagging; one that holds across priors is <strong>robust</strong>.</li>
+</ul>
+<h2 id="recording-in-the-browser">Recording in the browser</h2>
+<p>Use the recorder below — it saves your runs <strong>in your browser</strong> (no account needed) and exports a <strong>CSV</strong> so the room can compare. This answers a common question: yes, you can log and download results entirely client-side.</p>
+<h2 id="your-task">Your task</h2>
+<p>Run the model under at least two priors and record each result. Discuss: is the acidification effect robust to the prior?</p>
+</body></html>`,
+  'm14-poisson-two-factor': `<html><head></head><body><h1 id="poisson-with-two-factors">Poisson with two factors</h1>
+<p>Real surveys rarely vary one thing at a time. Suppose fish counts depend on both <strong>habitat</strong> (e.g.&nbsp;reef vs seagrass) and <strong>season</strong> (e.g.&nbsp;wet vs dry). We can put both factors in the same Poisson model.</p>
+<h2 id="the-model">The model</h2>
+<p><span class="math display">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub><em>A</em></sub> <em>A</em><sub><em>i</em></sub> + <em>β</em><sub><em>B</em></sub> <em>B</em><sub><em>i</em></sub></span></p>
 <p>Each factor contributes its own 0/1 indicator (its own design-matrix column):</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -384,17 +525,39 @@ export const COURSE_CONTENT = {
   beta_b ~ dnorm(0, 10)
 }</code></pre>
 <ul>
-<li><span class="math inline">\\(\\alpha\\)</span> — log mean count for the <strong>reference combination</strong> (both factors 0).</li>
-<li><span class="math inline">\\(\\beta_A,\\ \\beta_B\\)</span> — multiplicative effects of each factor, <strong>holding the other constant</strong>.</li>
+<li><span class="math inline"><em>α</em></span> — log mean count for the <strong>reference combination</strong> (both factors 0).</li>
+<li><span class="math inline"><em>β</em><sub><em>A</em></sub>,&nbsp;<em>β</em><sub><em>B</em></sub></span> — multiplicative effects of each factor, <strong>holding the other constant</strong>.</li>
 </ul>
 <p>This is the additive (no-interaction) model. If you suspect the effect of one factor depends on the other, you would add an interaction term — but start simple.</p>
-<h2>Your task</h2>
-<p>Fit the two-factor Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline">\\(\\alpha\\)</span>, <span class="math inline">\\(\\beta_A\\)</span>, and <span class="math inline">\\(\\beta_B\\)</span>.</p>`,
-  'm15-binomial': `<h1>Binomial regression with a logit link</h1>
-<p>When the response is <strong>yes/no</strong> — species present or absent, survived or not — we model the <strong>probability</strong> of a &quot;yes&quot;. Probabilities live in <span class="math inline">\\([0, 1]\\)</span>, so again we need a link that keeps predictions in range.</p>
-<h2>The logit link</h2>
-<div class="math display">\\[y_i \\sim \\text{Bernoulli}(p_i), \\qquad
-\\text{logit}(p_i) = \\log\\!\\frac{p_i}{1 - p_i} = \\alpha + \\beta\\,x_i\\]</div>
+<h2 id="your-task">Your task</h2>
+<p>Fit the two-factor Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em><sub><em>A</em></sub></span>, and <span class="math inline"><em>β</em><sub><em>B</em></sub></span>.</p>
+</body></html>`,
+  'm14-poisson': `<html><head></head><body><h1 id="poisson-regression-with-a-log-link">Poisson regression with a log link</h1>
+<p>Counts — fish per transect, eggs per nest, individuals per quadrat — are not Gaussian. They are non-negative integers, and their variance grows with their mean. The <strong>Poisson</strong> distribution is the natural starting point.</p>
+<h2 id="the-model">The model</h2>
+<p>We cannot model the rate <span class="math inline"><em>λ</em></span> directly with a line, because a line can go negative. Instead we model it on the <strong>log scale</strong> — the <strong>log link</strong>:</p>
+<p><span class="math display">count<sub><em>i</em></sub> ∼ Poisson(<em>λ</em><sub><em>i</em></sub>),   log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em> <em>x</em><sub><em>i</em></sub></span></p>
+<p>In FANGS:</p>
+<pre><code>model {
+  for (i in 1:N) {
+    count[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 10)
+  beta  ~ dnorm(0, 10)
+}</code></pre>
+<h2 id="interpreting-on-the-log-scale">Interpreting on the log scale</h2>
+<p>Coefficients act <strong>multiplicatively</strong> on the count. A slope <span class="math inline"><em>β</em></span> means each unit of <span class="math inline"><em>x</em></span> multiplies the expected count by <span class="math inline"><em>e</em><sup><em>β</em></sup></span>. So <span class="math inline"><em>β</em> = 0.69</span> roughly <strong>doubles</strong> the count per unit (<span class="math inline"><em>e</em><sup>0.69</sup> ≈ 2</span>).</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span> (both on the log scale).</p>
+</body></html>`,
+  'm15-binomial': `<html><head></head><body><h1 id="binomial-regression-with-a-logit-link">Binomial regression with a logit link</h1>
+<p>When the response is <strong>yes/no</strong> — species present or absent, survived or not — we model the <strong>probability</strong> of a “yes”. Probabilities live in <span class="math inline">[0, 1]</span>, so again we need a link that keeps predictions in range.</p>
+<h2 id="the-logit-link">The logit link</h2>
+<p><span class="math display">$$
+y_i \\sim \\text{Bernoulli}(p_i), \\qquad
+\\text{logit}(p_i) = \\log\\!\\frac{p_i}{1 - p_i} = \\alpha + \\beta\\,x_i
+$$</span></p>
 <p>The logit maps a probability to the whole real line, so the linear predictor can roam freely and we transform back with the inverse logit.</p>
 <p>In FANGS:</p>
 <pre><code>model {
@@ -405,62 +568,181 @@ export const COURSE_CONTENT = {
   alpha ~ dnorm(0, 10)
   beta  ~ dnorm(0, 10)
 }</code></pre>
-<h2>Interpreting on the logit scale</h2>
-<p>A slope <span class="math inline">\\(\\beta\\)</span> is a change in <strong>log-odds</strong> per unit <span class="math inline">\\(x\\)</span>; <span class="math inline">\\(e^{\\beta}\\)</span> is an <strong>odds ratio</strong>. Positive <span class="math inline">\\(\\beta\\)</span> → presence becomes more likely as <span class="math inline">\\(x\\)</span> increases. To get a probability for a given <span class="math inline">\\(x\\)</span>, push the linear predictor through the inverse logit.</p>
-<h2>Your task</h2>
-<p>Fit the logistic model to <code>presence.csv</code> and check your posterior means for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span> (logit scale).</p>`,
-  'm16-binomial-three-level': `<h1>Binomial with a 3-level factor</h1>
+<h2 id="interpreting-on-the-logit-scale">Interpreting on the logit scale</h2>
+<p>A slope <span class="math inline"><em>β</em></span> is a change in <strong>log-odds</strong> per unit <span class="math inline"><em>x</em></span>; <span class="math inline"><em>e</em><sup><em>β</em></sup></span> is an <strong>odds ratio</strong>. Positive <span class="math inline"><em>β</em></span> → presence becomes more likely as <span class="math inline"><em>x</em></span> increases. To get a probability for a given <span class="math inline"><em>x</em></span>, push the linear predictor through the inverse logit.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the logistic model to <code>presence.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span> (logit scale).</p>
+</body></html>`,
+  'm15-poisson-two-factor': `<html><head></head><body><h1 id="poisson-with-two-factors">Poisson with two factors</h1>
+<p>Real surveys rarely vary one thing at a time. Suppose fish counts depend on both <strong>habitat</strong> (e.g.&nbsp;reef vs seagrass) and <strong>season</strong> (e.g.&nbsp;wet vs dry). We can put both factors in the same Poisson model.</p>
+<h2 id="the-model">The model</h2>
+<p><span class="math display">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub><em>A</em></sub> <em>A</em><sub><em>i</em></sub> + <em>β</em><sub><em>B</em></sub> <em>B</em><sub><em>i</em></sub></span></p>
+<p>Each factor contributes its own 0/1 indicator (its own design-matrix column):</p>
+<pre><code>model {
+  for (i in 1:N) {
+    count[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta_a * A[i] + beta_b * B[i]
+  }
+  alpha  ~ dnorm(0, 10)
+  beta_a ~ dnorm(0, 10)
+  beta_b ~ dnorm(0, 10)
+}</code></pre>
+<ul>
+<li><span class="math inline"><em>α</em></span> — log mean count for the <strong>reference combination</strong> (both factors 0).</li>
+<li><span class="math inline"><em>β</em><sub><em>A</em></sub>,&nbsp;<em>β</em><sub><em>B</em></sub></span> — multiplicative effects of each factor, <strong>holding the other constant</strong>.</li>
+</ul>
+<p>This is the additive (no-interaction) model. If you suspect the effect of one factor depends on the other, you would add an interaction term — but start simple.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the two-factor Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em><sub><em>A</em></sub></span>, and <span class="math inline"><em>β</em><sub><em>B</em></sub></span>.</p>
+</body></html>`,
+  'm16-binomial-three-level': `<html><head></head><body><h1 id="binomial-with-a-3-level-factor">Binomial with a 3-level factor</h1>
 <p>What if the predictor is a category with <strong>more than two</strong> levels — say three sites: <strong>A</strong>, <strong>B</strong>, <strong>C</strong>? You cannot code three groups with a single 0/1 column. You need a small <strong>design matrix</strong>.</p>
-<h2>Reference (dummy) coding</h2>
+<h2 id="reference-dummy-coding">Reference (dummy) coding</h2>
 <p>Pick one level as the <strong>reference</strong> (say A). Create an indicator for each of the others:</p>
-<table>
-<thead><tr><th>Site</th><th><code>is_B</code></th><th><code>is_C</code></th></tr></thead>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Site</th>
+<th><code>is_B</code></th>
+<th><code>is_C</code></th>
+</tr>
+</thead>
 <tbody>
-<tr><td>A</td><td>0</td><td>0</td></tr>
-<tr><td>B</td><td>1</td><td>0</td></tr>
-<tr><td>C</td><td>0</td><td>1</td></tr>
+<tr class="odd">
+<td>A</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td>0</td>
+<td>1</td>
+</tr>
 </tbody>
 </table>
-<div class="math display">\\[\\text{logit}(p_i) = \\alpha + \\beta_2\\,\\text{is\\_B}_i + \\beta_3\\,\\text{is\\_C}_i\\]</div>
+<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>2</sub> is_B<sub><em>i</em></sub> + <em>β</em><sub>3</sub> is_C<sub><em>i</em></sub></span></p>
 <ul>
-<li><span class="math inline">\\(\\alpha\\)</span> — log-odds for the <strong>reference</strong> site A.</li>
-<li><span class="math inline">\\(\\beta_2\\)</span> — difference (B <strong>vs</strong> A).</li>
-<li><span class="math inline">\\(\\beta_3\\)</span> — difference (C <strong>vs</strong> A).</li>
+<li><span class="math inline"><em>α</em></span> — log-odds for the <strong>reference</strong> site A.</li>
+<li><span class="math inline"><em>β</em><sub>2</sub></span> — difference (B <strong>vs</strong> A).</li>
+<li><span class="math inline"><em>β</em><sub>3</sub></span> — difference (C <strong>vs</strong> A).</li>
 </ul>
-<p>There is <strong>no separate coefficient for A</strong> — it is absorbed into the intercept. That is why <span class="math inline">\\(k\\)</span> levels need <span class="math inline">\\(k-1\\)</span> indicator columns.</p>
-<h2>In FANGS</h2>
+<p>There is <strong>no separate coefficient for A</strong> — it is absorbed into the intercept. That is why <span class="math inline"><em>k</em></span> levels need <span class="math inline"><em>k</em> − 1</span> indicator columns.</p>
+<h2 id="in-fangs">In FANGS</h2>
 <p>If your CSV has a text <code>site</code> column, FANGS encodes it to integers; you can build the indicators in the model, or use a coefficient vector indexed by site. The key idea to take away is <em>what each coefficient means relative to the reference</em>.</p>
-<h2>Your task</h2>
-<p>Fit the 3-level model to <code>presence.csv</code> and check the reference log-odds <span class="math inline">\\(\\alpha\\)</span> and the two contrasts <span class="math inline">\\(\\beta_2\\)</span>, <span class="math inline">\\(\\beta_3\\)</span>. Make sure you can say which site each one compares against.</p>`,
-  'm17-random-effects-concept': `<h1>The idea of random effects</h1>
+<h2 id="your-task">Your task</h2>
+<p>Fit the 3-level model to <code>presence.csv</code> and check the reference log-odds <span class="math inline"><em>α</em></span> and the two contrasts <span class="math inline"><em>β</em><sub>2</sub></span>, <span class="math inline"><em>β</em><sub>3</sub></span>. Make sure you can say which site each one compares against.</p>
+</body></html>`,
+  'm16-binomial': `<html><head></head><body><h1 id="binomial-regression-with-a-logit-link">Binomial regression with a logit link</h1>
+<p>When the response is <strong>yes/no</strong> — species present or absent, survived or not — we model the <strong>probability</strong> of a “yes”. Probabilities live in <span class="math inline">[0, 1]</span>, so again we need a link that keeps predictions in range.</p>
+<h2 id="the-logit-link">The logit link</h2>
+<p><span class="math display">$$
+y_i \\sim \\text{Bernoulli}(p_i), \\qquad
+\\text{logit}(p_i) = \\log\\!\\frac{p_i}{1 - p_i} = \\alpha + \\beta\\,x_i
+$$</span></p>
+<p>The logit maps a probability to the whole real line, so the linear predictor can roam freely and we transform back with the inverse logit.</p>
+<p>In FANGS:</p>
+<pre><code>model {
+  for (i in 1:N) {
+    present[i] ~ dbern(p[i])
+    logit(p[i]) &lt;- alpha + beta * x[i]
+  }
+  alpha ~ dnorm(0, 10)
+  beta  ~ dnorm(0, 10)
+}</code></pre>
+<h2 id="interpreting-on-the-logit-scale">Interpreting on the logit scale</h2>
+<p>A slope <span class="math inline"><em>β</em></span> is a change in <strong>log-odds</strong> per unit <span class="math inline"><em>x</em></span>; <span class="math inline"><em>e</em><sup><em>β</em></sup></span> is an <strong>odds ratio</strong>. Positive <span class="math inline"><em>β</em></span> → presence becomes more likely as <span class="math inline"><em>x</em></span> increases. To get a probability for a given <span class="math inline"><em>x</em></span>, push the linear predictor through the inverse logit.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the logistic model to <code>presence.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span> (logit scale).</p>
+</body></html>`,
+  'm17-binomial-three-level': `<html><head></head><body><h1 id="binomial-with-a-3-level-factor">Binomial with a 3-level factor</h1>
+<p>What if the predictor is a category with <strong>more than two</strong> levels — say three sites: <strong>A</strong>, <strong>B</strong>, <strong>C</strong>? You cannot code three groups with a single 0/1 column. You need a small <strong>design matrix</strong>.</p>
+<h2 id="reference-dummy-coding">Reference (dummy) coding</h2>
+<p>Pick one level as the <strong>reference</strong> (say A). Create an indicator for each of the others:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Site</th>
+<th><code>is_B</code></th>
+<th><code>is_C</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>2</sub> is_B<sub><em>i</em></sub> + <em>β</em><sub>3</sub> is_C<sub><em>i</em></sub></span></p>
+<ul>
+<li><span class="math inline"><em>α</em></span> — log-odds for the <strong>reference</strong> site A.</li>
+<li><span class="math inline"><em>β</em><sub>2</sub></span> — difference (B <strong>vs</strong> A).</li>
+<li><span class="math inline"><em>β</em><sub>3</sub></span> — difference (C <strong>vs</strong> A).</li>
+</ul>
+<p>There is <strong>no separate coefficient for A</strong> — it is absorbed into the intercept. That is why <span class="math inline"><em>k</em></span> levels need <span class="math inline"><em>k</em> − 1</span> indicator columns.</p>
+<h2 id="in-fangs">In FANGS</h2>
+<p>If your CSV has a text <code>site</code> column, FANGS encodes it to integers; you can build the indicators in the model, or use a coefficient vector indexed by site. The key idea to take away is <em>what each coefficient means relative to the reference</em>.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the 3-level model to <code>presence.csv</code> and check the reference log-odds <span class="math inline"><em>α</em></span> and the two contrasts <span class="math inline"><em>β</em><sub>2</sub></span>, <span class="math inline"><em>β</em><sub>3</sub></span>. Make sure you can say which site each one compares against.</p>
+</body></html>`,
+  'm17-random-effects-concept': `<html><head></head><body><h1 id="the-idea-of-random-effects">The idea of random effects</h1>
 <p>You sampled fish at <strong>12 reefs</strong>. Reefs differ, and observations from the same reef are more alike than observations from different reefs. Ignoring that structure underestimates your uncertainty. <strong>Random effects</strong> handle it.</p>
-<h2>Three ways to treat groups</h2>
+<h2 id="three-ways-to-treat-groups">Three ways to treat groups</h2>
 <ul>
 <li><strong>Complete pooling</strong> — one intercept for all reefs. Ignores reef differences.</li>
-<li><strong>No pooling</strong> — a separate, independent intercept per reef. Wastes</li>
+<li><strong>No pooling</strong> — a separate, independent intercept per reef. Wastes information; noisy for reefs with little data.</li>
+<li><strong>Partial pooling (random effects)</strong> — reef intercepts are drawn from a shared distribution. Reefs <strong>borrow strength</strong> from each other.</li>
 </ul>
-<p>  information; noisy for reefs with little data.</p>
+<p><span class="math display"><em>b</em><sub><em>j</em></sub> ∼ Normal(0,&nbsp;<em>σ</em><sub><em>b</em></sub>),   <em>μ</em><sub><em>i</em></sub> = <em>α</em> + <em>b</em><sub>reef[<em>i</em>]</sub> + …</span></p>
+<h2 id="shrinkage">Shrinkage</h2>
+<p>Partial pooling pulls each reef’s estimate <strong>toward the overall mean</strong>, and it pulls hardest on reefs with <strong>little data</strong> (which are the least trustworthy on their own). The amount of pooling is learned from the data through the group-level SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>:</p>
 <ul>
-<li><strong>Partial pooling (random effects)</strong> — reef intercepts are drawn from a shared</li>
-</ul>
-<p>  distribution. Reefs <strong>borrow strength</strong> from each other.</p>
-<div class="math display">\\[b_j \\sim \\text{Normal}(0,\\ \\sigma_b), \\qquad
-\\mu_i = \\alpha + b_{\\text{reef}[i]} + \\dots\\]</div>
-<h2>Shrinkage</h2>
-<p>Partial pooling pulls each reef's estimate <strong>toward the overall mean</strong>, and it pulls hardest on reefs with <strong>little data</strong> (which are the least trustworthy on their own). The amount of pooling is learned from the data through the group-level SD <span class="math inline">\\(\\sigma_b\\)</span>:</p>
-<ul>
-<li>small <span class="math inline">\\(\\sigma_b\\)</span> → reefs are similar → strong pooling;</li>
-<li>large <span class="math inline">\\(\\sigma_b\\)</span> → reefs genuinely differ → little pooling.</li>
+<li>small <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> → reefs are similar → strong pooling;</li>
+<li>large <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> → reefs genuinely differ → little pooling.</li>
 </ul>
 <p>This is the core of <strong>mixed-effects models</strong> — fixed effects for the population, random effects for the groups.</p>
-<h2>Your task</h2>
-<p>Answer the concept quiz below before we fit one.</p>`,
-  'm18-random-effects-fit': `<h1>Fit a random-effects model</h1>
+<h2 id="your-task">Your task</h2>
+<p>Answer the concept quiz below before we fit one.</p>
+</body></html>`,
+  'm18-random-effects-concept': `<html><head></head><body><h1 id="the-idea-of-random-effects">The idea of random effects</h1>
+<p>You sampled fish at <strong>12 reefs</strong>. Reefs differ, and observations from the same reef are more alike than observations from different reefs. Ignoring that structure underestimates your uncertainty. <strong>Random effects</strong> handle it.</p>
+<h2 id="three-ways-to-treat-groups">Three ways to treat groups</h2>
+<ul>
+<li><strong>Complete pooling</strong> — one intercept for all reefs. Ignores reef differences.</li>
+<li><strong>No pooling</strong> — a separate, independent intercept per reef. Wastes information; noisy for reefs with little data.</li>
+<li><strong>Partial pooling (random effects)</strong> — reef intercepts are drawn from a shared distribution. Reefs <strong>borrow strength</strong> from each other.</li>
+</ul>
+<p><span class="math display"><em>b</em><sub><em>j</em></sub> ∼ Normal(0,&nbsp;<em>σ</em><sub><em>b</em></sub>),   <em>μ</em><sub><em>i</em></sub> = <em>α</em> + <em>b</em><sub>reef[<em>i</em>]</sub> + …</span></p>
+<h2 id="shrinkage">Shrinkage</h2>
+<p>Partial pooling pulls each reef’s estimate <strong>toward the overall mean</strong>, and it pulls hardest on reefs with <strong>little data</strong> (which are the least trustworthy on their own). The amount of pooling is learned from the data through the group-level SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>:</p>
+<ul>
+<li>small <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> → reefs are similar → strong pooling;</li>
+<li>large <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> → reefs genuinely differ → little pooling.</li>
+</ul>
+<p>This is the core of <strong>mixed-effects models</strong> — fixed effects for the population, random effects for the groups.</p>
+<h2 id="your-task">Your task</h2>
+<p>Answer the concept quiz below before we fit one.</p>
+</body></html>`,
+  'm18-random-effects-fit': `<html><head></head><body><h1 id="fit-a-random-effects-model">Fit a random-effects model</h1>
 <p>Now we fit the mixed-effects model: a population-level regression <strong>plus</strong> random intercepts for each group (reef/site).</p>
-<h2>The model</h2>
-<div class="math display">\\[y_i \\sim \\text{Normal}(\\mu_i,\\ \\sigma), \\qquad
-\\mu_i = \\alpha + \\beta\\,x_i + b_{\\text{group}[i]}, \\qquad
-b_j \\sim \\text{Normal}(0,\\ \\sigma_b)\\]</div>
+<h2 id="the-model">The model</h2>
+<p><span class="math display"><em>y</em><sub><em>i</em></sub> ∼ Normal(<em>μ</em><sub><em>i</em></sub>,&nbsp;<em>σ</em>),   <em>μ</em><sub><em>i</em></sub> = <em>α</em> + <em>β</em> <em>x</em><sub><em>i</em></sub> + <em>b</em><sub>group[<em>i</em>]</sub>,   <em>b</em><sub><em>j</em></sub> ∼ Normal(0,&nbsp;<em>σ</em><sub><em>b</em></sub>)</span></p>
 <p>In FANGS:</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -477,115 +759,88 @@ b_j \\sim \\text{Normal}(0,\\ \\sigma_b)\\]</div>
 }</code></pre>
 <ul>
 <li><code>J</code> — the number of groups. Set it in the constants alongside <code>N</code>.</li>
-<li><code>group[i]</code> — which group observation <code>i</code> belongs to (FANGS encodes a text</li>
+<li><code>group[i]</code> — which group observation <code>i</code> belongs to (FANGS encodes a text column for you).</li>
+<li><span class="math inline"><em>σ</em><sub><em>b</em></sub></span> — the <strong>group-level SD</strong>. It quantifies how much groups differ and controls the shrinkage.</li>
 </ul>
-<p>  column for you).</p>
-<ul>
-<li><span class="math inline">\\(\\sigma_b\\)</span> — the <strong>group-level SD</strong>. It quantifies how much groups differ and</li>
-</ul>
-<p>  controls the shrinkage.</p>
-<h2>What to check</h2>
-<p>The <strong>Summary</strong> tab now includes <span class="math inline">\\(\\sigma_b\\)</span> and each <code>b[j]</code>. Watch R-hat for <span class="math inline">\\(\\sigma_b\\)</span> especially — variance parameters are the slowest to mix.</p>
-<h2>Your task</h2>
-<p>Fit the random-intercepts model to <code>random-effects.csv</code> and check <span class="math inline">\\(\\alpha\\)</span>, <span class="math inline">\\(\\beta\\)</span>, and the group SD <span class="math inline">\\(\\sigma_b\\)</span>.</p>`,
-  'm19-improving-sampling': `<h1>Improving sampling: priors &amp; reparameterisation</h1>
+<h2 id="what-to-check">What to check</h2>
+<p>The <strong>Summary</strong> tab now includes <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and each <code>b[j]</code>. Watch R-hat for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> especially — variance parameters are the slowest to mix.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the random-intercepts model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em></span>, and the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>.</p>
+</body></html>`,
+  'm19-improving-sampling': `<html><head></head><body><h1 id="improving-sampling-priors-reparameterisation">Improving sampling: priors &amp; reparameterisation</h1>
 <p>Sometimes the chains misbehave — high R-hat, tiny ESS, trace plots that wander or stick. Often the model is fine but <strong>badly parameterised</strong> for the sampler. Here are the two most useful fixes.</p>
-<h2>1. Sensible priors</h2>
-<p>A wildly vague prior (e.g. <code>dnorm(0, 1000)</code> on a coefficient) creates a flat, sprawling posterior that the sampler struggles to explore, and can let parameters trade off against each other. <strong>Weakly informative</strong> priors — scaled to the problem — usually mix far better <em>and</em> are more honest. Try tightening a vague prior and watch R-hat and ESS improve.</p>
-<h2>2. Reparameterisation</h2>
-<p>In hierarchical models the group SD <span class="math inline">\\(\\sigma_b\\)</span> and the group effects <span class="math inline">\\(b_j\\)</span> are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the &quot;centred&quot; parameterisation). A <strong>non-centred</strong> form decouples them:</p>
+<h2 id="sensible-priors">1. Sensible priors</h2>
+<p>A wildly vague prior (e.g.&nbsp;<code>dnorm(0, 1000)</code> on a coefficient) creates a flat, sprawling posterior that the sampler struggles to explore, and can let parameters trade off against each other. <strong>Weakly informative</strong> priors — scaled to the problem — usually mix far better <em>and</em> are more honest. Try tightening a vague prior and watch R-hat and ESS improve.</p>
+<h2 id="reparameterisation">2. Reparameterisation</h2>
+<p>In hierarchical models the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and the group effects <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the “centred” parameterisation). A <strong>non-centred</strong> form decouples them:</p>
 <pre><code>for (j in 1:J) {
   z[j] ~ dnorm(0, 1)
   b[j] &lt;- sigma.b * z[j]
 }</code></pre>
-<p>Same model, much friendlier geometry — chains for <span class="math inline">\\(\\sigma_b\\)</span> mix dramatically better.</p>
-<h2>Diagnose, then fix</h2>
-<ol>
+<p>Same model, much friendlier geometry — chains for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> mix dramatically better.</p>
+<h2 id="diagnose-then-fix">Diagnose, then fix</h2>
+<ol type="1">
 <li>Spot the problem in the <strong>Summary</strong> (R-hat, ESS) and <strong>Trace</strong> tabs.</li>
 <li>Apply a fix (tighter prior, or non-centred form).</li>
 <li>Refit and confirm the diagnostics improved.</li>
 </ol>
-<h2>Your task</h2>
-<p>Take a poorly-mixing fit, improve it, and <strong>record before/after</strong> the worst R-hat and minimum ESS in the table below.</p>`,
-  'm20-identifiability-priors': `<h1>Model choice, priors &amp; identifiability</h1>
-<p>So far we have improved sampling by tidying up priors and reparameterising. This module pushes the idea one step further and asks a deeper question: **what happens when the model itself cannot, in principle, separate two parameters — and how can a prior rescue it?**</p>
-<p>This is one of the most important ideas in the whole course. A model that a classical (maximum-likelihood) analysis would reject as <em>unidentifiable</em> can be perfectly usable in a Bayesian analysis — <em>provided</em> you can bring honest prior information to the parameters the data cannot pin down.</p>
-<h2>A deliberately broken model</h2>
-<p>Consider a simple linear regression, but with <strong>two intercepts</strong> instead of one:</p>
+<h2 id="your-task">Your task</h2>
+<p>Take a poorly-mixing fit, improve it, and <strong>record before/after</strong> the worst R-hat and minimum ESS in the table below.</p>
+</body></html>`,
+  'm19-random-effects-fit': `<html><head></head><body><h1 id="fit-a-random-effects-model">Fit a random-effects model</h1>
+<p>Now we fit the mixed-effects model: a population-level regression <strong>plus</strong> random intercepts for each group (reef/site).</p>
+<h2 id="the-model">The model</h2>
+<p><span class="math display"><em>y</em><sub><em>i</em></sub> ∼ Normal(<em>μ</em><sub><em>i</em></sub>,&nbsp;<em>σ</em>),   <em>μ</em><sub><em>i</em></sub> = <em>α</em> + <em>β</em> <em>x</em><sub><em>i</em></sub> + <em>b</em><sub>group[<em>i</em>]</sub>,   <em>b</em><sub><em>j</em></sub> ∼ Normal(0,&nbsp;<em>σ</em><sub><em>b</em></sub>)</span></p>
+<p>In FANGS:</p>
 <pre><code>model {
   for (i in 1:N) {
     y[i] ~ dnorm(mu[i], sigma)
-    mu[i] &lt;- alpha + alpha2 + beta * x[i]
+    mu[i] &lt;- alpha + beta * x[i] + b[group[i]]
   }
-  alpha  ~ dnorm(0, 5)
-  alpha2 ~ dnorm(0, 5)
-  beta   ~ dnorm(0, 5)
-  sigma  ~ dunif(0, 100)
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
+  alpha   ~ dnorm(0, 50)
+  beta    ~ dnorm(0, 10)
+  sigma   ~ dunif(0, 50)
+  sigma.b ~ dunif(0, 50)
 }</code></pre>
-<p>Look closely at the mean: <code>alpha</code> and <code>alpha2</code> *only ever appear added together*. The data see the sum <span class="math inline">\\(\\alpha + \\alpha_2\\)</span> — never the two pieces on their own. Any increase in <code>alpha</code> can be exactly cancelled by an equal decrease in <code>alpha2</code> with <strong>no change to the fit</strong>. The likelihood is completely flat along the ridge</p>
-<div class="math display">\\[\\alpha + \\alpha_2 = \\text{constant}.\\]</div>
-<p>Statisticians call this a <strong>non-identifiable</strong> (or <em>aliased</em>) parameterisation. The <em>sum</em> is identified; the two <em>components</em> are not.</p>
-<h2>Your task — part 1: watch the chains fail</h2>
-<ol>
-<li>Load the default example dataset (the built-in <code>y</code>, <code>x</code> data) in FANGS.</li>
-<li>Paste the two-intercept model above and run it with <strong>4 chains</strong>.</li>
-<li>Open the <strong>Trace</strong> tab and watch <code>alpha</code> and <code>alpha2</code>.</li>
+<ul>
+<li><code>J</code> — the number of groups. Set it in the constants alongside <code>N</code>.</li>
+<li><code>group[i]</code> — which group observation <code>i</code> belongs to (FANGS encodes a text column for you).</li>
+<li><span class="math inline"><em>σ</em><sub><em>b</em></sub></span> — the <strong>group-level SD</strong>. It quantifies how much groups differ and controls the shrinkage.</li>
+</ul>
+<h2 id="what-to-check">What to check</h2>
+<p>The <strong>Summary</strong> tab now includes <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and each <code>b[j]</code>. Watch R-hat for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> especially — variance parameters are the slowest to mix.</p>
+<h2 id="your-task">Your task</h2>
+<p>Fit the random-intercepts model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em></span>, and the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>.</p>
+</body></html>`,
+  'm20-improving-sampling': `<html><head></head><body><h1 id="improving-sampling-priors-reparameterisation">Improving sampling: priors &amp; reparameterisation</h1>
+<p>Sometimes the chains misbehave — high R-hat, tiny ESS, trace plots that wander or stick. Often the model is fine but <strong>badly parameterised</strong> for the sampler. Here are the two most useful fixes.</p>
+<h2 id="sensible-priors">1. Sensible priors</h2>
+<p>A wildly vague prior (e.g.&nbsp;<code>dnorm(0, 1000)</code> on a coefficient) creates a flat, sprawling posterior that the sampler struggles to explore, and can let parameters trade off against each other. <strong>Weakly informative</strong> priors — scaled to the problem — usually mix far better <em>and</em> are more honest. Try tightening a vague prior and watch R-hat and ESS improve.</p>
+<h2 id="reparameterisation">2. Reparameterisation</h2>
+<p>In hierarchical models the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and the group effects <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the “centred” parameterisation). A <strong>non-centred</strong> form decouples them:</p>
+<pre><code>for (j in 1:J) {
+  z[j] ~ dnorm(0, 1)
+  b[j] &lt;- sigma.b * z[j]
+}</code></pre>
+<p>Same model, much friendlier geometry — chains for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> mix dramatically better.</p>
+<h2 id="diagnose-then-fix">Diagnose, then fix</h2>
+<ol type="1">
+<li>Spot the problem in the <strong>Summary</strong> (R-hat, ESS) and <strong>Trace</strong> tabs.</li>
+<li>Apply a fix (tighter prior, or non-centred form).</li>
+<li>Refit and confirm the diagnostics improved.</li>
 </ol>
-<p>You should see them <strong>wander</strong> — slow, drifting, snake-like traces that never settle, and that look different in every chain. Now check the <strong>Summary</strong> tab:</p>
-<ul>
-<li><strong>R-hat</strong> for <code>alpha</code> and <code>alpha2</code> will be large (well above 1.01) — the</li>
-</ul>
-<p>  chains disagree about where these parameters live.</p>
-<ul>
-<li><strong>ESS</strong> will be tiny — successive draws are highly correlated, so thousands of</li>
-</ul>
-<p>  iterations buy you only a handful of effectively independent samples.</p>
-<ul>
-<li>But look at <code>beta</code>, <code>sigma</code>, and (if you add it) the derived sum</li>
-</ul>
-<p>  <code>alpha + alpha2</code>: these are <strong>well-behaved</strong>. Only the un-identified pieces   misbehave.</p>
-<p>::: callout-tip The data constrain a <em>line</em> through <span class="math inline">\\((\\alpha, \\alpha_2)\\)</span> space, not a <em>point</em>. The sampler is free to slide anywhere along that line, so it does. :::</p>
-<h2>Your task — part 2: see the bimodality</h2>
-<p>Open the <strong>Posteriors</strong> tab and look at the density for <code>alpha</code> (and <code>alpha2</code>). Because each chain settles in a different stretch of the ridge and mixes badly, the pooled density often looks <strong>lumpy or multi-modal</strong> — two or more bumps where you expected one smooth hill. That bimodality is **not a real feature of the data**; it is an artefact of a non-identified parameter being explored by chains that cannot agree. Compare it with the density of <code>beta</code>, which is a single clean peak. Recognising &quot;fake&quot; multi-modality like this is a key diagnostic skill.</p>
-<h2>Your task — part 3: let a prior do the work</h2>
-<p>Here is the Bayesian punchline. The data cannot separate <code>alpha</code> and <code>alpha2</code>, but a <strong>prior can</strong>. Tighten the prior on <code>alpha2</code> step by step and refit each time, watching R-hat, ESS, and the posterior shape:</p>
-<table>
-<thead><tr><th>Step</th><th>Prior on <code>alpha2</code></th><th>Prior SD</th><th>What it says</th></tr></thead>
-<tbody>
-<tr><td>1</td><td><code>alpha2 ~ dnorm(0, 5)</code></td><td>5</td><td>&quot;alpha2 could be almost anything&quot;</td></tr>
-<tr><td>2</td><td><code>alpha2 ~ dnorm(0, 1)</code></td><td>1</td><td>&quot;alpha2 is probably small&quot;</td></tr>
-<tr><td>3</td><td><code>alpha2 ~ dnorm(0, 0.2)</code></td><td>0.2</td><td>&quot;alpha2 is very close to 0&quot;</td></tr>
-</tbody>
-</table>
-<p>(Remember: FANGS parameterises <code>dnorm</code> by <strong>standard deviation</strong>, so the second argument <em>is</em> the prior SD — a smaller number means a tighter prior.)</p>
-<p>As the prior on <code>alpha2</code> tightens, it pins <code>alpha2</code> near zero. That **breaks the symmetry of the ridge**: with <code>alpha2</code> held close to 0, the data can finally identify <code>alpha</code> (it becomes the ordinary intercept again). Watch what happens:</p>
-<ul>
-<li>The <code>alpha</code> trace <strong>stops wandering</strong> and settles.</li>
-<li><strong>R-hat falls toward 1.00</strong> and <strong>ESS climbs</strong> by orders of magnitude.</li>
-<li>The lumpy, bimodal density collapses into a <strong>single clean peak</strong>.</li>
-</ul>
-<p>You have not added any data. You have not changed what the data can tell you about the <em>sum</em>. You have simply supplied <strong>external information</strong> about one parameter — and that was enough to make the whole model sample cleanly.</p>
-<h2>The big idea</h2>
-<p>&gt; A model that looks hopeless to a classical, likelihood-only analysis — because &gt; the data alone cannot identify every parameter — can be **perfectly usable in &gt; a Bayesian analysis** when you have genuine prior information about the &gt; parameters the data leave undetermined.</p>
-<p>This is a real strength of the Bayesian approach, but it comes with responsibility:</p>
-<ul>
-<li>The result now <strong>depends on the prior</strong> you chose for <code>alpha2</code>. That is fine</li>
-</ul>
-<p>  <em>if the prior reflects real knowledge</em>, and dishonest if you tightened it just   to make the sampler behave. Be transparent about where the information came   from.</p>
-<ul>
-<li>Always check <strong>how much the prior moves things</strong> (exactly the prior-sensitivity</li>
-</ul>
-<p>  habit from earlier modules). For an identified parameter the prior barely   matters; for a non-identified one it does <strong>all</strong> the work — so say so.</p>
-<h2>Record your runs</h2>
-<p>Refit the two-intercept model under <strong>at least the three priors on <code>alpha2</code></strong> in the table above. For each run, record the prior SD, the worst R-hat (of <code>alpha</code>/<code>alpha2</code>), the minimum ESS, and a quick note on the posterior shape (<em>ridge / bimodal / single peak</em>). Two or more rows unlock the module — and give you a first-hand record of a prior turning an unidentifiable model into a well-behaved one.</p>`,
-  'm21-summative': `<h1>Summative challenge: multi-factor Poisson with random effects</h1>
+<h2 id="your-task">Your task</h2>
+<p>Take a poorly-mixing fit, improve it, and <strong>record before/after</strong> the worst R-hat and minimum ESS in the table below.</p>
+</body></html>`,
+  'm20-summative': `<html><head></head><body><h1 id="summative-challenge-multi-factor-poisson-with-random-effects">Summative challenge: multi-factor Poisson with random effects</h1>
 <p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: count data, a log link, multiple factors, and random effects for grouping.</p>
-<h2>The scenario</h2>
-<p>Fish <strong>counts</strong> were recorded across sites, under two experimental factors (e.g. habitat and season), with multiple <strong>reefs</strong> sampled per condition. You want the factor effects while accounting for reef-to-reef variation.</p>
-<h2>The model</h2>
-<div class="math display">\\[\\text{count}_i \\sim \\text{Poisson}(\\lambda_i), \\qquad
-\\log(\\lambda_i) = \\alpha + \\beta_A A_i + \\beta_B B_i + b_{\\text{reef}[i]}, \\qquad
-b_j \\sim \\text{Normal}(0, \\sigma_b)\\]</div>
+<h2 id="the-scenario">The scenario</h2>
+<p>Fish <strong>counts</strong> were recorded across sites, under two experimental factors (e.g.&nbsp;habitat and season), with multiple <strong>reefs</strong> sampled per condition. You want the factor effects while accounting for reef-to-reef variation.</p>
+<h2 id="the-model">The model</h2>
+<p><span class="math display">count<sub><em>i</em></sub> ∼ Poisson(<em>λ</em><sub><em>i</em></sub>),   log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub><em>A</em></sub><em>A</em><sub><em>i</em></sub> + <em>β</em><sub><em>B</em></sub><em>B</em><sub><em>i</em></sub> + <em>b</em><sub>reef[<em>i</em>]</sub>,   <em>b</em><sub><em>j</em></sub> ∼ Normal(0, <em>σ</em><sub><em>b</em></sub>)</span></p>
 <pre><code>model {
   for (i in 1:N) {
     count[i] ~ dpois(lambda[i])
@@ -597,17 +852,43 @@ b_j \\sim \\text{Normal}(0, \\sigma_b)\\]</div>
   beta_b  ~ dnorm(0, 5)
   sigma.b ~ dunif(0, 10)
 }</code></pre>
-<h2>Bring your whole toolkit</h2>
+<h2 id="bring-your-whole-toolkit">Bring your whole toolkit</h2>
 <ul>
 <li>Set sensible, weakly informative priors (Module 19).</li>
 <li><strong>Run a prior predictive check</strong> before fitting (Module 7).</li>
 <li>After fitting, check <strong>R-hat and ESS</strong> (Module 10) — reparameterise if needed.</li>
-<li>Run a <strong>posterior predictive check</strong> (Module 9) to confirm the model</li>
-</ul>
-<p>  reproduces the counts.</p>
-<ul>
+<li>Run a <strong>posterior predictive check</strong> (Module 9) to confirm the model reproduces the counts.</li>
 <li>Interpret factor effects multiplicatively (Module 13).</li>
 </ul>
-<h2>Your task</h2>
-<p>Fit the full model to <code>random-effects.csv</code> and check <span class="math inline">\\(\\alpha\\)</span>, <span class="math inline">\\(\\beta_A\\)</span>, <span class="math inline">\\(\\beta_B\\)</span>, and the reef SD <span class="math inline">\\(\\sigma_b\\)</span>. Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>`
+<h2 id="your-task">Your task</h2>
+<p>Fit the full model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em><sub><em>A</em></sub></span>, <span class="math inline"><em>β</em><sub><em>B</em></sub></span>, and the reef SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>
+</body></html>`,
+  'm21-summative': `<html><head></head><body><h1 id="summative-challenge-multi-factor-poisson-with-random-effects">Summative challenge: multi-factor Poisson with random effects</h1>
+<p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: count data, a log link, multiple factors, and random effects for grouping.</p>
+<h2 id="the-scenario">The scenario</h2>
+<p>Fish <strong>counts</strong> were recorded across sites, under two experimental factors (e.g.&nbsp;habitat and season), with multiple <strong>reefs</strong> sampled per condition. You want the factor effects while accounting for reef-to-reef variation.</p>
+<h2 id="the-model">The model</h2>
+<p><span class="math display">count<sub><em>i</em></sub> ∼ Poisson(<em>λ</em><sub><em>i</em></sub>),   log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub><em>A</em></sub><em>A</em><sub><em>i</em></sub> + <em>β</em><sub><em>B</em></sub><em>B</em><sub><em>i</em></sub> + <em>b</em><sub>reef[<em>i</em>]</sub>,   <em>b</em><sub><em>j</em></sub> ∼ Normal(0, <em>σ</em><sub><em>b</em></sub>)</span></p>
+<pre><code>model {
+  for (i in 1:N) {
+    count[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta_a * A[i] + beta_b * B[i] + b[reef[i]]
+  }
+  for (j in 1:J) { b[j] ~ dnorm(0, sigma.b) }
+  alpha   ~ dnorm(0, 10)
+  beta_a  ~ dnorm(0, 5)
+  beta_b  ~ dnorm(0, 5)
+  sigma.b ~ dunif(0, 10)
+}</code></pre>
+<h2 id="bring-your-whole-toolkit">Bring your whole toolkit</h2>
+<ul>
+<li>Set sensible, weakly informative priors (Module 19).</li>
+<li><strong>Run a prior predictive check</strong> before fitting (Module 7).</li>
+<li>After fitting, check <strong>R-hat and ESS</strong> (Module 10) — reparameterise if needed.</li>
+<li>Run a <strong>posterior predictive check</strong> (Module 9) to confirm the model reproduces the counts.</li>
+<li>Interpret factor effects multiplicatively (Module 13).</li>
+</ul>
+<h2 id="your-task">Your task</h2>
+<p>Fit the full model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em><sub><em>A</em></sub></span>, <span class="math inline"><em>β</em><sub><em>B</em></sub></span>, and the reef SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>
+</body></html>`
 };

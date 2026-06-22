@@ -128,6 +128,42 @@ export const MODULES = [
           ],
           answer: 0,
         },
+        {
+          q: 'A prior predictive check uses…',
+          options: [
+            'Samples drawn from the posterior after seeing the data.',
+            'Samples drawn from the priors only, with the likelihood switched off.',
+            'The observed data to calibrate the priors.',
+          ],
+          answer: 1,
+        },
+        {
+          q: 'You try a vague prior dnorm(0, 1000) for mean jaw length. The prior predictive check shows simulated lengths spanning −5000 to 5000 mm. What should you do?',
+          options: [
+            'Accept it — vague priors are always better.',
+            'Tighten the prior so simulated lengths are in a biologically plausible range.',
+            'Increase the number of MCMC samples.',
+          ],
+          answer: 1,
+        },
+        {
+          q: 'Compared with the vague prior dnorm(0, 100), a more informative prior dnorm(100, 5) for alpha produces prior predictive simulations that are…',
+          options: [
+            'More spread out and include impossible values.',
+            'Concentrated near realistic jaw lengths.',
+            'Identical — the prior has no effect on simulations.',
+          ],
+          answer: 1,
+        },
+        {
+          q: 'You notice the prior predictive density plot in FANGS dips slightly below zero for a parameter that must be positive. What is the most likely explanation?',
+          options: [
+            'The sampler has a bug.',
+            'The prior places real probability mass on negative values.',
+            'The kernel smoother used to draw the density curve extends beyond the actual samples.'
+          ],
+          answer: 2,
+        },
       ],
     },
   },
@@ -191,11 +227,11 @@ export const MODULES = [
         {
           q: 'A parameter has R-hat = 1.45. What should you do?',
           options: [
-            'Do not trust it — the chains disagree; run longer / reparameterise.',
             'Accept it — anything above 1 is fine.',
             'Discard the parameter from the model.',
+            'Do not trust it — the chains disagree; run longer / reparameterise.'
           ],
-          answer: 0,
+          answer: 2,
         },
         {
           q: 'ESS = 35 for 4000 saved samples means…',
@@ -210,9 +246,19 @@ export const MODULES = [
     },
   },
 
+  {
+    id: 'm11-identifiability-priors', session: 's3', num: 11,
+    title: 'Identifiability & bad ESS/R-hat: a case study', mode: 'fangs',
+    challenge: 'recorder',
+    config: {
+      storeKey: 'm11-identifiability-priors',
+      columns: ['Prior SD on alpha2', 'Worst R-hat (alpha/alpha2)', 'Min ESS', 'Posterior shape (ridge/bimodal/peak)'],
+    },
+  },
+
   // ── Session 4 ────────────────────────────────────────────────────────────
   {
-    id: 'm11-single-factor', session: 's4', num: 11,
+    id: 'm12-single-factor', session: 's4', num: 12,
     title: 'Single-factor linear model & the design matrix', mode: 'fangs',
     challenge: 'answer-check',
     config: {
@@ -225,18 +271,18 @@ export const MODULES = [
     },
   },
   {
-    id: 'm12-prior-comparison', session: 's4', num: 12,
+    id: 'm13-prior-comparison', session: 's4', num: 13,
     title: 'Comparing priors with the OA study', mode: 'fangs',
     challenge: 'recorder',
     config: {
-      storeKey: 'm12-prior-comparison',
+      storeKey: 'm13-prior-comparison',
       columns: ['Prior on treatment effect', 'Posterior mean', '95% CI low', '95% CI high'],
     },
   },
 
   // ── Session 5 ────────────────────────────────────────────────────────────
   {
-    id: 'm13-poisson', session: 's5', num: 13,
+    id: 'm14-poisson', session: 's5', num: 14,
     title: 'Poisson regression with a log link', mode: 'fangs',
     challenge: 'answer-check',
     config: {
@@ -248,7 +294,7 @@ export const MODULES = [
     },
   },
   {
-    id: 'm14-poisson-two-factor', session: 's5', num: 14,
+    id: 'm15-poisson-two-factor', session: 's5', num: 15,
     title: 'Poisson with two factors', mode: 'fangs',
     challenge: 'answer-check',
     config: {
@@ -261,7 +307,7 @@ export const MODULES = [
     },
   },
   {
-    id: 'm15-binomial', session: 's5', num: 15,
+    id: 'm16-binomial', session: 's5', num: 16,
     title: 'Binomial regression with a logit link', mode: 'fangs',
     challenge: 'answer-check',
     config: {
@@ -273,7 +319,7 @@ export const MODULES = [
     },
   },
   {
-    id: 'm16-binomial-three-level', session: 's5', num: 16,
+    id: 'm17-binomial-three-level', session: 's5', num: 17,
     title: 'Binomial with a 3-level factor', mode: 'fangs',
     challenge: 'answer-check',
     config: {
@@ -288,7 +334,7 @@ export const MODULES = [
 
   // ── Session 6 ────────────────────────────────────────────────────────────
   {
-    id: 'm17-random-effects-concept', session: 's6', num: 17,
+    id: 'm18-random-effects-concept', session: 's6', num: 18,
     title: 'The idea of random effects', mode: 'embedded',
     challenge: 'quiz',
     config: {
@@ -307,7 +353,7 @@ export const MODULES = [
           options: [
             'The overall mean, most strongly for groups with little data.',
             'Zero, always.',
-            'The largest group’s estimate.',
+            "The largest group's estimate.",
           ],
           answer: 0,
         },
@@ -315,7 +361,7 @@ export const MODULES = [
     },
   },
   {
-    id: 'm18-random-effects-fit', session: 's6', num: 18,
+    id: 'm19-random-effects-fit', session: 's6', num: 19,
     title: 'Fit a random-effects model', mode: 'fangs',
     challenge: 'answer-check',
     config: {
@@ -328,21 +374,12 @@ export const MODULES = [
     },
   },
   {
-    id: 'm19-improving-sampling', session: 's6', num: 19,
+    id: 'm20-improving-sampling', session: 's6', num: 20,
     title: 'Improving sampling: priors & reparameterisation', mode: 'fangs',
     challenge: 'recorder',
     config: {
-      storeKey: 'm19-improving-sampling',
+      storeKey: 'm20-improving-sampling',
       columns: ['Parameterisation', 'Worst R-hat', 'Min ESS', 'Notes'],
-    },
-  },
-  {
-    id: 'm20-identifiability-priors', session: 's6', num: 20,
-    title: 'Model choice, priors & identifiability', mode: 'fangs',
-    challenge: 'recorder',
-    config: {
-      storeKey: 'm20-identifiability-priors',
-      columns: ['Prior SD on alpha2', 'Worst R-hat (alpha/alpha2)', 'Min ESS', 'Posterior shape (ridge/bimodal/peak)'],
     },
   },
   {

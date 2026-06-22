@@ -22,4 +22,7 @@ Note that the posterior histograms in FANGS fit a smoother over the histograms, 
 
 ## Your task
 
-Run a prior check on your frogfish body-length model. Then answer the question below about how to read an obviously-too-vague prior.
+Using the model of mean jaw length, try some different priors for `alpha` and `sigma` and compare the results of the prior predictive check. 
+For example, you could try a `dnorm(0, 100)` prior for `alpha` and a `dunif(0, 100)` prior for `sigma`. Then try a more constrained `dnorm(100, 5)` for `alpha` and the same `dunif(0, 100)` for `sigma`.
+
+Then answer the questions below: 
