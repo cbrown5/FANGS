@@ -1,12 +1,10 @@
 # MCMC diagnostics: R-hat & ESS
 
-MCMC only works if the chains have **converged**. Two numbers tell you whether to
-trust the output — both are in the **Summary** tab.
+MCMC only works if the chains have **converged**. Two numbers tell you whether to trust the output — both are in the **Summary** tab.
 
 ## R-hat (the convergence check)
 
-R-hat compares the variation *within* each chain to the variation *between*
-chains. If the chains have converged to the same distribution, these match and:
+R-hat compares the variation *within* each chain to the variation *between* chains. If the chains have converged to the same distribution, these match and:
 
 $$
 \hat{R} \approx 1.0
@@ -16,20 +14,20 @@ $$
 - $\hat{R} > 1.1$ — **do not trust it.** The chains disagree. Run longer, or
   reparameterise (Module 19).
 
-In the trace plot, a high R-hat looks like chains exploring different regions
-instead of overlapping.
+In the trace plot, a high R-hat looks like chains exploring different regions instead of overlapping fuzzy caterpillars.  
 
 ## ESS (the efficiency check)
 
-The **effective sample size** is how many *independent* draws your correlated
-chain is worth. 4000 saved samples with ESS = 35 means heavy autocorrelation —
-your estimates are noisier than the sample count suggests.
+The **effective sample size** is how many *independent* draws your correlated chain is worth. 4000 saved samples with ESS = 35 means heavy autocorrelation — your estimates are noisier than the sample count suggests.
 
-- Low ESS → widen the sampler (more samples / thinning) or improve mixing.
+When there is strong autocorrelation the trace plots will look like trend lines that wander off in different directions consistently, instead of fuzzy caterpillars. 
+
+- Low ESS → widen the sampler (more samples / thinning) or make changes to the model to improve the randomness of samples.
 
 ## Rule of thumb
 
 Glance at **R-hat first** (is it valid?), then **ESS** (is it precise enough?).
+
 FANGS highlights problem rows for you.
 
 ## Your task

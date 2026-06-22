@@ -153,7 +153,7 @@ export const MODULES = [
     config: {
       questions: [
         {
-          q: 'In the PPC plot, the simulated datasets bracket the observed data well. What do you conclude?',
+          q: 'In the PPC plot for the first model, the simulated datasets bracket the observed data well. What do you conclude?',
           options: [
             'The model reproduces the key features of the data — a good sign.',
             'The chains have not converged.',
@@ -162,13 +162,22 @@ export const MODULES = [
           answer: 0,
         },
         {
-          q: 'The observed data sit in the far tail of every simulated dataset. This suggests…',
+          q: 'In the PPC plot for the second model with fixed SD, the simulated datasets had much broader spread than the histogram of the real data. What do you conclude?',
           options: [
-            'Model misfit — the model cannot reproduce the data.',
+            'The model reproduces the key features of the data — a good sign.',
+            'The chains have not converged.',
+            'We need to change how we model the spread of the data',
+          ],
+          answer: 2,
+        },
+        {
+          q: 'If the observed data sat in the far tail of every simulated dataset. This would suggest…',
+          options: [
             'Excellent fit.',
             'Nothing — PPC cannot detect misfit.',
+            'Model misfit — the model cannot reproduce the data.'
           ],
-          answer: 0,
+          answer: 2,
         },
       ],
     },

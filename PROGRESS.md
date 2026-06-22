@@ -49,6 +49,10 @@ All core modules are implemented and 253 tests pass.
 ## Next Steps
 
 ### USER todo
+- Check prediction tab with categorical predictors, should be fixed now? 
+- Check: Increase font size for 'Predictors auto-scaled for sampling' message
+- CHeck: Fix bug with syntax error. We get a pop-up and error message. However the model code text then shows a duplicate of the code overlaid the window with teh model box, so it is hard to edit the model. This disappears if you refresh, but then you lose edits to th emodel. 
+
 - Look into bug when you stop a chain partway. It keeps running, then won't restart when you hit starta gain. 
 - What happens if fixed factor variable has 3 or more levels? how does it handle that? - probably needs dummy encoding, or do like this beta[group[i]]. Do some more tests and then update course modules appropriately. 
 - Add figures from benchmark.R on timing from tests/results to the paper
@@ -66,13 +70,10 @@ All core modules are implemented and 253 tests pass.
 - Get rid of predictions page. Could replace with custom code parser to make predictions? 
 
 ### User course todo
-Have re-written modules M03 to M08. Need to continue working on M09. 
+Have re-written modules M03 to M09. Need to continue working on M10, add some models that have bad mixing. 
 
 
 ### Claude todo
-- [ ] Predictions tab not working for categorical predictors. fix that
-- [ ] Increase font size for 'Predictors auto-scaled for sampling' message
-- [ ] Fix bug with syntax error. We get a pop-up and error message. However the model code text then shows a duplicate of the code overlaid the window with teh model box, so it is hard to edit the model. This disappears if you refresh, but then you lose edits to th emodel. 
 
 
 

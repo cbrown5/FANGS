@@ -1,11 +1,8 @@
 # Posterior predictive checks
 
-You have a fitted model — but a fit is not the same as a *good* fit. The model will
-always draw you a line; the real question is whether that line, with its scatter,
-could plausibly have produced the frogfish you actually measured.
-A **posterior predictive check (PPC)** answers exactly this, by simulating fresh
-datasets from
-the *fitted* model and laying them next to the real one.
+You have fitted a model to data, but we want to to know whether our fitted models is a reasonable representation of the data. The model will always draw you a line; the real question is whether that line, with its scatter, could plausibly have produced the frogfish you actually measured. A **posterior predictive check (PPC)** simulates fresh datasets from the *fitted* model. We can then compare the simulated data to the real data. The idea is that a reasonable model shoudl simulate data that look like the real data. 
+
+This is similar to the prior predictive check we did earlier, but this time we're using the model with parameters that have been fit to the data. 
 
 ## Prior vs posterior predictive
 
@@ -18,21 +15,26 @@ These two checks bookend the fitting:
 
 ## How to read it
 
-In FANGS' **PPC** tab you see your observed jaw lengths against a fan of simulated
-datasets drawn from the fit:
+In FANGS' **PPC** tab you see two plots. 
 
-- If the real data sit comfortably **inside** the simulated spread, the model is
-  reproducing the features you care about. That is the result you want.
-- If the real data fall in the **far tail** of every replicate — more skewed, more
-  spread out, or just the wrong shape — the model is missing something. That is
-  your cue to change it: a different distribution, an extra predictor, perhaps
-  allowing the spread to grow with size.
+The first plot shows the histogram of data (bars) against the histograms of simulated data (lines). If the real data are very far out in the tail of the simulated data, then the model is not capturing some important feature of the data.
 
-A PPC will never certify that a model is *true* — only whether it is *good enough*
-for the features you chose to check. That is a more honest, and more useful,
-question anyway.
+The second plot shows the real data (points) plotted against the simulated data (points with lines for 95% CIs). We are expecting to see a positive trend line here, meaning that the model predicts higher values of jaw length for species that had longer jaw length. If the real data sit comfortably **inside** the simulated spread, the model is reproducing the features you care about. That is the result you want. 
+
+If the real data fall in the **far tail** of every replicate — more skewed, more spread out, or just the wrong shape — the model is missing something. That is  your cue to keep working on the model. It might need  a different distribution, an extra predictor, or even a different mathematical relationship between jaw and body length.
 
 ## Your task
 
-Open the PPC tab for your jaw-length-on-body-length fit from `fish-lengths.csv`,
-then answer the interpretation questions below.
+First, open the PPC tab for your jaw-length-on-body-length fit from `fish-lengths.csv` and inspect the results. 
+
+Then fit another model. This model I've set-up to be a deliberately bad fit: it assumes a fixed known standard deviation of jaw length of 70mm. Update the likelihood for `Lower_jaw_length[i]` to be: 
+
+```
+Lower_jaw_length[i] ~ dnorm(mu[i], 70)
+```
+
+How does that change the plots on the PPC tab? 
+
+And remove `sigma` from the model block, since it's no longer a parameter. 
+
+Then answer the interpretation questions below.

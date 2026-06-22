@@ -35,7 +35,7 @@ along the ridge
 
 $$\alpha + \alpha_2 = \text{constant}.$$
 
-Statisticians call this a **non-identifiable** (or *aliased*) parameterisation.
+Statisticians call this a **non-identifiable** parameterisation.
 The *sum* is identified; the two *components* are not.
 
 ## Your task — part 1: watch the chains fail
