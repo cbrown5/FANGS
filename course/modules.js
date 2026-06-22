@@ -262,11 +262,13 @@ export const MODULES = [
     title: 'Single-factor linear model & the design matrix', mode: 'fangs',
     challenge: 'answer-check',
     config: {
-      // clownfish-oa.csv columns: group (Normal seawater / Acidified), time.
+      // clownfish-oa.csv: time ~ treatment (Normal seawater=1, Acidified seawater=2).
+      // Model: mu[i] <- alpha + beta_trt * (treatment[i] - 1)
+      // Reference values computed from MLE (vague priors dominate).
       dataset: 'clownfish-oa.csv',
       params: [
-        { name: 'alpha',     label: 'Control mean α',        mean: 0, ci: [0, 0], tol: 0.5 },
-        { name: 'beta_trt',  label: 'Acidification effect',  mean: 0, ci: [0, 0], tol: 0.5 },
+        { name: 'alpha',     label: 'Control mean α (s)',     mean: 18.6, ci: [16.9, 20.2], tol: 1.0 },
+        { name: 'beta_trt',  label: 'Acidification effect β', mean: 65.6, ci: [63.3, 67.9], tol: 2.0 },
       ],
     },
   },
