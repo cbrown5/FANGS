@@ -84,7 +84,7 @@ export const MODULES = [
     y[i] ~ dnorm(mu, sigma
     mu <- alpha
   }
-  alpha ~ dnorm(0, 5)
+  alpha ~ dnorm(0, 50)
   sigma ~ dunif(0, 100)
 }`,
       hint: 'A distribution call is missing its closing parenthesis. FANGS uses dnorm(mean, SD).',

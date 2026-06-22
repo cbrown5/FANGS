@@ -1,14 +1,48 @@
 # Single-factor linear model & the design matrix
 
-Many marine studies compare **groups**: control vs treatment, inshore vs
-offshore. Here we use an **ocean-acidification (OA)** experiment — fish reared in
-control vs acidified seawater — and ask whether acidification changes our
-response (say, growth).
+Many studies compare **groups**: control vs treatment, inshore vs offshore. Here we use an **ocean-acidification (OA)** experiment — fish reared in control vs acidified seawater — and ask whether acidification changes their response to predators. 
 
-## Coding a 2-level factor
+In this experiment fish were given a choice to swim towards or away from a predator cue. The response variable is the time spent near the predator cue, and the predictor is the treatment (control vs acidified). 
 
-A categorical predictor enters the model through a **design matrix**. With two
-levels we use a single **0/1 indicator**:
+## Coding a two level factor in FANGS
+
+FANGS auto-encodes a text column like `treatment` (`"normal seawater"`, `"acidified seawater"`) into integers for you. The first group becomes a `0`, the second group becomes a `1`. You can then write the model directly against the indicator, e.g. `mu[i] <- alpha + beta * treatment[i]`. 
+
+Because treatment is `0` for the control group, `alpha` is the control mean. Because treatment is `1` for the acidified group, `alpha + beta` is the acidified mean. So $\beta$ is the difference between acidified and control fish — the **treatment effect**.
+
+UP TO HERE. CHeck that -1 is correct (will work if indexing starts at 1, but not if it starts at 0).
+Also why does below model sample more poorll than the next model
+
+```
+model {
+  for (i in 1:N) {
+    time[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + beta_trt * (treatment[i]-1)
+  }
+  alpha ~ dnorm(50, 50)
+   beta_trt ~ dnorm(0, 10)
+  sigma ~ dunif(0, 50)
+}
+```
+
+```
+model {
+  for (i in 1:N) {
+    time[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- beta_trt[treatment[i]]
+  }
+  for (j in 1:2) {
+    beta_trt[j] ~ dnorm(0, 10)
+  }
+  sigma ~ dunif(0, 50)
+}
+```
+
+
+## Coding a 2-level factor as a design matrix 
+
+
+A categorical predictor enters the model through a **design matrix**. With two levels we use a single **0/1 indicator**:
 
 | Treatment | indicator `trt` |
 |-----------|-----------------|
@@ -24,23 +58,6 @@ $$
 
 If $\beta$'s 95% CI excludes 0, acidification credibly shifts the response.
 
-## In FANGS
-
-FANGS auto-encodes a text column like `treatment` (`"control"`, `"acidified"`)
-into integers for you. You can write the model directly against the indicator,
-e.g. `mu[i] <- alpha + beta * trt[i]`.
-
-```
-model {
-  for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], sigma)
-    mu[i] <- alpha + beta_trt * trt[i]
-  }
-  alpha ~ dnorm(0, 50)
-  beta_trt ~ dnorm(0, 10)
-  sigma ~ dunif(0, 50)
-}
-```
 
 ## Your task
 

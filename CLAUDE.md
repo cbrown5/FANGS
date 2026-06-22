@@ -156,7 +156,7 @@ The app should launch with:
       y[i] ~ dnorm(mu[i], sigma)
       mu[i] <- alpha + beta * x[i]
     }
-    alpha ~ dnorm(0, 5)
+    alpha ~ dnorm(0, 50)
     beta ~ dnorm(0, 5)
     sigma ~ dunif(0, 100)
   }
@@ -171,7 +171,7 @@ The app should launch with:
     for (j in 1:J) {
       b[j] ~ dnorm(0, sigma.b)
     }
-    alpha ~ dnorm(0, 5)
+    alpha ~ dnorm(0, 50)
     beta ~ dnorm(0, 5)
     sigma ~ dunif(0, 100)
     sigma.b ~ dunif(0, 100)

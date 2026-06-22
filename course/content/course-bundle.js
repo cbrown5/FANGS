@@ -283,48 +283,60 @@ $$</span></p>
 </body></html>`,
   'm11-identifiability-priors': `<html><head></head><body><h1 id="identifiability-bad-essr-hat-a-case-study">Identifiability &amp; bad ESS/R-hat: a case study</h1>
 <p>You have just learned what R-hat and ESS mean. Now let’s see what <em>really bad</em> values look like — and understand <em>why</em> they occur.</p>
-<p>This module uses a deliberately broken version of the jaw-length regression from Module 8 to illustrate <strong>non-identifiability</strong>: a situation where the data cannot, even in principle, pin down the individual parameters you have asked for.</p>
+<p>This module uses a deliberately broken version of the jaw-length regression from Module 8 to illustrate <strong>non-identifiability</strong>: a situation where the data cannot pin down the individual parameters you have asked for.</p>
 <h2 id="a-two-intercept-jaw-length-model">A two-intercept jaw-length model</h2>
 <p>Recall the jaw-length regression:</p>
 <p><span class="math display">Lower_jaw_length<sub><em>i</em></sub> = <em>α</em> + <em>β</em> × Standard_length<sub><em>i</em></sub> + <em>ε</em><sub><em>i</em></sub></span></p>
 <p>Now add a second intercept, <code>alpha2</code>, that does nothing but shadow the first:</p>
 <pre><code>model {
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], sigma)
-    mu[i] &lt;- alpha + alpha2 + beta * x[i]
+    Lower_jaw_length[i] ~ dnorm(mu[i], sigma)
+    mu[i] &lt;- alpha + alpha2 + beta * Mouth_width[i]
   }
-  alpha  ~ dnorm(0, 5)
-  alpha2 ~ dnorm(0, 5)
+  alpha  ~ dnorm(0, 100)
+  alpha2 ~ dnorm(0, 100)
   beta   ~ dnorm(0, 5)
   sigma  ~ dunif(0, 100)
 }</code></pre>
 <p>Use <code>Lower_jaw_length</code> as <code>y</code> and <code>Standard_length</code> as <code>x</code> in FANGS.</p>
-<p>Look closely at the mean: <code>alpha</code> and <code>alpha2</code> <em>only ever appear added together</em>. The data see the sum <span class="math inline"><em>α</em> + <em>α</em><sub>2</sub></span> — never the two pieces individually. Any increase in <code>alpha</code> can be exactly cancelled by an equal decrease in <code>alpha2</code> with <strong>no change to the fit</strong>. The likelihood is completely flat along the ridge</p>
+<p>Look closely at the mean: <code>alpha</code> and <code>alpha2</code> <em>only ever appear added together</em>.</p>
+<p>Any increase in <code>alpha</code> can be exactly cancelled by an equal decrease in <code>alpha2</code> with <strong>no change to the fit</strong>. The likelihood is completely flat along the ridge</p>
 <p><span class="math display"><em>α</em> + <em>α</em><sub>2</sub> = constant.</span></p>
 <p>This is a <strong>non-identifiable</strong> parameterisation.</p>
-<h2 id="part-1-watch-the-chains-fail">Part 1 — watch the chains fail</h2>
+<h2 id="step-1-watch-the-chains-fail">Step 1 — watch the chains fail</h2>
 <ol type="1">
 <li>Load <code>fish-lengths.csv</code> in FANGS, setting <code>y = Lower_jaw_length</code> and <code>x = Standard_length</code>.</li>
-<li>Paste the two-intercept model above and run with <strong>4 chains</strong>.</li>
+<li>Paste the two-intercept model above and run with <strong>4 chains</strong> and <strong>1000 samples</strong>.</li>
 <li>Open the <strong>Trace</strong> tab and watch <code>alpha</code> and <code>alpha2</code>.</li>
 </ol>
-<p>You should see them <strong>wander</strong> — slow, drifting traces that never settle, looking different in every chain. Check the <strong>Summary</strong> tab:</p>
+<p>You should see each chain <strong>wander</strong>, making long detours to higher then lower values. Check the <strong>Summary</strong> tab:</p>
 <ul>
-<li><strong>R-hat</strong> for <code>alpha</code> and <code>alpha2</code> will be large (well above 1.01).</li>
-<li><strong>ESS</strong> will be tiny — thousands of iterations buy only a handful of effectively independent samples.</li>
-<li>But <code>beta</code>, <code>sigma</code>, and the <em>sum</em> <code>alpha + alpha2</code> remain <strong>well-behaved</strong>. Only the unidentified pieces misbehave.</li>
+<li><strong>R-hat</strong>s for <code>alpha</code> and <code>alpha2</code> will be large (well above 1.01).</li>
+<li><strong>ESS</strong> will be small relative to the number of samples — thousands of iteration buy only a handful of effectively independent samples.</li>
 </ul>
+<p>But <code>beta</code>, <code>sigma</code>, and the <em>sum</em> <code>alpha + alpha2</code> remain <strong>well-behaved</strong>. This is the clue that the issue lies with the <code>alpha</code> parameters.</p>
 <div>
 <blockquote>
 <p><strong>Tip</strong></p>
 <p>The data constrain a <em>line</em> through <span class="math inline">(<em>α</em>, <em>α</em><sub>2</sub>)</span> space, not a <em>point</em>. The sampler slides freely along that line — so it does.</p>
 </blockquote>
 </div>
-<h2 id="part-2-see-the-bimodality">Part 2 — see the bimodality</h2>
-<p>Open the <strong>Posteriors</strong> tab and look at the density for <code>alpha</code> (and <code>alpha2</code>). Because each chain settles in a different stretch of the ridge and mixes badly, the pooled density often looks <strong>lumpy or multi-modal</strong> — two or more bumps where you expected one smooth hill. That bimodality is <strong>not a real feature of the data</strong>; it is an artefact of the non-identified parameter. Compare it with the density of <code>beta</code>, which is a single clean peak.</p>
-<h2 id="part-3-let-a-prior-rescue-it">Part 3 — let a prior rescue it</h2>
-<p>A <strong>prior can identify what the data cannot</strong>. Tighten the prior on <code>alpha2</code> step by step, refitting each time:</p>
+<h2 id="step-2-see-the-bimodality">Step 2 — see the bimodality</h2>
+<p>Open the <strong>Posteriors</strong> tab and look at the density for <code>alpha</code> (and <code>alpha2</code>).</p>
+<p>Because each chain settles in a different stretch of the ridge and mixes badly, the pooled density often looks <strong>lumpy or multi-modal</strong> — two or more bumps where you expected one smooth hill. That bimodality is <strong>not a real feature of the data</strong>; it is an artefact of the non-identified parameter. Compare it with the density of <code>beta</code>, which is a single clean peak.</p>
+<h2 id="step-3---check-the-joint-distribution">Step 3 - check the joint distribution</h2>
+<p>Navigate to the <strong>Joint</strong> tab. This tab allows you to plot samples of one parameter against samples of another. Experiment with the drop-downs to compare different parameters.</p>
+<p>The strong negative correlation between <code>alpha</code> parameters is another clue to the unidentifiability. In contrast, there is no correlation between <code>alpha</code> and <code>beta</code>.</p>
+<p>Correlations among parameters aren’t always a bad sign. Its just one of many clues that might point to a problem.</p>
+<p>Record your results in the app below before you progress onto the next step.</p>
+<h2 id="step-4-informed-priors-to-the-rescue">Step 4 — informed priors to the rescue</h2>
+<p>A <strong>prior can identify what the data cannot</strong>. Try putting a different priors on <code>alpha2</code> that say we are increasingly certain it has a value near 10. Be sure to refit the model each time.</p>
 <table class="caption-top">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 56%">
+<col style="width: 30%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Step</th>
@@ -335,35 +347,40 @@ $$</span></p>
 <tbody>
 <tr class="odd">
 <td>1</td>
-<td><code>alpha2 ~ dnorm(0, 5)</code></td>
+<td><code>alpha2 ~ dnorm(0, 100)</code></td>
 <td>“alpha2 could be almost anything”</td>
 </tr>
 <tr class="even">
 <td>2</td>
-<td><code>alpha2 ~ dnorm(0, 1)</code></td>
-<td>“alpha2 is probably small”</td>
+<td><code>alpha2 ~ dnorm(10, 20)</code></td>
+<td>“alpha2 is centered on 10, but could be much higher or lower”</td>
 </tr>
 <tr class="odd">
 <td>3</td>
-<td><code>alpha2 ~ dnorm(0, 0.2)</code></td>
-<td>“alpha2 is very close to 0”</td>
+<td><code>alpha2 ~ dnorm(10, 2)</code></td>
+<td>“alpha2 is very close to 10”</td>
 </tr>
 </tbody>
 </table>
+<h2 id="record-your-runs">Record your runs</h2>
+<p>Fit the two-intercept jaw-length model under <strong>at least the three priors on <code>alpha2</code></strong> in the table above. For each run, record the prior SD, the worst R-hat of <code>alpha</code>/<code>alpha2</code>, the minimum ESS, and a quick note on the posterior shape (<em>ridge / bimodal / single peak</em>). Two or more rows unlock the module.</p>
+<h2 id="whats-happening-here">What’s happening here?</h2>
 <p>As the prior on <code>alpha2</code> tightens, it pins <code>alpha2</code> near zero, breaking the symmetry of the ridge. Watch what happens:</p>
 <ul>
-<li>The <code>alpha</code> trace <strong>stops wandering</strong> and settles.</li>
+<li>The <code>alpha</code> trace <strong>stops wandering</strong> and settles to look more like random noise.</li>
 <li><strong>R-hat falls toward 1.00</strong> and <strong>ESS climbs</strong> by orders of magnitude.</li>
 <li>The lumpy, bimodal density collapses into a <strong>single clean peak</strong>.</li>
+<li>The strong negative correlation between <code>alpha</code> and <code>alpha2</code> disappears.</li>
 </ul>
-<p>You have not added any data. You have simply supplied <strong>external information</strong> about one parameter — and that was enough to make the whole model sample cleanly.</p>
-<h2 id="the-big-idea">The big idea</h2>
+<p>You have not added any data. You have simply supplied <strong>external information</strong> about one parameter. The new information was enough to make the whole model sample cleanly.</p>
+<h2 id="the-key-idea">The key idea</h2>
 <blockquote>
 <p>A model that looks hopeless to a likelihood-only analysis — because the data alone cannot identify every parameter — can be <strong>perfectly usable in a Bayesian analysis</strong> when you bring genuine prior information to the unidentified parts.</p>
 </blockquote>
-<p>This comes with responsibility: the result now <strong>depends on the prior</strong> you chose for <code>alpha2</code>. That is fine if the prior reflects real knowledge, and dishonest if you tightened it just to make the sampler behave. Be transparent about where the information came from.</p>
-<h2 id="record-your-runs">Record your runs</h2>
-<p>Fit the two-intercept jaw-length model under <strong>at least the three priors on <code>alpha2</code></strong> in the table above. For each run, record the prior SD, the worst R-hat of <code>alpha</code>/<code>alpha2</code>, the minimum ESS, and a quick note on the posterior shape (<em>ridge / bimodal / single peak</em>). Two or more rows unlock the module.</p>
+<p>But be careful because the result is becoming increasingly dependent on the prior you chose for <code>alpha2</code>. That is fine if the prior reflects real knowledge, and dishonest if you tightened it just to make the sampler behave. Be transparent about where the information came from and what parts of the model are informed by data vs.&nbsp;priors.</p>
+<p>The case-study here was pretty clear cut example of non-identifiability. In practice, the issues are often more subtle and harder to diagnose. But the same principles apply: look for clues in the diagnostics like poor sampler performance and correlations among samples for different parameters.</p>
+<p>Looking for prior evidence to inform your priors may then help break symmetries and identify what the data cannot.</p>
+<p>Another option is pen and paper work to re-write your model to reduce the number of parameters. Pay careful attention to those parameters with badly behave traces, high Rhat values, low ESS and strong correlations with other parameters.</p>
 </body></html>`,
   'm11-single-factor': `<html><head></head><body><h1 id="single-factor-linear-model-the-design-matrix">Single-factor linear model &amp; the design matrix</h1>
 <p>Many marine studies compare <strong>groups</strong>: control vs treatment, inshore vs offshore. Here we use an <strong>ocean-acidification (OA)</strong> experiment — fish reared in control vs acidified seawater — and ask whether acidification changes our response (say, growth).</p>

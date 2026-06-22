@@ -1,11 +1,8 @@
 # Identifiability & bad ESS/R-hat: a case study
 
-You have just learned what R-hat and ESS mean. Now let's see what *really bad*
-values look like — and understand *why* they occur.
+You have just learned what R-hat and ESS mean. Now let's see what *really bad* values look like — and understand *why* they occur.
 
-This module uses a deliberately broken version of the jaw-length regression from
-Module 8 to illustrate **non-identifiability**: a situation where the data
-cannot, even in principle, pin down the individual parameters you have asked for.
+This module uses a deliberately broken version of the jaw-length regression from Module 8 to illustrate **non-identifiability**: a situation where the data cannot pin down the individual parameters you have asked for. 
 
 ## A two-intercept jaw-length model
 
@@ -20,11 +17,11 @@ Now add a second intercept, `alpha2`, that does nothing but shadow the first:
 ```
 model {
   for (i in 1:N) {
-    y[i] ~ dnorm(mu[i], sigma)
-    mu[i] <- alpha + alpha2 + beta * x[i]
+    Lower_jaw_length[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + alpha2 + beta * Mouth_width[i]
   }
-  alpha  ~ dnorm(0, 5)
-  alpha2 ~ dnorm(0, 5)
+  alpha  ~ dnorm(0, 100)
+  alpha2 ~ dnorm(0, 100)
   beta   ~ dnorm(0, 5)
   sigma  ~ dunif(0, 100)
 }
@@ -33,79 +30,86 @@ model {
 Use `Lower_jaw_length` as `y` and `Standard_length` as `x` in FANGS.
 
 Look closely at the mean: `alpha` and `alpha2` *only ever appear added together*.
-The data see the sum $\alpha + \alpha_2$ — never the two pieces individually.
-Any increase in `alpha` can be exactly cancelled by an equal decrease in `alpha2`
-with **no change to the fit**. The likelihood is completely flat along the ridge
+
+Any increase in `alpha` can be exactly cancelled by an equal decrease in `alpha2` with **no change to the fit**. The likelihood is completely flat along the ridge
 
 $$\alpha + \alpha_2 = \text{constant.}$$
 
 This is a **non-identifiable** parameterisation.
 
-## Part 1 — watch the chains fail
+## Step 1 — watch the chains fail
 
 1. Load `fish-lengths.csv` in FANGS, setting `y = Lower_jaw_length` and
    `x = Standard_length`.
-2. Paste the two-intercept model above and run with **4 chains**.
+2. Paste the two-intercept model above and run with **4 chains** and **1000 samples**.
 3. Open the **Trace** tab and watch `alpha` and `alpha2`.
 
-You should see them **wander** — slow, drifting traces that never settle, looking
-different in every chain. Check the **Summary** tab:
+You should see each chain **wander**, making long detours to higher then lower values.  Check the **Summary** tab:
 
-- **R-hat** for `alpha` and `alpha2` will be large (well above 1.01).
-- **ESS** will be tiny — thousands of iterations buy only a handful of
-  effectively independent samples.
-- But `beta`, `sigma`, and the *sum* `alpha + alpha2` remain **well-behaved**.
-  Only the unidentified pieces misbehave.
+- **R-hat**s for `alpha` and `alpha2` will be large (well above 1.01).
+- **ESS** will be small relative to the number of samples — thousands of iteration buy only a handful of effectively independent samples.
+
+But `beta`, `sigma`, and the *sum* `alpha + alpha2` remain **well-behaved**. This is the clue that the issue lies with the `alpha` parameters. 
 
 ::: callout-tip
 The data constrain a *line* through $(\alpha, \alpha_2)$ space, not a *point*.
 The sampler slides freely along that line — so it does.
 :::
 
-## Part 2 — see the bimodality
+## Step 2 — see the bimodality
 
 Open the **Posteriors** tab and look at the density for `alpha` (and `alpha2`).
-Because each chain settles in a different stretch of the ridge and mixes badly,
-the pooled density often looks **lumpy or multi-modal** — two or more bumps where
-you expected one smooth hill. That bimodality is **not a real feature of the
-data**; it is an artefact of the non-identified parameter. Compare it with the
-density of `beta`, which is a single clean peak.
 
-## Part 3 — let a prior rescue it
+Because each chain settles in a different stretch of the ridge and mixes badly, the pooled density often looks **lumpy or multi-modal** — two or more bumps where you expected one smooth hill. That bimodality is **not a real feature of the data**; it is an artefact of the non-identified parameter. Compare it with the density of `beta`, which is a single clean peak.
 
-A **prior can identify what the data cannot**. Tighten the prior on `alpha2`
-step by step, refitting each time:
+## Step 3 - check the joint distribution
+
+Navigate to the **Joint** tab. This tab allows you to plot samples of one parameter against samples of another. Experiment with the drop-downs to compare different parameters. 
+
+The strong negative correlation between `alpha` parameters is another clue to the unidentifiability. In contrast, there is no correlation between `alpha` and `beta`. 
+
+Correlations among parameters aren't always a bad sign. Its just one of many clues that might point to a problem. 
+
+Record your results in the app below before you progress onto the next step. 
+
+## Step 4 — informed priors to the rescue
+
+A **prior can identify what the data cannot**. Try putting a different priors on `alpha2` that say we are increasingly certain it has a value near 10. Be sure to refit the model each time. 
 
 | Step | Prior on `alpha2`        | What it says |
 |------|--------------------------|--------------|
-| 1    | `alpha2 ~ dnorm(0, 5)`   | "alpha2 could be almost anything" |
-| 2    | `alpha2 ~ dnorm(0, 1)`   | "alpha2 is probably small" |
-| 3    | `alpha2 ~ dnorm(0, 0.2)` | "alpha2 is very close to 0" |
+| 1    | `alpha2 ~ dnorm(0, 100)`   | "alpha2 could be almost anything" |
+| 2    | `alpha2 ~ dnorm(10, 20)`   | "alpha2 is centered on 10, but could be much higher or lower" |
+| 3    | `alpha2 ~ dnorm(10, 2)` | "alpha2 is very close to 10" |
 
-As the prior on `alpha2` tightens, it pins `alpha2` near zero, breaking the
-symmetry of the ridge. Watch what happens:
+## Record your runs
 
-- The `alpha` trace **stops wandering** and settles.
+Fit the two-intercept jaw-length model under **at least the three priors on `alpha2`** in the table at. For each run, record the prior SD, the worst R-hat of `alpha`/`alpha2`, the minimum ESS, and a quick note on the posterior shape (*ridge / bimodal / single peak*). Add your records in the app at the end of this module. Two or more rows will unlock the module.
+
+## What's happening here? 
+
+As the prior on `alpha2` tightens, it pins `alpha2` near zero, breaking the symmetry of the ridge. Watch what happens:
+
+- The `alpha` trace **stops wandering** and settles to look more like random noise. 
 - **R-hat falls toward 1.00** and **ESS climbs** by orders of magnitude.
 - The lumpy, bimodal density collapses into a **single clean peak**.
+- The strong negative correlation between `alpha` and `alpha2` disappears.
 
-You have not added any data. You have simply supplied **external information**
-about one parameter — and that was enough to make the whole model sample cleanly.
+You have not added any data. You have simply supplied **external information** about one parameter. The new information was enough to make the whole model sample cleanly.
 
-## The big idea
+## The key idea
 
 > A model that looks hopeless to a likelihood-only analysis — because the data
 > alone cannot identify every parameter — can be **perfectly usable in a Bayesian
 > analysis** when you bring genuine prior information to the unidentified parts.
 
-This comes with responsibility: the result now **depends on the prior** you chose
-for `alpha2`. That is fine if the prior reflects real knowledge, and dishonest if
-you tightened it just to make the sampler behave. Be transparent about where the
-information came from.
+But be careful because the result is becoming increasingly dependent on the prior you chose for `alpha2`. That is fine if the prior reflects real knowledge, and dishonest if you tightened it just to make the sampler behave. Be transparent about where the information came from and what parts of the model are informed by data vs. priors. 
 
-## Record your runs
+The case-study here was pretty clear cut example of non-identifiability. In practice, the issues are often more subtle and harder to diagnose. But the same principles apply: look for clues in the diagnostics like poor sampler performance and correlations among samples for different parameters. 
 
-Fit the two-intercept jaw-length model under **at least the three priors on
-`alpha2`** in the table above. For each run, record the prior SD, the worst
-R-hat of `alpha`/`alpha2`, the minimum ESS, and a quick note on the posterior
-shape (*ridge / bimodal / single peak*). Two or more rows unlock the module.
+Looking for prior evidence to inform your priors may then help break symmetries and identify what the data cannot.
+
+Another option is pen and paper work to re-write your model to reduce the number of parameters. Pay careful attention to those parameters with badly behave traces, high Rhat values, low ESS and strong correlations with other parameters. 
+
+
+
