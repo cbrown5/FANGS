@@ -70,10 +70,19 @@ All core modules are implemented and 253 tests pass.
 - Get rid of predictions page. Could replace with custom code parser to make predictions? 
 
 ### User course todo
-Have re-written modules M03 to M10. Need to continue working on M11, check example therein. 
+Have re-written modules M03 to M10. Need to continue working on M12. 
+Add references. 
 
 
 ### Claude todo
+- Work on modules M11 and M12
+- Add references and explanation to Module. M11/12 Make it more of a story. based on this OA example from: Munday et al. 2009, PNAS https://www.pnas.org/doi/abs/10.1073/pnas.1004519107. Replication failure: Clark et al. 2020, Nature. https://www.nature.com/articles/s41586-019-1903-y
+-  If Munday had used an informed prior centered on 0 (shrinkage prior) they would not have made such an outrageous claim of effect size. 
+- add references for books to the course in appropriate places. 
+- - McElreath, R. (2020). [*Statistical Rethinking: A Bayesian Course with Examples in R and Stan*](https://xcelab.net/rm/statistical-rethinking/) (2nd ed.). CRC Press.
+- de Valpine, P., Turek, D., Paciorek, C. J., Anderson-Bergman, C., Temple Lang, D., & Bodik, R. (2017). Programming with models: writing statistical algorithms for general model structures with NIMBLE. *Journal of Computational and Graphical Statistics*, 26(2), 403–413. [doi:10.1080/10618600.2016.1172487](https://doi.org/10.1080/10618600.2016.1172487)
+- [NIMBLE documentation](https://r-nimble.org/)
+- Cross link across modules. 
 
 
 

@@ -25,6 +25,10 @@ model {
 }
 ```
 
+## improving the sampling by coding the factor as a design matrix
+
+Make the point that this improves seampling, explain why, but it will also change the interpretation of the parameters. 
+
 ```
 model {
   for (i in 1:N) {
