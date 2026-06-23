@@ -1,69 +1,67 @@
 # Single-factor linear model & the design matrix
 
-Many studies compare **groups**: control vs treatment, inshore vs offshore. Here we use an **ocean-acidification (OA)** experiment — fish reared in control vs acidified seawater — and ask whether acidification changes their response to predators. 
+Many studies compare **groups**: control vs treatment, inshore vs offshore. Here we use an **ocean-acidification (OA)** experiment — clownfish reared in control vs acidified seawater — and ask whether acidification changes their behaviour around predator cues.
 
-In this experiment fish were given a choice to swim towards or away from a predator cue. The response variable is the time spent near the predator cue, and the predictor is the treatment (control vs acidified). 
+In this experiment fish were given a choice to swim towards or away from a predator odour. The response variable is the time spent near the predator cue (seconds), and the predictor is the treatment (normal seawater vs acidified seawater).
 
-## Coding a two level factor in FANGS
+## Coding a two-level factor in FANGS
 
-FANGS auto-encodes a text column like `treatment` (`"normal seawater"`, `"acidified seawater"`) into integers for you. The first group becomes a `0`, the second group becomes a `1`. You can then write the model directly against the indicator, e.g. `mu[i] <- alpha + beta * treatment[i]`. 
+FANGS encodes a text column like `treatment` into integers automatically, using the order of first appearance in the CSV. For `clownfish-oa.csv` this gives:
 
-Because treatment is `0` for the control group, `alpha` is the control mean. Because treatment is `1` for the acidified group, `alpha + beta` is the acidified mean. So $\beta$ is the difference between acidified and control fish — the **treatment effect**.
+| Level | Code |
+|-------|------|
+| Normal seawater | 1 |
+| Acidified seawater | 2 |
 
-UP TO HERE. CHeck that -1 is correct (will work if indexing starts at 1, but not if it starts at 0).
-Also why does below model sample more poorll than the next model
+To build the familiar **contrast** parameterisation (control mean + effect of treatment), subtract 1 from the code so the control maps to 0:
+
+$$
+\mu_i = \alpha + \beta_{\text{trt}} \times (\text{treatment}_i - 1)
+$$
+
+- $\alpha$ — the **control mean** (Normal seawater, when `treatment = 1`).
+- $\beta_{\text{trt}}$ — the **acidification effect**: how much the mean shifts for acidified fish.
+
+If $\beta_{\text{trt}}$'s 95% CI clearly excludes 0, acidification credibly shifts the response.
+
+## The model
 
 ```
 model {
   for (i in 1:N) {
     time[i] ~ dnorm(mu[i], sigma)
-    mu[i] <- alpha + beta_trt * (treatment[i]-1)
+    mu[i] <- alpha + beta_trt * (treatment[i] - 1)
   }
-  alpha ~ dnorm(50, 50)
-   beta_trt ~ dnorm(0, 10)
-  sigma ~ dunif(0, 50)
+  alpha    ~ dnorm(50, 50)
+  beta_trt ~ dnorm(0, 100)
+  sigma    ~ dunif(0, 100)
 }
 ```
-
-## improving the sampling by coding the factor as a design matrix
-
-Make the point that this improves seampling, explain why, but it will also change the interpretation of the parameters. 
-
-```
-model {
-  for (i in 1:N) {
-    time[i] ~ dnorm(mu[i], sigma)
-    mu[i] <- beta_trt[treatment[i]]
-  }
-  for (j in 1:2) {
-    beta_trt[j] ~ dnorm(0, 10)
-  }
-  sigma ~ dunif(0, 50)
-}
-```
-
-
-## Coding a 2-level factor as a design matrix 
-
-
-A categorical predictor enters the model through a **design matrix**. With two levels we use a single **0/1 indicator**:
-
-| Treatment | indicator `trt` |
-|-----------|-----------------|
-| Control   | 0 |
-| Acidified | 1 |
-
-$$
-y_i = \alpha + \beta\,\text{trt}_i
-$$
-
-- $\alpha$ — the **control** mean (when `trt = 0`).
-- $\beta$ — the **difference** for acidified fish (the treatment effect).
-
-If $\beta$'s 95% CI excludes 0, acidification credibly shifts the response.
-
 
 ## Your task
 
-Fit the single-factor model to `oa-study.csv` and check your posterior means for
-the control mean $\alpha$ and the acidification effect.
+1. Load `clownfish-oa.csv` into FANGS. Set `y = time` and `x = treatment`.
+2. Copy the model above into the editor and run it (4 chains, 2000 samples).
+3. Inspect the **Trace** and **Summary** tabs to check convergence (R-hat ≈ 1, ESS > 400).
+4. Read the posterior mean and 95% CI for `alpha` and `beta_trt` from the Summary tab.
+5. Enter those values in the challenge below to complete the module.
+
+::: callout-tip
+Look at the **Predictions** tab after fitting. The two groups should stand out clearly, and the model's posterior mean and 95% CI for each group will be overlaid on the data.
+:::
+
+## Interpreting the result
+
+Once the model has converged, ask yourself:
+
+- Does the 95% CI for `beta_trt` include 0? If not, there is strong evidence that acidification changes behaviour.
+- How large is the effect relative to the control mean `alpha`? Is this biologically meaningful?
+- Does the **PPC** tab show that the model's simulations look like the real data?
+
+## Further reading
+
+- **Ocean acidification and fish behaviour** — Dixson, D.L., Munday, P.L. & Jones, G.P. (2010). Ocean acidification disrupts the innate ability of fish to detect predator olfactory cues. *Ecology Letters*, 13(1), 68–75. <https://doi.org/10.1111/j.1461-0248.2009.01400.x>
+
+- **Regression and design matrices** — Gelman, A. & Hill, J. (2006). *Data Analysis Using Regression and Multilevel/Hierarchical Models*. Cambridge University Press. A thorough treatment of factor coding and contrast parameterisations in Chapter 3–4.
+
+- **Bayesian workflow** — Gelman, A., Vehtari, A., Simpson, D., et al. (2020). Bayesian workflow. *arXiv*:2011.01808. <https://arxiv.org/abs/2011.01808>

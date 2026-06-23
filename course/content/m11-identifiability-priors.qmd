@@ -109,7 +109,13 @@ The case-study here was pretty clear cut example of non-identifiability. In prac
 
 Looking for prior evidence to inform your priors may then help break symmetries and identify what the data cannot.
 
-Another option is pen and paper work to re-write your model to reduce the number of parameters. Pay careful attention to those parameters with badly behave traces, high Rhat values, low ESS and strong correlations with other parameters. 
+Another option is pen and paper work to re-write your model to reduce the number of parameters. Pay careful attention to those parameters with badly behaved traces, high R-hat values, low ESS and strong correlations with other parameters.
 
+## Further reading
 
+- **R-hat and ESS** — Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. & Bürkner, P.-C. (2021). Rank-normalization, folding, and localization: An improved $\hat{R}$ for assessing convergence of MCMC. *Bayesian Analysis*, 16(2), 667–718. <https://doi.org/10.1214/20-BA1221>
+
+- **Identifiability in Bayesian models** — Gelman, A., Carlin, J.B., Stern, H.S., Dunson, D.B., Vehtari, A. & Rubin, D.B. (2013). *Bayesian Data Analysis* (3rd ed.), Chapter 4. Chapman & Hall/CRC. Covers parameter identifiability and the role of priors in resolving it.
+
+- **Bayesian workflow** — Gelman, A., Vehtari, A., Simpson, D., et al. (2020). Bayesian workflow. *arXiv*:2011.01808. <https://arxiv.org/abs/2011.01808> — Section 7 discusses identifiability and prior choices as part of the modelling cycle.
 
