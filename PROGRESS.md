@@ -52,30 +52,27 @@ All core modules are implemented and 253 tests pass.
 - Check prediction tab with categorical predictors, should be fixed now? 
 - Check: Increase font size for 'Predictors auto-scaled for sampling' message
 - CHeck: Fix bug with syntax error. We get a pop-up and error message. However the model code text then shows a duplicate of the code overlaid the window with teh model box, so it is hard to edit the model. This disappears if you refresh, but then you lose edits to th emodel. 
-
 - Look into bug when you stop a chain partway. It keeps running, then won't restart when you hit starta gain. 
 - What happens if fixed factor variable has 3 or more levels? how does it handle that? - probably needs dummy encoding, or do like this beta[group[i]]. Do some more tests and then update course modules appropriately. 
-- Add figures from benchmark.R on timing from tests/results to the paper
 - test poisson gamma 
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper. I think there are still some mentions of conjugates
 - Confirm number of tests is what is said in the paper
 - Edits to help files
 - Confirm ESS and Rhat equations in help and JS code
-- test app performance interactively
 - edit pop-ups and help pages
 - Add a writing style and update the help pages. 
 - nimble tests covering conjugate and non conjugate dists
 - tests with x on different scales, mv X
-- Get rid of predictions page. Could replace with custom code parser to make predictions? 
 
 ### User course todo
-Have re-written modules M03 to M10. Need to continue working on M12. 
+Have re-written modules M03 to M11. Need to continue working on M12. 
+Check how fangs encodes factor varaibles
 Add references. 
+Edit M00
 
 
 ### Claude todo
-- Work on modules M11 and M12
 - Add references and explanation to Module. M11/12 Make it more of a story. based on this OA example from: Munday et al. 2009, PNAS https://www.pnas.org/doi/abs/10.1073/pnas.1004519107. Replication failure: Clark et al. 2020, Nature. https://www.nature.com/articles/s41586-019-1903-y
 -  If Munday had used an informed prior centered on 0 (shrinkage prior) they would not have made such an outrageous claim of effect size. 
 - add references for books to the course in appropriate places. 

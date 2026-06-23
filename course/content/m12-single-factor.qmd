@@ -62,6 +62,3 @@ Once the model has converged, ask yourself:
 
 - **Ocean acidification and fish behaviour** — Dixson, D.L., Munday, P.L. & Jones, G.P. (2010). Ocean acidification disrupts the innate ability of fish to detect predator olfactory cues. *Ecology Letters*, 13(1), 68–75. <https://doi.org/10.1111/j.1461-0248.2009.01400.x>
 
-- **Regression and design matrices** — Gelman, A. & Hill, J. (2006). *Data Analysis Using Regression and Multilevel/Hierarchical Models*. Cambridge University Press. A thorough treatment of factor coding and contrast parameterisations in Chapter 3–4.
-
-- **Bayesian workflow** — Gelman, A., Vehtari, A., Simpson, D., et al. (2020). Bayesian workflow. *arXiv*:2011.01808. <https://arxiv.org/abs/2011.01808>
