@@ -540,9 +540,42 @@ export const COURSE_CONTENT = {
 </ul>
 <p>There is <strong>no separate coefficient for A</strong> — it is absorbed into the intercept. That is why <span class="math inline">\\(k\\)</span> levels need <span class="math inline">\\(k-1\\)</span> indicator columns.</p>
 <h2>In FANGS</h2>
-<p>If your CSV has a text <code>site</code> column, FANGS encodes it to integers; you can build the indicators in the model, or use a coefficient vector indexed by site. The key idea to take away is <em>what each coefficient means relative to the reference</em>.</p>
+<p>If your CSV has a text <code>site</code> column with levels <code>A</code>, <code>B</code>, <code>C</code>, FANGS encodes it to integers automatically, using the order of first appearance:</p>
+<table>
+<thead><tr><th>Level</th><th>Code</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>1</td></tr>
+<tr><td>B</td><td>2</td></tr>
+<tr><td>C</td><td>3</td></tr>
+</tbody>
+</table>
+<p>You could build the <code>is_B</code>/<code>is_C</code> indicator columns yourself, but FANGS already hands you the integer codes — so there is a neater way to write the model.</p>
+<h2>Alternative parameterisation: index a coefficient vector</h2>
+<p>Instead of one intercept plus contrasts, give <strong>each site its own coefficient</strong> and let FANGS's integer code pick the right one for each row. Because <code>site[i]</code> is <code>1</code>, <code>2</code>, or <code>3</code>, the expression <code>gamma[site[i]]</code> selects <code>gamma[1]</code>, <code>gamma[2]</code>, or <code>gamma[3]</code>:</p>
+<div class="math display">\\[\\text{logit}(p_i) = \\gamma_{\\,\\text{site}_i}\\]</div>
+<pre><code>model {
+  for (i in 1:N) {
+    present[i] ~ dbern(p[i])
+    logit(p[i]) &lt;- gamma[site[i]]
+  }
+  for (k in 1:3) {
+    gamma[k] ~ dnorm(0, 10)
+  }
+}</code></pre>
+<p>This is the <strong>means (cell-means) parameterisation</strong>: each <span class="math inline">\\(\\gamma_k\\)</span> is the log-odds of presence <strong>at that site directly</strong>, with no reference level. It maps back to the dummy coding exactly:</p>
+<ul>
+<li><span class="math inline">\\(\\gamma_1 = \\alpha\\)</span> — the reference site A.</li>
+<li><span class="math inline">\\(\\gamma_2 - \\gamma_1 = \\beta_2\\)</span> — the B-vs-A contrast.</li>
+<li><span class="math inline">\\(\\gamma_3 - \\gamma_1 = \\beta_3\\)</span> — the C-vs-A contrast.</li>
+</ul>
+<p>The two models fit the same data and give the same predicted probabilities; they just package the three numbers differently. Index coding is handy when you care about <strong>each level's value on its own</strong> (and it scales to many levels without writing an indicator column for each). Reference coding is handy when you care about <strong>differences from a baseline</strong>, because the contrasts come straight out of the summary table with their own credible intervals.</p>
+<p>::: callout-tip The <code>for (k in 1:3)</code> loop assigns the same prior to every site. Set the loop bound (here <code>3</code>) to the number of levels in your factor — FANGS reports the levels it found when you load the data. :::</p>
 <h2>Your task</h2>
-<p>Fit the 3-level model to <code>presence.csv</code> and check the reference log-odds <span class="math inline">\\(\\alpha\\)</span> and the two contrasts <span class="math inline">\\(\\beta_2\\)</span>, <span class="math inline">\\(\\beta_3\\)</span>. Make sure you can say which site each one compares against.</p>`,
+<p>Fit the 3-level model to <code>presence.csv</code>. Try it <strong>both ways</strong>:</p>
+<ol>
+<li><strong>Reference coding</strong> — read off the reference log-odds <span class="math inline">\\(\\alpha\\)</span> and the contrasts <span class="math inline">\\(\\beta_2\\)</span>, <span class="math inline">\\(\\beta_3\\)</span>, and say which site each contrast compares against.</li>
+<li><strong>Index coding</strong> — fit the <code>gamma[site[i]]</code> model above and confirm that <span class="math inline">\\(\\gamma_1 \\approx \\alpha\\)</span>, <span class="math inline">\\(\\gamma_2 - \\gamma_1 \\approx \\beta_2\\)</span>, and <span class="math inline">\\(\\gamma_3 - \\gamma_1 \\approx \\beta_3\\)</span>.</li>
+</ol>`,
   'm18-random-effects-concept': `<h1>The idea of random effects</h1>
 <p>You sampled fish at <strong>12 reefs</strong>. Reefs differ, and observations from the same reef are more alike than observations from different reefs. Ignoring that structure underestimates your uncertainty. <strong>Random effects</strong> handle it.</p>
 <h2>Three ways to treat groups</h2>

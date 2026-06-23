@@ -28,12 +28,65 @@ That is why $k$ levels need $k-1$ indicator columns.
 
 ## In FANGS
 
-If your CSV has a text `site` column, FANGS encodes it to integers; you can build
-the indicators in the model, or use a coefficient vector indexed by site. The key
-idea to take away is *what each coefficient means relative to the reference*.
+If your CSV has a text `site` column with levels `A`, `B`, `C`, FANGS encodes it
+to integers automatically, using the order of first appearance:
+
+| Level | Code |
+|-------|------|
+| A | 1 |
+| B | 2 |
+| C | 3 |
+
+You could build the `is_B`/`is_C` indicator columns yourself, but FANGS already
+hands you the integer codes — so there is a neater way to write the model.
+
+## Alternative parameterisation: index a coefficient vector
+
+Instead of one intercept plus contrasts, give **each site its own coefficient**
+and let FANGS's integer code pick the right one for each row. Because `site[i]`
+is `1`, `2`, or `3`, the expression `gamma[site[i]]` selects `gamma[1]`,
+`gamma[2]`, or `gamma[3]`:
+
+$$
+\text{logit}(p_i) = \gamma_{\,\text{site}_i}
+$$
+
+```
+model {
+  for (i in 1:N) {
+    present[i] ~ dbern(p[i])
+    logit(p[i]) <- gamma[site[i]]
+  }
+  for (k in 1:3) {
+    gamma[k] ~ dnorm(0, 10)
+  }
+}
+```
+
+This is the **means (cell-means) parameterisation**: each $\gamma_k$ is the
+log-odds of presence **at that site directly**, with no reference level. It maps
+back to the dummy coding exactly:
+
+- $\gamma_1 = \alpha$ — the reference site A.
+- $\gamma_2 - \gamma_1 = \beta_2$ — the B-vs-A contrast.
+- $\gamma_3 - \gamma_1 = \beta_3$ — the C-vs-A contrast.
+
+The two models fit the same data and give the same predicted probabilities; they
+just package the three numbers differently. Index coding is handy when you care
+about **each level's value on its own** (and it scales to many levels without
+writing an indicator column for each). Reference coding is handy when you care
+about **differences from a baseline**, because the contrasts come straight out of
+the summary table with their own credible intervals.
+
+::: callout-tip
+The `for (k in 1:3)` loop assigns the same prior to every site. Set the loop
+bound (here `3`) to the number of levels in your factor — FANGS reports the
+levels it found when you load the data.
+:::
 
 ## Your task
 
-Fit the 3-level model to `presence.csv` and check the reference log-odds $\alpha$
-and the two contrasts $\beta_2$, $\beta_3$. Make sure you can say which site each
-one compares against.
+Fit the 3-level model to `presence.csv`. Try it **both ways**:
+
+1. **Reference coding** — read off the reference log-odds $\alpha$ and the contrasts $\beta_2$, $\beta_3$, and say which site each contrast compares against.
+2. **Index coding** — fit the `gamma[site[i]]` model above and confirm that $\gamma_1 \approx \alpha$, $\gamma_2 - \gamma_1 \approx \beta_2$, and $\gamma_3 - \gamma_1 \approx \beta_3$.
