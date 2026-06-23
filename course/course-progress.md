@@ -1,6 +1,6 @@
 # Course Build Progress
 
-_Last updated: 2026-06-19 (dataset alignment, M1–M9 rewrite, M3 sampler slowdown)_
+_Last updated: 2026-06-23 (M11–M12 content rewrite, M13 prior-comparison module, M12 reference posteriors pinned)_
 
 ## Summary
 
@@ -41,37 +41,42 @@ The course scaffold is **fully implemented** across all 21 modules. Infrastructu
 
 All 21 `.qmd` files are authored and rendered to `content/_rendered/`:
 
-| Session | Module | Title |
-|---------|--------|-------|
-| S1 | M1 | Bayes' theorem with discrete models |
-| S1 | M2 | Bayes for a continuous parameter (MAP) |
-| S1 | M3 | Sampling the posterior with MCMC |
-| S2 | M4 | Writing models in BUGS/JAGS syntax |
-| S2 | M5 | Fit your first model in FANGS |
-| S2 | M6 | Choosing a prior for σ |
-| S2 | M7 | Prior predictive checks |
-| S3 | M8 | Gaussian regression: jaw length ~ body length |
-| S3 | M9 | Posterior predictive checks |
-| S3 | M10 | MCMC diagnostics: R-hat & ESS |
-| S4 | M11 | Single-factor linear model & the design matrix |
-| S4 | M12 | Comparing priors with the OA study |
-| S5 | M13 | Poisson regression with a log link |
-| S5 | M14 | Poisson with two factors |
-| S5 | M15 | Binomial regression with a logit link |
-| S5 | M16 | Binomial with a 3-level factor |
-| S6 | M17 | The idea of random effects |
-| S6 | M18 | Fit a random-effects model |
-| S6 | M19 | Improving sampling: priors & reparameterisation |
-| S6 | M20 | Model choice, priors & identifiability |
-| S6 | M21 | Summative challenge: multi-factor Poisson with random effects |
+| Session | Module | Title | Reference posteriors |
+|---------|--------|-------|----------------------|
+| S1 | M1 | Bayes' theorem with discrete models | N/A (embedded) |
+| S1 | M2 | Bayes for a continuous parameter (MAP) | N/A (embedded) |
+| S1 | M3 | Sampling the posterior with MCMC | N/A (embedded) |
+| S2 | M4 | Writing models in BUGS/JAGS syntax | N/A (syntax check) |
+| S2 | M5 | Fit your first model in FANGS | ✅ Pinned |
+| S2 | M6 | Choosing a prior for σ | ✅ Pinned (recorder) |
+| S2 | M7 | Prior predictive checks | ✅ Pinned (quiz) |
+| S3 | M8 | Gaussian regression: jaw length ~ body length | ✅ Pinned |
+| S3 | M9 | Posterior predictive checks | ✅ Pinned (quiz) |
+| S3 | M10 | MCMC diagnostics: R-hat & ESS | ✅ Pinned (quiz) |
+| S3 | M11 | Identifiability & bad ESS/R-hat: a case study | N/A (recorder) |
+| S4 | M12 | Single-factor linear model & the design matrix | ✅ Pinned |
+| S4 | M13 | Comparing priors with the OA study | N/A (recorder) |
+| S5 | M14 | Poisson regression with a log link | ⚠️ Self-report (zeros) |
+| S5 | M15 | Poisson with two factors | ⚠️ Self-report (zeros) |
+| S5 | M16 | Binomial regression with a logit link | ⚠️ Self-report (zeros) |
+| S5 | M17 | Binomial with a 3-level factor | ⚠️ Self-report (zeros) |
+| S6 | M18 | The idea of random effects | N/A (quiz) |
+| S6 | M19 | Fit a random-effects model | ⚠️ Self-report (zeros) |
+| S6 | M20 | Improving sampling: priors & reparameterisation | N/A (recorder) |
+| S6 | M21 | Summative challenge: multi-factor Poisson with random effects | ⚠️ Self-report (zeros) |
 
 The `course-bundle.js` fallback (for `file://` mode) is also committed.
 
 ### Datasets
 
-| File | Status |
-|------|--------|
-| `course/data/fish-lengths.csv` | ✅ Supplied (frogfish morphology: `Tree_name`, `Standard_length`, `Lower_jaw_length`, `Mouth_width`) |
+| File | Status | Used by |
+|------|--------|---------|
+| `course/data/fish-lengths.csv` | ✅ Present | M5, M6, M7 |
+| `course/data/clownfish-oa.csv` | ✅ Present | M12, M13 |
+| `course/data/fish-counts.csv` | ✅ Present | M14, M15 |
+| `course/data/random-effects.csv` | ✅ Present | M19, M21 |
+| `course/data/jaw-length.csv` | ❌ Missing | M8, M9 |
+| `course/data/presence.csv` | ❌ Missing | M16, M17 |
 
 ---
 
@@ -79,36 +84,29 @@ The `course-bundle.js` fallback (for `file://` mode) is also committed.
 
 ### Module updates
 
-Add M00 - An initial module that is an introduction to the course, including the recommendation to use a desktop or a large screen over a mobile, how FANGS was made etc... (draw on the 'About' page). 
-Add a further reading page. Note, include bayesian workflow paper, among others... 
-
-M04 - add three tabs with three syntax challenges. Make them a little bit more complex, such that the student has to complete more syntax. 
-
-M07 - Use a challenge like in M06, where the user has to enter Means and 95% CIs for `alpha` for different priors, but this time from the 'Prior check' tab
-
-M08 - Add a task to run some models that will have bad mixing. 
-
+- **M00** — Add intro module: desktop/large-screen recommendation, how FANGS was made (draw on 'About' page).
+- **Further reading page** — Include Bayesian workflow paper, McElreath, NIMBLE docs, etc.
+- **M04** — Add three tabs with more complex syntax challenges requiring students to complete more of the syntax themselves.
+- **M07** — Add a challenge like M06 where students enter prior predictive means and 95% CIs for `alpha` under different priors, from the 'Prior check' tab.
+- **M08** — Add a task to run models with bad mixing as a teaching example.
+- **Cross-linking** — Link related concepts across modules.
 
 ### Missing reference posterior values
 
-All `answer-check` modules in `modules.js` have placeholder zeros in their `config.params`:
+Modules below are in self-report mode (accept any number). To pin them, load the dataset in FANGS (or run the R reference script), read posterior means + 95% CIs from the Summary tab, and paste into `modules.js` `config.params`.
 
-```js
-{ name: 'alpha', label: 'Mean length α', mean: 0, ci: [0, 0], tol: 0.5 }
-```
+| Module | Dataset | Parameters needed |
+|--------|---------|-------------------|
+| M14 | `fish-counts.csv` | `alpha`, `beta` (log scale) |
+| M15 | `fish-counts.csv` | `alpha`, `beta_a`, `beta_b` |
+| M16 | `presence.csv` ❌ missing | `alpha`, `beta` (logit scale) |
+| M17 | `presence.csv` ❌ missing | `alpha`, `beta_2`, `beta_3` |
+| M19 | `random-effects.csv` | `alpha`, `beta`, `sigma.b` |
+| M21 | `random-effects.csv` | `alpha`, `beta_a`, `beta_b`, `sigma.b` |
 
-For each FANGS module, the author needs to:
-1. Load the dataset into FANGS (or run the matching R reference script)
-2. Read the posterior means and 95% CIs from the Summary tab
-3. Paste the real values into `modules.js`
+### Missing datasets
 
-Modules left to-do: **M11, M13, M14, M15, M16, M18, M21**
-
-Until these are filled in, those challenges fall back to self-report mode (they accept any number and mark the student done).
-
-**Status: still open.** Requires running the models (R/NIMBLE or FANGS), which
-needs resources not available in the automated environment. Placeholders left in
-place; self-report mode remains the fallback.
+Before M16/M17 can be completed, `presence.csv` and `jaw-length.csv` need to be created and added to `course/data/`. See dataset table above.
 
 
 ### Verification not yet done

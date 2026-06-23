@@ -2,7 +2,7 @@
 
 ## Status: Fully Working
 
-All core modules are implemented and 253 tests pass.
+All core modules are implemented and 275 tests pass.
 
 ### Source files (`src/`)
 
@@ -26,7 +26,7 @@ All core modules are implemented and 253 tests pass.
 | `ui/settings.js` | Sampler settings panel (chains, samples, burn-in, thin) |
 | `ui/data-table.js` | CSV data preview (max 200 rows) |
 | `ui/popups.js` | Educational popup system; fetch from `_rendered/` with `popups-bundle.js` fallback for `file://` |
-| `content/popups/*.qmd` | 17 Quarto source files; build with `npm run build:popups` |
+| `content/popups/*.qmd` | 21 Quarto source files; build with `npm run build:popups` |
 | `utils/distributions.js` | Log-densities and samplers for all supported distributions |
 | `utils/math.js` | Statistical math helpers |
 | `utils/diagnostics.js` | Rhat, ESS, convergence checks |
@@ -35,12 +35,15 @@ All core modules are implemented and 253 tests pass.
 
 | File | Notes |
 |------|-------|
-| `parser.test.js` | 148 tests — parser and lexer |
+| `parser.test.js` | 74 tests — parser and lexer |
 | `distributions.test.js` | 92 tests — all log-density and sampler functions |
-| `integration.test.js` | ~241 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM, logit-link GLM; fixture comparison vs NIMBLE reference for all four model types |
+| `integration.test.js` | 75 tests — linear model, mixed-effects, Poisson GLM, Bernoulli GLM, logit-link GLM; fixture comparison vs NIMBLE reference for all four model types |
+| `predictor-scaling.test.js` | 21 tests — internal predictor rescaling utilities |
+| `predictions-grid.test.js` | 4 tests — predictions tab grid logic |
+| `course-challenges.test.js` | 9 tests — course challenge widget logic |
 | `r-reference/*.R` | R/NIMBLE reference scripts; output to `tests/r-reference/results/` |
 
-**252 tests passing.**
+**275 tests passing (6 test files).**
 
 
 ---
@@ -64,17 +67,20 @@ All core modules are implemented and 253 tests pass.
 - Add a writing style and update the help pages. 
 - nimble tests covering conjugate and non conjugate dists
 - tests with x on different scales, mv X
+- Review paper draft, read whole thing. 
+- Check all references in paper
 
 ### User course todo
-Have re-written modules M03 to M11. Need to continue working on M12. 
-Check how fangs encodes factor varaibles
-Add references. 
-Edit M00
+- M12 and M13 content complete (clownfish-oa.csv, single-factor & prior-comparison); reference posteriors pinned for M12.
+- Add references to course modules.
+- Edit/add M00 intro module.
+- Pin reference posteriors for M14–M19, M21 (currently self-report mode).
+- Supply missing datasets: `jaw-length.csv` (M8–M9), `presence.csv` (M16–M17).
+- Check how FANGS encodes multi-level factor variables (3+ levels); update course modules accordingly.
 
 
 ### Claude todo
-- Add references and explanation to Module. M11/12 Make it more of a story. based on this OA example from: Munday et al. 2009, PNAS https://www.pnas.org/doi/abs/10.1073/pnas.1004519107. Replication failure: Clark et al. 2020, Nature. https://www.nature.com/articles/s41586-019-1903-y
--  If Munday had used an informed prior centered on 0 (shrinkage prior) they would not have made such an outrageous claim of effect size. 
+- Issue with prior check. when I run it for my clownfish-oa dataset the prior for alpha is centered on 20, which si the mean of the posterior. But I input a prior centered on 0, so that somehow the data is influencing hte prior check. Figure out how this happens and fix it. 
 - add references for books to the course in appropriate places. 
 - - McElreath, R. (2020). [*Statistical Rethinking: A Bayesian Course with Examples in R and Stan*](https://xcelab.net/rm/statistical-rethinking/) (2nd ed.). CRC Press.
 - de Valpine, P., Turek, D., Paciorek, C. J., Anderson-Bergman, C., Temple Lang, D., & Bodik, R. (2017). Programming with models: writing statistical algorithms for general model structures with NIMBLE. *Journal of Computational and Graphical Statistics*, 26(2), 403–413. [doi:10.1080/10618600.2016.1172487](https://doi.org/10.1080/10618600.2016.1172487)

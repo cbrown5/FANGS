@@ -292,10 +292,10 @@ course/
 |---------|---------|-------|
 | 1 | M1–M3 | Bayesian thinking from scratch (all embedded JS challenges) |
 | 2 | M4–M7 | First models in FANGS |
-| 3 | M8–M10 | Regression & model checking |
-| 4 | M11–M12 | Factors & design matrices |
-| 5 | M13–M16 | Generalised linear models (Poisson, Binomial) |
-| 6 | M17–M21 | Random effects, identifiability & summative challenge |
+| 3 | M8–M11 | Regression, model checking & diagnostics |
+| 4 | M12–M13 | Factors & prior sensitivity |
+| 5 | M14–M17 | Generalised linear models (Poisson, Binomial) |
+| 6 | M18–M21 | Random effects, identifiability & summative challenge |
 
 `[EMBEDDED]` modules use interactive JS widgets on the course page. `[FANGS]` modules have students work in the live app then verify via an `answer-check` widget.
 
@@ -326,11 +326,11 @@ User-supplied CSVs in `course/data/`. For each `answer-check` module, fit the mo
 
 | CSV | Used by modules | Status |
 |-----|----------------|--------|
-| `fish-lengths.csv` | M5, M6, M7 | present |
-| `jaw-length.csv` | M2, M8, M9 | missing |
-| `clownfish-oa.csv` | M11, M12 | present |
-| `fish-counts.csv` | M13, M14 | missing |
-| `presence.csv` | M15, M16 | missing |
-| `random-effects.csv` | M18, M20 | missing |
+| `fish-lengths.csv` | M5, M6, M7 | ✅ present |
+| `clownfish-oa.csv` | M12, M13 | ✅ present |
+| `fish-counts.csv` | M14, M15 | ✅ present |
+| `random-effects.csv` | M19, M21 | ✅ present |
+| `jaw-length.csv` | M8, M9 | ❌ missing |
+| `presence.csv` | M16, M17 | ❌ missing |
 
-Note: `clownfish-oa.csv` replaces the originally planned `oa-study.csv`. Four datasets still need to be added.
+Note: `clownfish-oa.csv` replaces the originally planned `oa-study.csv`. Two datasets still needed: `jaw-length.csv` and `presence.csv`.

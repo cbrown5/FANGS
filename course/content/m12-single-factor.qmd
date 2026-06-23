@@ -58,7 +58,20 @@ Once the model has converged, ask yourself:
 - How large is the effect relative to the control mean `alpha`? Is this biologically meaningful?
 - Does the **PPC** tab show that the model's simulations look like the real data?
 
+## Alternative parameterisation for two groups
+
+The above model is the most common way to parameterise a two-group comparison. But it is also common to use dummy variables. In fact, other popular Bayesian software like `stan` and `NIMBLE` won't automatically encode text variables as integers like FANGS does. So you have to do it yourself. 
+
+Many statisticians would use what is called a dummy variable, a binary variable that is 0 for the control group and 1 for the treatment group. 
+
+The dataset also includes a dummy variable `is_OA`. You can try it, just replace your linear equation with: 
+
+```
+  mu[i] <- alpha + beta_trt * is_OA[i]
+```
+
+You should get the same results as before. 
+
 ## Further reading
 
-- **Ocean acidification and fish behaviour** — Dixson, D.L., Munday, P.L. & Jones, G.P. (2010). Ocean acidification disrupts the innate ability of fish to detect predator olfactory cues. *Ecology Letters*, 13(1), 68–75. <https://doi.org/10.1111/j.1461-0248.2009.01400.x>
-
+P.L. Munday, D.L. Dixson, M.I. McCormick, M. Meekan, M.C.O. Ferrari, & D.P. Chivers, Replenishment of fish populations is threatened by ocean acidification, Proc. Natl. Acad. Sci. U.S.A. 107 (29) 12930-12934, https://doi.org/10.1073/pnas.1004519107 (2010). 
