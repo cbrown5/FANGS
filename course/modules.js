@@ -392,15 +392,19 @@ export const MODULES = [
   },
   {
     id: 'm21-summative', session: 's6', num: 21,
-    title: 'Summative challenge: multi-factor Poisson with random effects', mode: 'fangs',
+    title: 'Summative challenge: coral cover, logging & random effects', mode: 'fangs',
     challenge: 'answer-check',
     config: {
+      // random-effects.csv: cover (per-cent branching Acropora) ~ dist_to_logging_km
+      // + flow (Strong=1 reference, Mild=2) + random intercept per site.
+      // Poisson with log link; multiple transects per site. Reference values still
+      // to be filled in — runs in self-report mode until then.
       dataset: 'random-effects.csv',
       params: [
-        { name: 'alpha',   label: 'Intercept α',     mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'beta_a',  label: 'Factor A effect', mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'beta_b',  label: 'Factor B effect', mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'sigma.b', label: 'Group SD σ_b',    mean: 0, ci: [0, 0], tol: 0.5 },
+        { name: 'alpha',     label: 'Intercept α (log scale)',           mean: 0, ci: [0, 0], tol: 0.4 },
+        { name: 'beta',      label: 'Distance slope β (log scale)',       mean: 0, ci: [0, 0], tol: 0.3 },
+        { name: 'beta_flow', label: 'Mild-flow effect β_flow (log scale)', mean: 0, ci: [0, 0], tol: 0.4 },
+        { name: 'sigma.b',   label: 'Site SD σ_b',                        mean: 0, ci: [0, 0], tol: 0.5 },
       ],
     },
   },
