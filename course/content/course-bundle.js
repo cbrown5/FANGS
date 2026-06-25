@@ -4,6 +4,11 @@
 // This bundle is a fallback for when fetch() is unavailable (e.g. file:// protocol).
 
 export const COURSE_CONTENT = {
+  'm00-getting-started': `<h1>Getting started </h1>
+<h2>Further reading</h2>
+<ul>
+<li><strong>Bayesian workflow</strong> — Gelman, A., Vehtari, A., Simpson, D., et al. (2020). Bayesian workflow. <em>arXiv</em>:2011.01808. &lt;https://arxiv.org/abs/2011.01808&gt; — Section 7 discusses identifiability and prior choices as part of the modelling cycle.</li>
+</ul>`,
   'm01-discrete-bayes': `<h1>Bayes' theorem with discrete models</h1>
 <p>Bayesian inference works on the idea of <strong>starting with what you already believe, then updating those beliefs in proportion to how well the new data fit your model.</strong></p>
 <p>You begin with a belief held <em>before</em> the data arrive — the <strong>prior</strong>. You ask how well each explanation accounts for what you saw — the <strong>likelihood</strong>. Multiply the two, tidy up so the numbers add to one, and you have your belief <em>after</em> the data — the <strong>posterior</strong>.</p>
@@ -371,20 +376,10 @@ export const COURSE_CONTENT = {
 <p>You have not added any data. You have simply supplied <strong>external information</strong> about one parameter. The new information was enough to make the whole model sample cleanly.</p>
 <h2>The key idea</h2>
 <p>&gt; A model that looks hopeless to a likelihood-only analysis — because the data &gt; alone cannot identify every parameter — can be **perfectly usable in a Bayesian &gt; analysis** when you bring genuine prior information to the unidentified parts.</p>
-<p>But be careful because the result is becoming increasingly dependent on the prior you chose for <code>alpha2</code>. That is fine if the prior reflects real knowledge, and dishonest if you tightened it just to make the sampler behave. Be transparent about where the information came from and what parts of the model are informed by data vs. priors. </p>
+<p>But be careful because the result is becoming increasingly dependent on the prior you chose for <code>alpha2</code>. That is fine if the prior reflects real knowledge. You should always be transparent about where the information came from and what parts of the model are informed by data vs. priors. </p>
 <p>The case-study here was pretty clear cut example of non-identifiability. In practice, the issues are often more subtle and harder to diagnose. But the same principles apply: look for clues in the diagnostics like poor sampler performance and correlations among samples for different parameters. </p>
 <p>Looking for prior evidence to inform your priors may then help break symmetries and identify what the data cannot.</p>
-<p>Another option is pen and paper work to re-write your model to reduce the number of parameters. Pay careful attention to those parameters with badly behaved traces, high R-hat values, low ESS and strong correlations with other parameters.</p>
-<h2>Further reading</h2>
-<ul>
-<li><strong>R-hat and ESS</strong> — Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. &amp; Bürkner, P.-C. (2021). Rank-normalization, folding, and localization: An improved <span class="math inline">\\(\\hat{R}\\)</span> for assessing convergence of MCMC. <em>Bayesian Analysis</em>, 16(2), 667–718. &lt;https://doi.org/10.1214/20-BA1221&gt;</li>
-</ul>
-<ul>
-<li><strong>Identifiability in Bayesian models</strong> — Gelman, A., Carlin, J.B., Stern, H.S., Dunson, D.B., Vehtari, A. &amp; Rubin, D.B. (2013). <em>Bayesian Data Analysis</em> (3rd ed.), Chapter 4. Chapman &amp; Hall/CRC. Covers parameter identifiability and the role of priors in resolving it.</li>
-</ul>
-<ul>
-<li><strong>Bayesian workflow</strong> — Gelman, A., Vehtari, A., Simpson, D., et al. (2020). Bayesian workflow. <em>arXiv</em>:2011.01808. &lt;https://arxiv.org/abs/2011.01808&gt; — Section 7 discusses identifiability and prior choices as part of the modelling cycle.</li>
-</ul>`,
+<p>Another option is pen and paper work to re-write your model to reduce the number of parameters. Pay careful attention to those parameters with badly behaved traces, high R-hat values, low ESS and strong correlations with other parameters.</p>`,
   'm12-single-factor': `<h1>Single-factor linear model &amp; the design matrix</h1>
 <p>Many studies compare <strong>groups</strong>: control vs treatment, inshore vs offshore. Here we use an <strong>ocean-acidification (OA)</strong> experiment — clownfish reared in control vs acidified seawater — and ask whether acidification changes their behaviour around predator cues.</p>
 <p>In this experiment fish were given a choice to swim towards or away from a predator odour. The response variable is the time spent near the predator cue (seconds), and the predictor is the treatment (normal seawater vs acidified seawater).</p>
@@ -430,45 +425,77 @@ export const COURSE_CONTENT = {
 <li>How large is the effect relative to the control mean <code>alpha</code>? Is this biologically meaningful?</li>
 <li>Does the <strong>PPC</strong> tab show that the model's simulations look like the real data?</li>
 </ul>
+<h2>Alternative parameterisation for two groups</h2>
+<p>The above model is the most common way to parameterise a two-group comparison. But it is also common to use dummy variables. In fact, other popular Bayesian software like <code>stan</code> and <code>NIMBLE</code> won't automatically encode text variables as integers like FANGS does. So you have to do it yourself. </p>
+<p>Many statisticians would use what is called a dummy variable, a binary variable that is 0 for the control group and 1 for the treatment group. </p>
+<p>The dataset also includes a dummy variable <code>is_OA</code>. You can try it, just replace your linear equation with: </p>
+<pre><code>  mu[i] &lt;- alpha + beta_trt * is_OA[i]</code></pre>
+<p>You should get the same results as before. </p>
 <h2>Further reading</h2>
-<ul>
-<li><strong>Ocean acidification and fish behaviour</strong> — Dixson, D.L., Munday, P.L. &amp; Jones, G.P. (2010). Ocean acidification disrupts the innate ability of fish to detect predator olfactory cues. <em>Ecology Letters</em>, 13(1), 68–75. &lt;https://doi.org/10.1111/j.1461-0248.2009.01400.x&gt;</li>
-</ul>
-<ul>
-<li><strong>Regression and design matrices</strong> — Gelman, A. &amp; Hill, J. (2006). <em>Data Analysis Using Regression and Multilevel/Hierarchical Models</em>. Cambridge University Press. A thorough treatment of factor coding and contrast parameterisations in Chapter 3–4.</li>
-</ul>
-<ul>
-<li><strong>Bayesian workflow</strong> — Gelman, A., Vehtari, A., Simpson, D., et al. (2020). Bayesian workflow. <em>arXiv</em>:2011.01808. &lt;https://arxiv.org/abs/2011.01808&gt;</li>
-</ul>`,
-  'm13-prior-comparison': `<h1>Comparing priors with the OA study</h1>
-<p>How much does your prior on the <strong>treatment effect</strong> change the conclusion? With a small experiment, it can matter — so let's measure it instead of guessing.</p>
-<h2>The experiment</h2>
-<p>Refit the OA model from the previous module several times, changing <strong>only</strong> the prior on the acidification effect <code>beta_trt</code>. For example:</p>
-<ul>
-<li>Vague:   <code>beta_trt ~ dnorm(0, 100)</code></li>
-<li>Weakly informative: <code>beta_trt ~ dnorm(0, 5)</code></li>
-<li>Sceptical (shrinks toward no effect): <code>beta_trt ~ dnorm(0, 1)</code></li>
-</ul>
-<p>Keep everything else identical.</p>
-<h2>What to watch</h2>
-<ul>
-<li>Does the <strong>posterior mean</strong> of the effect move?</li>
-<li>Does the <strong>95% CI</strong> widen or shift across 0?</li>
-<li>A conclusion that flips with a reasonable prior is <strong>fragile</strong> and worth</li>
-</ul>
-<p>  flagging; one that holds across priors is <strong>robust</strong>.</p>
-<h2>Recording in the browser</h2>
-<p>Use the recorder below — it saves your runs <strong>in your browser</strong> (no account needed) and exports a <strong>CSV</strong> so the room can compare. This answers a common question: yes, you can log and download results entirely client-side.</p>
+<p>P.L. Munday, D.L. Dixson, M.I. McCormick, M. Meekan, M.C.O. Ferrari, &amp; D.P. Chivers, Replenishment of fish populations is threatened by ocean acidification, Proc. Natl. Acad. Sci. U.S.A. 107 (29) 12930-12934, https://doi.org/10.1073/pnas.1004519107 (2010). </p>`,
+  'm13-prior-comparison': `<h1>Does the conclusion depend on the prior?</h1>
+<p>In Module 12 you fitted a Bayesian model to the clownfish OA data and estimated the acidification effect <code>beta_trt</code>. Now let's look at <strong>how sensitive the effect size is to the choice of prior?</strong></p>
+<h2>The story behind these data</h2>
+<p>Munday et al. (2010) reported that ocean acidification dramatically altered the olfactory behaviour of larval clownfish — a striking result published in <em>PNAS</em>. The effect size was large and acidified fish behaved maladaptively by swimming towards, rather than away from, water that smelled of predator fish. </p>
+<p>The problem is that there is no known biological mechanism by which changes in seawater pH would affect olfaction in fish. The study's claim was extraordinary.</p>
+<p>When Clark et al. (2020) attempted to replicate the many studies looking at how OA affects fish behaviour they found no effect in almost all cases. Even when they did find an effect it was much weaker than reported in the original studies. </p>
+<p>UP to here, cite Bern fallacy</p>
+<p>Bernoulli's Fallacy</p>
+<p>Pub Date: November 2022</p>
+<p>ISBN: 9780231199957</p>
+<p>368 Pages</p>
+<p>Format: Paperback</p>
+<p>List Price: $26.95£22.00 Add To Cart</p>
+<p>Pub Date: August 2021</p>
+<p>ISBN: 9780231199940</p>
+<p>368 Pages</p>
+<p>Format: Hardcover</p>
+<p>List Price: $37.95£32.00 Add To Cart</p>
+<p>Pub Date: August 2021</p>
+<p>ISBN: 9780231553353</p>
+<p>368 Pages</p>
+<p>Format: E-book</p>
+<p>List Price: $25.99£22.00 Get the E-Book Bernoulli's Fallacy</p>
+<p>Statistical Illogic and the Crisis of Modern Science</p>
+<p>Aubrey Clayton</p>
+<p>Columbia University Press</p>
+<p>The literature is full of studies that are a chance product of a small experiments. Extreme results are surprising and easier to publish. But that trend has left us with the replication crisis where many effects fail to be detected in follow-up replication studies. </p>
+<p>This is where Bayesian priors become more than a technicality. A <strong>shrinkage prior</strong> centred on zero reflects genuine scientific uncertainty: we have no reason to expect a large effect, so we should not start the analysis assuming one is plausible. Had Munday et al. used a sceptical prior, the data alone would not have been strong enough to push the posterior to an extreme conclusion.</p>
+<h2>Three priors to try</h2>
+<p>Keep the model from Module 12 exactly as-is, but change the prior on <code>beta_trt</code>:</p>
+<table>
+<thead><tr><th>Prior</th><th>BUGS line</th><th>What it encodes</th></tr></thead>
+<tbody>
+<tr><td>Vague</td><td><code>beta_trt ~ dnorm(0, 100)</code></td><td>Almost no constraint — very large effects are plausible</td></tr>
+<tr><td>Weakly informative</td><td><code>beta_trt ~ dnorm(0, 5)</code></td><td>Effect likely within ±10 seconds</td></tr>
+<tr><td>Sceptical (shrinkage)</td><td><code>beta_trt ~ dnorm(0, 1)</code></td><td>No strong prior expectation of any effect</td></tr>
+</tbody>
+</table>
+<p>For context, the control mean <code>alpha</code> is around 20 seconds, so a <code>beta_trt</code> of 100 seconds would mean acidified fish spent five times longer near the predator cue. The vague prior sees nothing wrong with that. The sceptical prior does.</p>
 <h2>Your task</h2>
-<p>Run the model under at least two priors and record each result. Discuss: is the acidification effect robust to the prior?</p>`,
+<ol>
+<li>Start with the model from Module 12 (still in FANGS if you haven't closed the tab).</li>
+<li>Run the model <strong>three times</strong> — once per prior row above — and record the posterior mean and 95% CI for <code>beta_trt</code> each time.</li>
+<li>Enter your results in the recorder below.</li>
+</ol>
+<p>::: callout-tip Only one line changes between runs. Keep chains, samples, and all other priors identical. :::</p>
+<h2>What to watch for</h2>
+<ul>
+<li>Does the <strong>posterior mean</strong> of <code>beta_trt</code> shift across priors?</li>
+<li>Does the <strong>95% CI</strong> cross zero under the more sceptical prior?</li>
+<li>A conclusion that holds across all three priors is <strong>robust</strong>. One that flips with a defensible prior change is <strong>fragile</strong> — and should be treated with caution.</li>
+</ul>
+<h2>Recording your runs</h2>
+<p>Use the recorder below — it saves your runs <strong>in your browser</strong> (no account needed) and lets you export a CSV to compare results across runs.</p>
+<h2>Further reading</h2>
+<p>P.L. Munday, D.L. Dixson, M.I. McCormick, M. Meekan, M.C.O. Ferrari, &amp; D.P. Chivers, Replenishment of fish populations is threatened by ocean acidification, <em>Proc. Natl. Acad. Sci. U.S.A.</em> 107(29), 12930–12934 (2010). &lt;https://doi.org/10.1073/pnas.1004519107&gt;</p>
+<p>Clark, T.D., Raby, G.D., Roche, D.G. et al. Ocean acidification does not impair the behaviour of coral reef fishes. <em>Nature</em> 577, 370–375 (2020). &lt;https://doi.org/10.1038/s41586-019-1903-y&gt;</p>`,
   'm14-poisson': `<h1>Poisson regression: counting fish near logging</h1>
 <p>Counts — fish on a transect, eggs in a nest, individuals in a quadrat — are not Gaussian. They are non-negative integers, and their variance grows with their mean. The <strong>Poisson</strong> distribution is the natural starting point.</p>
 <h2>The data: a coral-reef nursery under pressure</h2>
-<p><code>fish-counts.csv</code> comes from surveys of juvenile <strong>bumphead parrotfish</strong> (<em>Bolbometopon muricatum</em>) at 49 reef sites in <strong>Kia Province, Solomon Islands</strong>. The bumphead is the largest parrotfish in the world and is both culturally and ecologically important — but its juveniles depend on healthy branching <em>Acropora</em> coral as nursery habitat.</p>
+<p><code>fish-counts.csv</code> comes from surveys of juvenile <strong>bumphead parrotfish</strong> (<em>Bolbometopon muricatum</em>) at 49 reef sites in **Kia Province, Solomon Islands**. The bumphead is the largest parrotfish in the world and is both culturally and ecologically important — but its juveniles depend on healthy branching <em>Acropora</em> coral as nursery habitat.</p>
 <p>Across the bay, terrestrial <strong>logging</strong> washes sediment onto the reefs. Sediment smothers the branching coral the young fish shelter in, so the concern is that sites closer to logging operations support fewer juveniles. Each row is one site: <code>fish</code> is the number of juvenile bumpheads counted there, and <code>dist_to_logging_km</code> is the site's distance from the nearest logging operation, in kilometres.</p>
-<blockquote>
-<p><strong>Data &amp; attribution.</strong> Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) <em>Logging degrades nursery habitat for an iconic coral reef fish.</em> <strong>Biological Conservation</strong> 210: 273–280. <a href="https://doi.org/10.1016/j.biocon.2017.04.025">https://doi.org/10.1016/j.biocon.2017.04.025</a>. The copy used here has been lightly modified for teaching with FANGS.</p>
-</blockquote>
+<p>&gt; <strong>Data &amp; attribution.</strong> Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., &gt; Peterson, N.A. &amp; Choat, J.H. (2017) *Logging degrades nursery habitat for an &gt; iconic coral reef fish.* <strong>Biological Conservation</strong> 210: 273–280. &gt; &lt;https://doi.org/10.1016/j.biocon.2017.04.025&gt;. The copy used here has been &gt; lightly modified for teaching with FANGS.</p>
 <h2>The model</h2>
 <p>We cannot model the expected count <span class="math inline">\\(\\lambda\\)</span> directly with a straight line, because a line can go negative. Instead we model it on the <strong>log scale</strong> — the <strong>log link</strong>:</p>
 <div class="math display">\\[\\text{fish}_i \\sim \\text{Poisson}(\\lambda_i), \\qquad
@@ -640,55 +667,89 @@ b_j \\sim \\text{Normal}(0,\\ \\sigma_b)\\]</div>
 <p>The <strong>Summary</strong> tab now includes <span class="math inline">\\(\\sigma_b\\)</span> and each <code>b[j]</code>. Watch R-hat for <span class="math inline">\\(\\sigma_b\\)</span> especially — variance parameters are the slowest to mix.</p>
 <h2>Your task</h2>
 <p>Fit the random-intercepts model to <code>random-effects.csv</code> and check <span class="math inline">\\(\\alpha\\)</span>, <span class="math inline">\\(\\beta\\)</span>, and the group SD <span class="math inline">\\(\\sigma_b\\)</span>.</p>`,
-  'm20-improving-sampling': `<h1>Improving sampling: priors &amp; reparameterisation</h1>
-<p>Sometimes the chains misbehave — high R-hat, tiny ESS, trace plots that wander or stick. Often the model is fine but <strong>badly parameterised</strong> for the sampler. Here are the two most useful fixes.</p>
-<h2>1. Sensible priors</h2>
-<p>A wildly vague prior (e.g. <code>dnorm(0, 1000)</code> on a coefficient) creates a flat, sprawling posterior that the sampler struggles to explore, and can let parameters trade off against each other. <strong>Weakly informative</strong> priors — scaled to the problem — usually mix far better <em>and</em> are more honest. Try tightening a vague prior and watch R-hat and ESS improve.</p>
-<h2>2. Reparameterisation</h2>
-<p>In hierarchical models the group SD <span class="math inline">\\(\\sigma_b\\)</span> and the group effects <span class="math inline">\\(b_j\\)</span> are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the &quot;centred&quot; parameterisation). A <strong>non-centred</strong> form decouples them:</p>
-<pre><code>for (j in 1:J) {
-  z[j] ~ dnorm(0, 1)
-  b[j] &lt;- sigma.b * z[j]
-}</code></pre>
-<p>Same model, much friendlier geometry — chains for <span class="math inline">\\(\\sigma_b\\)</span> mix dramatically better.</p>
-<h2>Diagnose, then fix</h2>
-<ol>
-<li>Spot the problem in the <strong>Summary</strong> (R-hat, ESS) and <strong>Trace</strong> tabs.</li>
-<li>Apply a fix (tighter prior, or non-centred form).</li>
-<li>Refit and confirm the diagnostics improved.</li>
-</ol>
-<h2>Your task</h2>
-<p>Take a poorly-mixing fit, improve it, and <strong>record before/after</strong> the worst R-hat and minimum ESS in the table below.</p>`,
-  'm21-summative': `<h1>Summative challenge: multi-factor Poisson with random effects</h1>
-<p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: count data, a log link, multiple factors, and random effects for grouping.</p>
-<h2>The scenario</h2>
-<p>Fish <strong>counts</strong> were recorded across sites, under two experimental factors (e.g. habitat and season), with multiple <strong>reefs</strong> sampled per condition. You want the factor effects while accounting for reef-to-reef variation.</p>
-<h2>The model</h2>
-<div class="math display">\\[\\text{count}_i \\sim \\text{Poisson}(\\lambda_i), \\qquad
-\\log(\\lambda_i) = \\alpha + \\beta_A A_i + \\beta_B B_i + b_{\\text{reef}[i]}, \\qquad
-b_j \\sim \\text{Normal}(0, \\sigma_b)\\]</div>
+  'm20-improving-sampling': `<h1>Improving sampling: fixing an over-specified model</h1>
+<p>Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that wander across enormous ranges or drift apart and never settle. The first instinct is &quot;the sampler is broken&quot;, but far more often the model is asking the data to estimate something it <strong>cannot</strong>. This is an <em>over-specified</em> model, and the cure is to respecify it, not to sample harder.</p>
+<h2>The data</h2>
+<p>We use <code>random-effects.csv</code> — the benthic-cover survey from the same Kia Province reefs you met with the fish counts. Each row is one transect, and <code>cover</code> is the per-cent cover of branching <em>Acropora</em> coral. There are several transects per site, so <code>site</code> is a natural grouping variable for random effects.</p>
+<h2>A broken model</h2>
+<p>Here is a model that tries to give every site its own free mean, on top of a global intercept, with very diffuse priors:</p>
 <pre><code>model {
   for (i in 1:N) {
-    count[i] ~ dpois(lambda[i])
-    log(lambda[i]) &lt;- alpha + beta_a * A[i] + beta_b * B[i] + b[reef[i]]
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta[site[i]]
   }
-  for (j in 1:J) { b[j] ~ dnorm(0, sigma.b) }
+  alpha ~ dnorm(0, 1000)
+  for (j in 1:J) {
+    beta[j] ~ dnorm(0, 1000)
+  }
+}</code></pre>
+<p>Set <code>J</code> to the number of sites (49) alongside <code>N</code> in the constants, then fit it. The diagnostics will be dreadful: R-hat for <code>alpha</code> and the <code>beta[j]</code> will be huge, and ESS will collapse to single digits.</p>
+<h2>Why it fails: non-identifiability</h2>
+<p>Look at the linear predictor: <span class="math inline">\\(\\log(\\lambda_i) = \\alpha + \\beta_{\\text{site}[i]}\\)</span>. You can add any constant <span class="math inline">\\(c\\)</span> to <span class="math inline">\\(\\alpha\\)</span> and subtract the same <span class="math inline">\\(c\\)</span> from <em>every</em> <span class="math inline">\\(\\beta_j\\)</span>, and the predictions are completely unchanged:</p>
+<div class="math display">\\[(\\alpha + c) + (\\beta_j - c) = \\alpha + \\beta_j\\]</div>
+<p>So the data can pin down each sum <span class="math inline">\\(\\alpha + \\beta_j\\)</span>, but never <span class="math inline">\\(\\alpha\\)</span> and the <span class="math inline">\\(\\beta_j\\)</span> separately — there are infinitely many equally good answers along a ridge. The two diffuse <code>dnorm(0, 1000)</code> priors do nothing to break the tie, so the sampler slides up and down that ridge forever. That is exactly what high R-hat and tiny ESS are telling you.</p>
+<h2>The fix: partial pooling and sensible priors</h2>
+<p>Make the site effects deviations around the global mean, drawn from a shared distribution whose width <span class="math inline">\\(\\sigma_b\\)</span> the model estimates. Anchoring them at zero identifies <span class="math inline">\\(\\alpha\\)</span> as the grand mean, and the shared prior pools information across sites — exactly the random-effects idea from Modules 18–19:</p>
+<pre><code>model {
+  for (i in 1:N) {
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + b[site[i]]
+  }
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
   alpha   ~ dnorm(0, 10)
-  beta_a  ~ dnorm(0, 5)
-  beta_b  ~ dnorm(0, 5)
   sigma.b ~ dunif(0, 10)
 }</code></pre>
+<p>Two changes did the work:</p>
+<ol>
+<li><strong>Identifiability</strong> — the <code>b[j]</code> are centred on 0 with a shared, estimated SD, so they can no longer trade off freely against <code>alpha</code>.</li>
+<li><strong>Sensible priors</strong> — <code>dnorm(0, 10)</code> on the log-scale intercept and a bounded <code>dunif(0, 10)</code> on <span class="math inline">\\(\\sigma_b\\)</span> are weakly informative rather than absurdly vague.</li>
+</ol>
+<p>Refit and watch R-hat fall toward 1.0 and ESS climb into the hundreds.</p>
+<h2>Your task</h2>
+<ol>
+<li>Fit the <strong>broken</strong> model and read the worst R-hat and minimum ESS from the <strong>Summary</strong> tab.</li>
+<li>Fix it with the partial-pooling version above (adjust priors if you like).</li>
+<li>Refit and record the <strong>before/after</strong> worst R-hat and minimum ESS in the table below.</li>
+</ol>`,
+  'm21-summative': `<h1>Summative challenge: coral cover, logging &amp; random effects</h1>
+<p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: count-like data, a log link, a continuous predictor, a factor, and random effects for grouping.</p>
+<h2>The scenario</h2>
+<p>Same Kia Province case study as the fish counts (Module 14), but now we look at the habitat itself. On each reef, divers ran several transects and recorded the per-cent cover of branching <em>Acropora</em> coral — the nursery habitat the juvenile bumphead parrotfish depend on. The worry is the same: terrestrial logging washes sediment onto the reef and smothers the branching coral, so cover should be lower closer to logging.</p>
+<p><code>random-effects.csv</code> has one row per transect:</p>
+<ul>
+<li><code>cover</code> — per-cent cover of branching <em>Acropora</em> (our response).</li>
+<li><code>dist_to_logging_km</code> — the site's distance from the nearest logging operation.</li>
+<li><code>flow</code> — water flow, a two-level factor (<code>Strong</code>, <code>Mild</code>); FANGS encodes it in order of first appearance, so <code>Strong</code> = 1 and <code>Mild</code> = 2.</li>
+<li><code>site</code> — which reef the transect belongs to. Because there are multiple transects per site, transects from the same reef are correlated, so <code>site</code> is our random-effects grouping variable.</li>
+</ul>
+<p>&gt; <strong>Data &amp; attribution.</strong> From the same study as Module 14: Hamilton, R.J., &gt; Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) &gt; <em>Logging degrades nursery habitat for an iconic coral reef fish.</em> &gt; <strong>Biological Conservation</strong> 210: 273–280. &gt; &lt;https://doi.org/10.1016/j.biocon.2017.04.025&gt;. Lightly modified for teaching &gt; with FANGS.</p>
+<h2>The model</h2>
+<p>We treat per-cent cover as a count on the log scale, add the distance and flow effects, and let each site have its own random intercept to absorb transect-to-transect clustering:</p>
+<div class="math display">\\[\\text{cover}_i \\sim \\text{Poisson}(\\lambda_i), \\qquad \\log(\\lambda_i) = \\alpha + \\beta\\,\\text{dist}_i + \\beta_{\\text{flow}}\\,(\\text{flow}_i - 1) + b_{\\text{site}[i]}, \\qquad b_j \\sim \\text{Normal}(0, \\sigma_b)\\]</div>
+<pre><code>model {
+  for (i in 1:N) {
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta * dist_to_logging_km[i] + beta_flow * (flow[i] - 1) + b[site[i]]
+  }
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
+  alpha     ~ dnorm(0, 10)
+  beta      ~ dnorm(0, 5)
+  beta_flow ~ dnorm(0, 5)
+  sigma.b   ~ dunif(0, 10)
+}</code></pre>
+<p>Set <code>N</code> and <code>J</code> (the number of sites, 49) in the constants.</p>
 <h2>Bring your whole toolkit</h2>
 <ul>
-<li>Set sensible, weakly informative priors (Module 19).</li>
+<li>Set sensible, weakly informative priors, and avoid the over-specification trap from Module 20.</li>
 <li><strong>Run a prior predictive check</strong> before fitting (Module 7).</li>
-<li>After fitting, check <strong>R-hat and ESS</strong> (Module 10) — reparameterise if needed.</li>
-<li>Run a <strong>posterior predictive check</strong> (Module 9) to confirm the model</li>
-</ul>
-<p>  reproduces the counts.</p>
-<ul>
-<li>Interpret factor effects multiplicatively (Module 13).</li>
+<li>After fitting, check <strong>R-hat and ESS</strong> (Module 10) — repair the model if the variance parameters mix badly.</li>
+<li>Run a <strong>posterior predictive check</strong> (Module 9) to confirm the model reproduces the cover values.</li>
+<li>Interpret the distance and flow effects multiplicatively (<span class="math inline">\\(e^\\beta\\)</span>), exactly as in Modules 14–15.</li>
 </ul>
 <h2>Your task</h2>
-<p>Fit the full model to <code>random-effects.csv</code> and check <span class="math inline">\\(\\alpha\\)</span>, <span class="math inline">\\(\\beta_A\\)</span>, <span class="math inline">\\(\\beta_B\\)</span>, and the reef SD <span class="math inline">\\(\\sigma_b\\)</span>. Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>`
+<p>Fit the full model to <code>random-effects.csv</code> and read the <strong>Summary</strong> tab for <span class="math inline">\\(\\alpha\\)</span>, the distance slope <span class="math inline">\\(\\beta\\)</span>, the flow effect <span class="math inline">\\(\\beta_{\\text{flow}}\\)</span>, and the site SD <span class="math inline">\\(\\sigma_b\\)</span>. Does cover rise with distance from logging, as the sediment-damage story predicts? Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>`
 };

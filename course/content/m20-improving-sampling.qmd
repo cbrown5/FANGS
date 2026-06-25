@@ -1,40 +1,86 @@
-# Improving sampling: priors & reparameterisation
+# Improving sampling: fixing an over-specified model
 
-Sometimes the chains misbehave — high R-hat, tiny ESS, trace plots that wander or
-stick. Often the model is fine but **badly parameterised** for the sampler. Here
-are the two most useful fixes.
+Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that
+wander across enormous ranges or drift apart and never settle. The first
+instinct is "the sampler is broken", but far more often the model is asking the
+data to estimate something it **cannot**. This is an *over-specified* model, and
+the cure is to respecify it, not to sample harder.
 
-## 1. Sensible priors
+## The data
 
-A wildly vague prior (e.g. `dnorm(0, 1000)` on a coefficient) creates a flat,
-sprawling posterior that the sampler struggles to explore, and can let
-parameters trade off against each other. **Weakly informative** priors —
-scaled to the problem — usually mix far better *and* are more honest. Try
-tightening a vague prior and watch R-hat and ESS improve.
+We use `random-effects.csv` — the benthic-cover survey from the same Kia
+Province reefs you met with the fish counts. Each row is one transect, and
+`cover` is the per-cent cover of branching *Acropora* coral. There are several
+transects per site, so `site` is a natural grouping variable for random effects.
 
-## 2. Reparameterisation
+## A broken model
 
-In hierarchical models the group SD $\sigma_b$ and the group effects $b_j$ are
-strongly coupled, creating a funnel-shaped posterior that is hard to sample
-(the "centred" parameterisation). A **non-centred** form decouples them:
+Here is a model that tries to give every site its own free mean, on top of a
+global intercept, with very diffuse priors:
 
 ```
-for (j in 1:J) {
-  z[j] ~ dnorm(0, 1)
-  b[j] <- sigma.b * z[j]
+model {
+  for (i in 1:N) {
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta[site[i]]
+  }
+  alpha ~ dnorm(0, 1000)
+  for (j in 1:J) {
+    beta[j] ~ dnorm(0, 1000)
+  }
 }
 ```
 
-Same model, much friendlier geometry — chains for $\sigma_b$ mix dramatically
-better.
+Set `J` to the number of sites (49) alongside `N` in the constants, then fit it.
+The diagnostics will be dreadful: R-hat for `alpha` and the `beta[j]` will be
+huge, and ESS will collapse to single digits.
 
-## Diagnose, then fix
+## Why it fails: non-identifiability
 
-1. Spot the problem in the **Summary** (R-hat, ESS) and **Trace** tabs.
-2. Apply a fix (tighter prior, or non-centred form).
-3. Refit and confirm the diagnostics improved.
+Look at the linear predictor: $\log(\lambda_i) = \alpha + \beta_{\text{site}[i]}$.
+You can add any constant $c$ to $\alpha$ and subtract the same $c$ from *every*
+$\beta_j$, and the predictions are completely unchanged:
+
+$$
+(\alpha + c) + (\beta_j - c) = \alpha + \beta_j
+$$
+
+So the data can pin down each sum $\alpha + \beta_j$, but never $\alpha$ and the
+$\beta_j$ separately — there are infinitely many equally good answers along a
+ridge. The two diffuse `dnorm(0, 1000)` priors do nothing to break the tie, so
+the sampler slides up and down that ridge forever. That is exactly what high
+R-hat and tiny ESS are telling you.
+
+## The fix: partial pooling and sensible priors
+
+Make the site effects deviations around the global mean, drawn from a shared
+distribution whose width $\sigma_b$ the model estimates. Anchoring them at zero
+identifies $\alpha$ as the grand mean, and the shared prior pools information
+across sites — exactly the random-effects idea from Modules 18–19:
+
+```
+model {
+  for (i in 1:N) {
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + b[site[i]]
+  }
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
+  alpha   ~ dnorm(0, 10)
+  sigma.b ~ dunif(0, 10)
+}
+```
+
+Two changes did the work:
+
+1. **Identifiability** — the `b[j]` are centred on 0 with a shared, estimated SD, so they can no longer trade off freely against `alpha`.
+2. **Sensible priors** — `dnorm(0, 10)` on the log-scale intercept and a bounded `dunif(0, 10)` on $\sigma_b$ are weakly informative rather than absurdly vague.
+
+Refit and watch R-hat fall toward 1.0 and ESS climb into the hundreds.
 
 ## Your task
 
-Take a poorly-mixing fit, improve it, and **record before/after** the worst
-R-hat and minimum ESS in the table below.
+1. Fit the **broken** model and read the worst R-hat and minimum ESS from the **Summary** tab.
+2. Fix it with the partial-pooling version above (adjust priors if you like).
+3. Refit and record the **before/after** worst R-hat and minimum ESS in the table below.

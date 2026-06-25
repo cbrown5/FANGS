@@ -1,48 +1,72 @@
-# Summative challenge: multi-factor Poisson with random effects
+# Summative challenge: coral cover, logging & random effects
 
 This brings the whole day together. You will build and fit a model that combines
-**everything**: count data, a log link, multiple factors, and random effects for
-grouping.
+**everything**: count-like data, a log link, a continuous predictor, a factor,
+and random effects for grouping.
 
 ## The scenario
 
-Fish **counts** were recorded across sites, under two experimental factors
-(e.g. habitat and season), with multiple **reefs** sampled per condition. You
-want the factor effects while accounting for reef-to-reef variation.
+Same Kia Province case study as the fish counts (Module 14), but now we look at
+the habitat itself. On each reef, divers ran several transects and recorded the
+per-cent cover of branching *Acropora* coral — the nursery habitat the juvenile
+bumphead parrotfish depend on. The worry is the same: terrestrial logging washes
+sediment onto the reef and smothers the branching coral, so cover should be
+lower closer to logging.
+
+`random-effects.csv` has one row per transect:
+
+- `cover` — per-cent cover of branching *Acropora* (our response).
+- `dist_to_logging_km` — the site's distance from the nearest logging operation.
+- `flow` — water flow, a two-level factor (`Strong`, `Mild`); FANGS encodes it in order of first appearance, so `Strong` = 1 and `Mild` = 2.
+- `site` — which reef the transect belongs to. Because there are multiple transects per site, transects from the same reef are correlated, so `site` is our random-effects grouping variable.
+
+> **Data & attribution.** From the same study as Module 14: Hamilton, R.J.,
+> Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. & Choat, J.H. (2017)
+> *Logging degrades nursery habitat for an iconic coral reef fish.*
+> **Biological Conservation** 210: 273–280.
+> <https://doi.org/10.1016/j.biocon.2017.04.025>. Lightly modified for teaching
+> with FANGS.
 
 ## The model
 
+We treat per-cent cover as a count on the log scale, add the distance and flow
+effects, and let each site have its own random intercept to absorb
+transect-to-transect clustering:
+
 $$
-\text{count}_i \sim \text{Poisson}(\lambda_i), \qquad
-\log(\lambda_i) = \alpha + \beta_A A_i + \beta_B B_i + b_{\text{reef}[i]}, \qquad
-b_j \sim \text{Normal}(0, \sigma_b)
+\text{cover}_i \sim \text{Poisson}(\lambda_i), \qquad \log(\lambda_i) = \alpha + \beta\,\text{dist}_i + \beta_{\text{flow}}\,(\text{flow}_i - 1) + b_{\text{site}[i]}, \qquad b_j \sim \text{Normal}(0, \sigma_b)
 $$
 
 ```
 model {
   for (i in 1:N) {
-    count[i] ~ dpois(lambda[i])
-    log(lambda[i]) <- alpha + beta_a * A[i] + beta_b * B[i] + b[reef[i]]
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta * dist_to_logging_km[i] + beta_flow * (flow[i] - 1) + b[site[i]]
   }
-  for (j in 1:J) { b[j] ~ dnorm(0, sigma.b) }
-  alpha   ~ dnorm(0, 10)
-  beta_a  ~ dnorm(0, 5)
-  beta_b  ~ dnorm(0, 5)
-  sigma.b ~ dunif(0, 10)
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
+  alpha     ~ dnorm(0, 10)
+  beta      ~ dnorm(0, 5)
+  beta_flow ~ dnorm(0, 5)
+  sigma.b   ~ dunif(0, 10)
 }
 ```
 
+Set `N` and `J` (the number of sites, 49) in the constants.
+
 ## Bring your whole toolkit
 
-- Set sensible, weakly informative priors (Module 19).
+- Set sensible, weakly informative priors, and avoid the over-specification trap from Module 20.
 - **Run a prior predictive check** before fitting (Module 7).
-- After fitting, check **R-hat and ESS** (Module 10) — reparameterise if needed.
-- Run a **posterior predictive check** (Module 9) to confirm the model
-  reproduces the counts.
-- Interpret factor effects multiplicatively (Module 13).
+- After fitting, check **R-hat and ESS** (Module 10) — repair the model if the variance parameters mix badly.
+- Run a **posterior predictive check** (Module 9) to confirm the model reproduces the cover values.
+- Interpret the distance and flow effects multiplicatively ($e^\beta$), exactly as in Modules 14–15.
 
 ## Your task
 
-Fit the full model to `random-effects.csv` and check $\alpha$, $\beta_A$,
-$\beta_B$, and the reef SD $\sigma_b$. Pass this and you have fit a real
-hierarchical GLM end to end. 🎉
+Fit the full model to `random-effects.csv` and read the **Summary** tab for
+$\alpha$, the distance slope $\beta$, the flow effect $\beta_{\text{flow}}$, and
+the site SD $\sigma_b$. Does cover rise with distance from logging, as the
+sediment-damage story predicts? Pass this and you have fit a real hierarchical
+GLM end to end. 🎉
