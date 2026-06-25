@@ -1,0 +1,50 @@
+site,pres,logged,habitat,dist_to_logging_km
+1,0,Not logged,Rubble,3.178
+2,1,Not logged,Coral,2.562
+3,1,Logged,Coral,1.87
+4,0,Logged,Rubble,1.745
+5,1,Not logged,Coral,3.39
+6,0,Not logged,Coral,3.551
+7,1,Not logged,Coral,2.642
+8,1,Logged,Rubble,1.848
+9,0,Logged,Rubble,0.53
+10,0,Logged,Rubble,0.654
+11,0,Logged,Rubble,0.006
+12,1,Not logged,Coral,2.563
+13,1,Not logged,Coral,2.999
+14,1,Not logged,Coral,2.352
+15,1,Logged,Rubble,1.929
+16,0,Logged,Coral,1.822
+17,0,Logged,Rubble,0.884
+18,1,Not logged,Rubble,2.545
+19,0,Logged,Coral,0.073
+20,0,Logged,Rubble,0.414
+21,1,Not logged,Coral,3.368
+22,1,Not logged,Coral,2.379
+23,0,Not logged,Rubble,3.251
+24,0,Logged,Coral,1.744
+25,1,Not logged,Coral,2.477
+26,0,Logged,Rubble,0.148
+27,1,Logged,Rubble,1.858
+28,1,Not logged,Coral,2.822
+29,0,Logged,Rubble,0.467
+30,0,Logged,Rubble,1.869
+31,1,Logged,Mixed,0.272
+32,0,Logged,Mixed,1.61
+33,1,Logged,Coral,1.394
+34,1,Not logged,Coral,3.445
+35,0,Logged,Coral,1.401
+36,1,Not logged,Coral,2.468
+37,1,Not logged,Coral,2.405
+38,0,Logged,Rubble,1.413
+39,1,Logged,Rubble,1.315
+40,1,Not logged,Coral,2.514
+41,1,Logged,Rubble,0.953
+42,1,Logged,Coral,1.994
+43,0,Not logged,Rubble,2.594
+44,1,Not logged,Coral,4.367
+45,0,Logged,Rubble,0.564
+46,1,Not logged,Coral,2.157
+47,1,Not logged,Coral,2.395
+48,0,Not logged,Rubble,2.802
+49,1,Not logged,Coral,2.767

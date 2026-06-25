@@ -330,7 +330,7 @@ User-supplied CSVs in `course/data/`. For each `answer-check` module, fit the mo
 | `clownfish-oa.csv` | M12, M13 | ✅ present |
 | `fish-counts.csv` | M14, M15 | ✅ present |
 | `random-effects.csv` | M19, M21 | ✅ present |
-| `jaw-length.csv` | M8, M9 | ❌ missing |
-| `presence.csv` | M16, M17 | ❌ missing |
+| `jaw-length.csv` | M8, M9 | ✅ present |
+| `presence.csv` | M16, M17 | ✅ present |
 
 Note: `clownfish-oa.csv` replaces the originally planned `oa-study.csv`. Two datasets still needed: `jaw-length.csv` and `presence.csv`.
