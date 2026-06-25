@@ -9,7 +9,7 @@ modules reference these by filename in `../modules.js`.
 |------|---------|---------|
 | `fish-lengths.csv` | M5, M6, M7, M8, M9 | `Tree_name` (species), `Standard_length`, `Lower_jaw_length`, `Mouth_width` (all continuous, mm) |
 | `clownfish-oa.csv` | M11, M12 | `group` (treatment: "Normal seawater" / acidified), `time` (continuous growth response) |
-| `fish-counts.csv` | M13, M14 | `site`, `fish` (count), `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `fish_pres` (binary) |
+| `fish-counts.csv` | M14, M15 | `site`, `fish` (count), `flow` (factor: Strong/Mild), `logged` (factor), `dist_to_logging_km` (continuous), `fish_pres` (binary) |
 | `random-effects.csv` | M18, M20 | `site`, `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
 
 Factors may be text columns — FANGS auto-encodes them to 1-based integers and

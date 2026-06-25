@@ -1,37 +1,49 @@
-# Poisson with two factors
+# Poisson with two predictors: distance and flow
 
-Real surveys rarely vary one thing at a time. Suppose fish counts depend on both
-**habitat** (e.g. reef vs seagrass) and **season** (e.g. wet vs dry). We can put
-both factors in the same Poisson model.
+Real surveys rarely vary one thing at a time. The same Kia reef sites differ not
+only in their **distance from logging** but also in their **water flow**: some
+sit in strong tidal currents, others in sheltered, mild-flow water.
 
-## The model
+Flow matters ecologically. Strong currents flush logging sediment off the reef,
+so the branching coral — and the juvenile bumphead parrotfish that shelter in it
+— can persist even fairly close to a logging operation. In mild-flow sites the
+sediment settles out and smothers the coral. So we expect flow to shift the
+counts up or down *on top of* whatever the distance effect is.
+
+## Adding a factor
+
+`flow` is a two-level factor (`Strong`, `Mild`). FANGS auto-encodes factors to
+integers in order of first appearance — here `Strong` = 1 and `Mild` = 2 — and
+we turn that code into a 0/1 indicator by subtracting 1, exactly as you did with
+the treatment factor earlier. That makes **strong flow the reference level**.
 
 $$
-\log(\lambda_i) = \alpha + \beta_A\,A_i + \beta_B\,B_i
+\log(\lambda_i) = \alpha + \beta\,\text{dist}_i + \beta_{\text{flow}}\,(\text{flow}_i - 1)
 $$
-
-Each factor contributes its own 0/1 indicator (its own design-matrix column):
 
 ```
 model {
   for (i in 1:N) {
-    count[i] ~ dpois(lambda[i])
-    log(lambda[i]) <- alpha + beta_a * A[i] + beta_b * B[i]
+    fish[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta * dist_to_logging_km[i] + beta_flow * (flow[i] - 1)
   }
-  alpha  ~ dnorm(0, 10)
-  beta_a ~ dnorm(0, 10)
-  beta_b ~ dnorm(0, 10)
+  alpha     ~ dnorm(0, 10)
+  beta      ~ dnorm(0, 10)
+  beta_flow ~ dnorm(0, 10)
 }
 ```
 
-- $\alpha$ — log mean count for the **reference combination** (both factors 0).
-- $\beta_A,\ \beta_B$ — multiplicative effects of each factor, **holding the other constant**.
+- $\alpha$ — log mean count for the **reference** site: strong flow, at zero distance from logging.
+- $\beta$ — the distance effect, **holding flow constant**.
+- $\beta_{\text{flow}}$ — the mild-vs-strong effect, **holding distance constant**. A negative value means mild-flow sites hold fewer fish; $e^{\beta_{\text{flow}}}$ is the multiplicative drop.
 
-This is the additive (no-interaction) model. If you suspect the effect of one
-factor depends on the other, you would add an interaction term — but start
+This is the additive (no-interaction) model: flow shifts the whole log-count up
+or down by the same amount at every distance. If you suspected the *distance*
+effect itself changed with flow, you would add an interaction term — but start
 simple.
 
 ## Your task
 
-Fit the two-factor Poisson model to `fish-counts.csv` and check your posterior
-means for $\alpha$, $\beta_A$, and $\beta_B$.
+Fit the two-predictor model to `fish-counts.csv` and enter your posterior means
+for $\alpha$, $\beta$, and $\beta_{\text{flow}}$. How big is the flow effect once
+distance is accounted for — and which way does it go?

@@ -461,46 +461,54 @@ export const COURSE_CONTENT = {
 <p>Use the recorder below — it saves your runs <strong>in your browser</strong> (no account needed) and exports a <strong>CSV</strong> so the room can compare. This answers a common question: yes, you can log and download results entirely client-side.</p>
 <h2>Your task</h2>
 <p>Run the model under at least two priors and record each result. Discuss: is the acidification effect robust to the prior?</p>`,
-  'm14-poisson': `<h1>Poisson regression with a log link</h1>
-<p>Counts — fish per transect, eggs per nest, individuals per quadrat — are not Gaussian. They are non-negative integers, and their variance grows with their mean. The <strong>Poisson</strong> distribution is the natural starting point.</p>
+  'm14-poisson': `<h1>Poisson regression: counting fish near logging</h1>
+<p>Counts — fish on a transect, eggs in a nest, individuals in a quadrat — are not Gaussian. They are non-negative integers, and their variance grows with their mean. The <strong>Poisson</strong> distribution is the natural starting point.</p>
+<h2>The data: a coral-reef nursery under pressure</h2>
+<p><code>fish-counts.csv</code> comes from surveys of juvenile <strong>bumphead parrotfish</strong> (<em>Bolbometopon muricatum</em>) at 49 reef sites in <strong>Kia Province, Solomon Islands</strong>. The bumphead is the largest parrotfish in the world and is both culturally and ecologically important — but its juveniles depend on healthy branching <em>Acropora</em> coral as nursery habitat.</p>
+<p>Across the bay, terrestrial <strong>logging</strong> washes sediment onto the reefs. Sediment smothers the branching coral the young fish shelter in, so the concern is that sites closer to logging operations support fewer juveniles. Each row is one site: <code>fish</code> is the number of juvenile bumpheads counted there, and <code>dist_to_logging_km</code> is the site's distance from the nearest logging operation, in kilometres.</p>
+<blockquote>
+<p><strong>Data &amp; attribution.</strong> Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) <em>Logging degrades nursery habitat for an iconic coral reef fish.</em> <strong>Biological Conservation</strong> 210: 273–280. <a href="https://doi.org/10.1016/j.biocon.2017.04.025">https://doi.org/10.1016/j.biocon.2017.04.025</a>. The copy used here has been lightly modified for teaching with FANGS.</p>
+</blockquote>
 <h2>The model</h2>
-<p>We cannot model the rate <span class="math inline">\\(\\lambda\\)</span> directly with a line, because a line can go negative. Instead we model it on the <strong>log scale</strong> — the <strong>log link</strong>:</p>
-<div class="math display">\\[\\text{count}_i \\sim \\text{Poisson}(\\lambda_i), \\qquad
-\\log(\\lambda_i) = \\alpha + \\beta\\,x_i\\]</div>
+<p>We cannot model the expected count <span class="math inline">\\(\\lambda\\)</span> directly with a straight line, because a line can go negative. Instead we model it on the <strong>log scale</strong> — the <strong>log link</strong>:</p>
+<div class="math display">\\[\\text{fish}_i \\sim \\text{Poisson}(\\lambda_i), \\qquad
+\\log(\\lambda_i) = \\alpha + \\beta\\,\\text{dist}_i\\]</div>
 <p>In FANGS:</p>
 <pre><code>model {
   for (i in 1:N) {
-    count[i] ~ dpois(lambda[i])
-    log(lambda[i]) &lt;- alpha + beta * x[i]
+    fish[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta * dist_to_logging_km[i]
   }
   alpha ~ dnorm(0, 10)
   beta  ~ dnorm(0, 10)
 }</code></pre>
 <h2>Interpreting on the log scale</h2>
-<p>Coefficients act <strong>multiplicatively</strong> on the count. A slope <span class="math inline">\\(\\beta\\)</span> means each unit of <span class="math inline">\\(x\\)</span> multiplies the expected count by <span class="math inline">\\(e^{\\beta}\\)</span>. So <span class="math inline">\\(\\beta = 0.69\\)</span> roughly <strong>doubles</strong> the count per unit (<span class="math inline">\\(e^{0.69}\\approx 2\\)</span>).</p>
+<p>Coefficients act <strong>multiplicatively</strong> on the count. A slope <span class="math inline">\\(\\beta\\)</span> means each extra kilometre from logging multiplies the expected count by <span class="math inline">\\(e^{\\beta}\\)</span>. A <strong>positive</strong> <span class="math inline">\\(\\beta\\)</span> therefore means <em>more</em> juvenile fish the further you get from logging — the statistical footprint of sediment damage on the nursery.</p>
 <h2>Your task</h2>
-<p>Fit the Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span> (both on the log scale).</p>`,
-  'm15-poisson-two-factor': `<h1>Poisson with two factors</h1>
-<p>Real surveys rarely vary one thing at a time. Suppose fish counts depend on both <strong>habitat</strong> (e.g. reef vs seagrass) and <strong>season</strong> (e.g. wet vs dry). We can put both factors in the same Poisson model.</p>
-<h2>The model</h2>
-<div class="math display">\\[\\log(\\lambda_i) = \\alpha + \\beta_A\\,A_i + \\beta_B\\,B_i\\]</div>
-<p>Each factor contributes its own 0/1 indicator (its own design-matrix column):</p>
+<p>Load <code>fish-counts.csv</code>, fit the Poisson model, and read the <em>Summary</em> tab. Enter your posterior means for <span class="math inline">\\(\\alpha\\)</span> and <span class="math inline">\\(\\beta\\)</span> (both on the log scale). Then ask yourself: does the <strong>sign</strong> of <span class="math inline">\\(\\beta\\)</span> support the idea that logging harms the nursery, and how many extra fish per kilometre does <span class="math inline">\\(e^{\\beta}\\)</span> imply?</p>`,
+  'm15-poisson-two-factor': `<h1>Poisson with two predictors: distance and flow</h1>
+<p>Real surveys rarely vary one thing at a time. The same Kia reef sites differ not only in their <strong>distance from logging</strong> but also in their <strong>water flow</strong>: some sit in strong tidal currents, others in sheltered, mild-flow water.</p>
+<p>Flow matters ecologically. Strong currents flush logging sediment off the reef, so the branching coral — and the juvenile bumphead parrotfish that shelter in it — can persist even fairly close to a logging operation. In mild-flow sites the sediment settles out and smothers the coral. So we expect flow to shift the counts up or down <em>on top of</em> whatever the distance effect is.</p>
+<h2>Adding a factor</h2>
+<p><code>flow</code> is a two-level factor (<code>Strong</code>, <code>Mild</code>). FANGS auto-encodes factors to integers in order of first appearance — here <code>Strong</code> = 1 and <code>Mild</code> = 2 — and we turn that code into a 0/1 indicator by subtracting 1, exactly as you did with the treatment factor earlier. That makes <strong>strong flow the reference level</strong>.</p>
+<div class="math display">\\[\\log(\\lambda_i) = \\alpha + \\beta\\,\\text{dist}_i + \\beta_{\\text{flow}}\\,(\\text{flow}_i - 1)\\]</div>
 <pre><code>model {
   for (i in 1:N) {
-    count[i] ~ dpois(lambda[i])
-    log(lambda[i]) &lt;- alpha + beta_a * A[i] + beta_b * B[i]
+    fish[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta * dist_to_logging_km[i] + beta_flow * (flow[i] - 1)
   }
-  alpha  ~ dnorm(0, 10)
-  beta_a ~ dnorm(0, 10)
-  beta_b ~ dnorm(0, 10)
+  alpha     ~ dnorm(0, 10)
+  beta      ~ dnorm(0, 10)
+  beta_flow ~ dnorm(0, 10)
 }</code></pre>
 <ul>
-<li><span class="math inline">\\(\\alpha\\)</span> — log mean count for the <strong>reference combination</strong> (both factors 0).</li>
-<li><span class="math inline">\\(\\beta_A,\\ \\beta_B\\)</span> — multiplicative effects of each factor, <strong>holding the other constant</strong>.</li>
+<li><span class="math inline">\\(\\alpha\\)</span> — log mean count for the <strong>reference</strong> site: strong flow, at zero distance from logging.</li>
+<li><span class="math inline">\\(\\beta\\)</span> — the distance effect, <strong>holding flow constant</strong>.</li>
+<li><span class="math inline">\\(\\beta_{\\text{flow}}\\)</span> — the mild-vs-strong effect, <strong>holding distance constant</strong>. A negative value means mild-flow sites hold fewer fish; <span class="math inline">\\(e^{\\beta_{\\text{flow}}}\\)</span> is the multiplicative drop.</li>
 </ul>
-<p>This is the additive (no-interaction) model. If you suspect the effect of one factor depends on the other, you would add an interaction term — but start simple.</p>
+<p>This is the additive (no-interaction) model: flow shifts the whole log-count up or down by the same amount at every distance. If you suspected the <em>distance</em> effect itself changed with flow, you would add an interaction term — but start simple.</p>
 <h2>Your task</h2>
-<p>Fit the two-factor Poisson model to <code>fish-counts.csv</code> and check your posterior means for <span class="math inline">\\(\\alpha\\)</span>, <span class="math inline">\\(\\beta_A\\)</span>, and <span class="math inline">\\(\\beta_B\\)</span>.</p>`,
+<p>Fit the two-predictor model to <code>fish-counts.csv</code> and enter your posterior means for <span class="math inline">\\(\\alpha\\)</span>, <span class="math inline">\\(\\beta\\)</span>, and <span class="math inline">\\(\\beta_{\\text{flow}}\\)</span>. How big is the flow effect once distance is accounted for — and which way does it go?</p>`,
   'm16-binomial': `<h1>Binomial regression with a logit link</h1>
 <p>When the response is <strong>yes/no</strong> — species present or absent, survived or not — we model the <strong>probability</strong> of a &quot;yes&quot;. Probabilities live in <span class="math inline">\\([0, 1]\\)</span>, so again we need a link that keeps predictions in range.</p>
 <h2>The logit link</h2>

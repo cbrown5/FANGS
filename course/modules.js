@@ -285,26 +285,32 @@ export const MODULES = [
   // ── Session 5 ────────────────────────────────────────────────────────────
   {
     id: 'm14-poisson', session: 's5', num: 14,
-    title: 'Poisson regression with a log link', mode: 'fangs',
+    title: 'Poisson regression: fish counts vs distance to logging', mode: 'fangs',
     challenge: 'answer-check',
     config: {
+      // fish-counts.csv: fish (juvenile bumphead parrotfish count) ~ dist_to_logging_km.
+      // Poisson with log link; priors dnorm(0, 10). Reference fit from FANGS
+      // (4 chains × 4000 samples, burn-in 2000); counts rise with distance.
       dataset: 'fish-counts.csv',
       params: [
-        { name: 'alpha', label: 'Intercept α (log scale)', mean: 0, ci: [0, 0], tol: 0.3 },
-        { name: 'beta',  label: 'Slope β (log scale)',     mean: 0, ci: [0, 0], tol: 0.2 },
+        { name: 'alpha', label: 'Intercept α (log scale)',      mean: 0.41,  ci: [0.12, 0.68],  tol: 0.2 },
+        { name: 'beta',  label: 'Distance slope β (log scale)', mean: 0.086, ci: [0.066, 0.105], tol: 0.03 },
       ],
     },
   },
   {
     id: 'm15-poisson-two-factor', session: 's5', num: 15,
-    title: 'Poisson with two factors', mode: 'fangs',
+    title: 'Poisson with two predictors: distance & flow', mode: 'fangs',
     challenge: 'answer-check',
     config: {
+      // fish-counts.csv: fish ~ dist_to_logging_km + flow (Strong=1 reference, Mild=2).
+      // Model: log(lambda) <- alpha + beta*dist + beta_flow*(flow - 1); priors dnorm(0, 10).
+      // Reference fit from FANGS (4 chains × 4000 samples, burn-in 2000).
       dataset: 'fish-counts.csv',
       params: [
-        { name: 'alpha',    label: 'Intercept α',  mean: 0, ci: [0, 0], tol: 0.3 },
-        { name: 'beta_a',   label: 'Factor A effect', mean: 0, ci: [0, 0], tol: 0.3 },
-        { name: 'beta_b',   label: 'Factor B effect', mean: 0, ci: [0, 0], tol: 0.3 },
+        { name: 'alpha',     label: 'Intercept α (strong flow, log scale)', mean: 1.38,  ci: [1.09, 1.67],    tol: 0.25 },
+        { name: 'beta',      label: 'Distance slope β (log scale)',         mean: 0.153, ci: [0.125, 0.183],  tol: 0.04 },
+        { name: 'beta_flow', label: 'Mild-flow effect β_flow (log scale)',  mean: -2.27, ci: [-2.78, -1.78],  tol: 0.4 },
       ],
     },
   },
