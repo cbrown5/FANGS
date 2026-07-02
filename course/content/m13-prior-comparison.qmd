@@ -4,61 +4,15 @@ In Module 12 you fitted a Bayesian model to the clownfish OA data and estimated 
 
 ## The story behind these data
 
-Munday et al. (2010) reported that ocean acidification dramatically altered the olfactory behaviour of larval clownfish — a striking result published in *PNAS*. The effect size was large and acidified fish behaved maladaptively by swimming towards, rather than away from, water that smelled of predator fish. 
+The study found that ocean acidification dramatically altered the olfactory behaviour of larval clownfish — a striking result published in *PNAS*. The effect size was large and acidified fish behaved maladaptively by swimming towards, rather than away from, water that smelled of predator fish. 
 
-The problem is that there is no known biological mechanism by which changes in seawater pH would affect olfaction in fish. The study's claim was extraordinary.
+The problem is that there is no known biological mechanism by which changes in seawater pH would affect olfaction in fish. The study's claim was extraordinary. 
 
-When Clark et al. (2020) attempted to replicate the many studies looking at how OA affects fish behaviour they found no effect in almost all cases. Even when they did find an effect it was much weaker than reported in the original studies. 
+A later study attempted to replicate the many studies looking at how OA affects fish behaviour they found no effect in almost all cases (Clark et al. 2020). Even when they did find an effect it was much weaker than reported in the original studies. 
 
-UP to here, cite Bern fallacy
+The literature is full of studies that are a chance product of a small experiments. Extreme results are surprising and easier to publish. But that trend has left us with the replication crisis where many effects fail to be detected in follow-up replication studies (Clayton 2022). 
 
-
-Bernoulli's Fallacy
-
-Pub Date: November 2022
-
-ISBN: 9780231199957
-
-368 Pages
-
-Format: Paperback
-
-List Price: $26.95£22.00
-Add To Cart
-
-Pub Date: August 2021
-
-ISBN: 9780231199940
-
-368 Pages
-
-Format: Hardcover
-
-List Price: $37.95£32.00
-Add To Cart
-
-Pub Date: August 2021
-
-ISBN: 9780231553353
-
-368 Pages
-
-Format: E-book
-
-List Price: $25.99£22.00
-Get the E-Book
-Bernoulli's Fallacy
-
-Statistical Illogic and the Crisis of Modern Science
-
-Aubrey Clayton
-
-Columbia University Press
-
-
-The literature is full of studies that are a chance product of a small experiments. Extreme results are surprising and easier to publish. But that trend has left us with the replication crisis where many effects fail to be detected in follow-up replication studies. 
-
-This is where Bayesian priors become more than a technicality. A **shrinkage prior** centred on zero reflects genuine scientific uncertainty: we have no reason to expect a large effect, so we should not start the analysis assuming one is plausible. Had Munday et al. used a sceptical prior, the data alone would not have been strong enough to push the posterior to an extreme conclusion.
+This is where Bayesian priors come into play. A **shrinkage prior** centred on zero reflects genuine scientific uncertainty: we have no reason to expect a large effect, so we should not start the analysis assuming one is plausible. Had the original ocean acidification study used a sceptical prior, the data alone would not have been strong enough to push the posterior to an extreme conclusion.
 
 ## Three priors to try
 
@@ -67,10 +21,12 @@ Keep the model from Module 12 exactly as-is, but change the prior on `beta_trt`:
 | Prior | BUGS line | What it encodes |
 |-------|-----------|-----------------|
 | Vague | `beta_trt ~ dnorm(0, 100)` | Almost no constraint — very large effects are plausible |
-| Weakly informative | `beta_trt ~ dnorm(0, 5)` | Effect likely within ±10 seconds |
+| Weakly informative | `beta_trt ~ dnorm(0, 5)` | Effect likely within ±10 percent |
 | Sceptical (shrinkage) | `beta_trt ~ dnorm(0, 1)` | No strong prior expectation of any effect |
 
-For context, the control mean `alpha` is around 20 seconds, so a `beta_trt` of 100 seconds would mean acidified fish spent five times longer near the predator cue. The vague prior sees nothing wrong with that. The sceptical prior does.
+For context, the control mean `alpha` is around 20 percent, so a `beta_trt` of 100 percent would mean acidified fish spent five times longer near the predator cue. The vague prior sees nothing wrong with that. In fact, the vague prior would even allow for a `beta_trt` of greater than 100 percent, which would be nonsensical. 
+
+The original study used a frequentist analysis that had no contraints on the effect size. That's analogous to a Bayesian model with a vague prior that allows nonsensical effect sizes.
 
 ## Your task
 
@@ -86,7 +42,13 @@ Only one line changes between runs. Keep chains, samples, and all other priors i
 
 - Does the **posterior mean** of `beta_trt` shift across priors?
 - Does the **95% CI** cross zero under the more sceptical prior?
-- A conclusion that holds across all three priors is **robust**. One that flips with a defensible prior change is **fragile** — and should be treated with caution.
+- A conclusion that holds across all three priors is **robust**. One that flips with a defensible prior change is **fragile** and should be treated with caution.
+- Did you notice the estimate for the intercept parameter (mean of the control group) also changes. Why is that? 
+
+::: callout-tip
+If you have some trouble getting convergence, try another prior. FANGS guesses the starting values for the chains based on the prior, so a very tight prior can make it hard for FANGS find a good starting point. In real world modelling, you would choose a range of starting values for each chain and use a larger number of chains to avoid this problem. 
+:::
+
 
 ## Recording your runs
 
@@ -97,3 +59,5 @@ Use the recorder below — it saves your runs **in your browser** (no account ne
 P.L. Munday, D.L. Dixson, M.I. McCormick, M. Meekan, M.C.O. Ferrari, & D.P. Chivers, Replenishment of fish populations is threatened by ocean acidification, *Proc. Natl. Acad. Sci. U.S.A.* 107(29), 12930–12934 (2010). <https://doi.org/10.1073/pnas.1004519107>
 
 Clark, T.D., Raby, G.D., Roche, D.G. et al. Ocean acidification does not impair the behaviour of coral reef fishes. *Nature* 577, 370–375 (2020). <https://doi.org/10.1038/s41586-019-1903-y>
+
+[Clayton, A. (2022). Bernoulli's Fallacy: Statistical Illogic and the Crisis of Modern Science, Columbia University Press.](https://aubreyclayton.com/bernoulli)

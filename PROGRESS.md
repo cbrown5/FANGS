@@ -71,7 +71,7 @@ All core modules are implemented and 275 tests pass.
 - Check all references in paper
 
 ### User course todo
-- M12 and M13 content complete (clownfish-oa.csv, single-factor & prior-comparison); reference posteriors pinned for M12.
+- Up to m15 with reviews (poisson two factor)
 - Add references to course modules.
 - Edit/add M00 intro module.
 - Pin reference posteriors for M14–M19, M21 (currently self-report mode).
@@ -80,6 +80,7 @@ All core modules are implemented and 275 tests pass.
 
 
 ### Claude todo
+- Issue with prediction plot tab. When we fit a poisson model with log link, changing to the link scale changes the predicted curve, but the y-axis scale and the data points remain the same. When we are on the log scale the datapoints should show as logged. Likewise for logit. 
 - Issue with prior check. when I run it for my clownfish-oa dataset the prior for alpha is centered on 20, which si the mean of the posterior. But I input a prior centered on 0, so that somehow the data is influencing hte prior check. Figure out how this happens and fix it. 
 - add references for books to the course in appropriate places. 
 - - McElreath, R. (2020). [*Statistical Rethinking: A Bayesian Course with Examples in R and Stan*](https://xcelab.net/rm/statistical-rethinking/) (2nd ed.). CRC Press.

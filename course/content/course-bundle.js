@@ -543,31 +543,11 @@ $$</span></p>
   'm13-prior-comparison': `<html><head></head><body><h1 id="does-the-conclusion-depend-on-the-prior">Does the conclusion depend on the prior?</h1>
 <p>In Module 12 you fitted a Bayesian model to the clownfish OA data and estimated the acidification effect <code>beta_trt</code>. Now let’s look at <strong>how sensitive the effect size is to the choice of prior?</strong></p>
 <h2 id="the-story-behind-these-data">The story behind these data</h2>
-<p>Munday et al.&nbsp;(2010) reported that ocean acidification dramatically altered the olfactory behaviour of larval clownfish — a striking result published in <em>PNAS</em>. The effect size was large and acidified fish behaved maladaptively by swimming towards, rather than away from, water that smelled of predator fish.</p>
+<p>The study found that ocean acidification dramatically altered the olfactory behaviour of larval clownfish — a striking result published in <em>PNAS</em>. The effect size was large and acidified fish behaved maladaptively by swimming towards, rather than away from, water that smelled of predator fish.</p>
 <p>The problem is that there is no known biological mechanism by which changes in seawater pH would affect olfaction in fish. The study’s claim was extraordinary.</p>
-<p>When Clark et al.&nbsp;(2020) attempted to replicate the many studies looking at how OA affects fish behaviour they found no effect in almost all cases. Even when they did find an effect it was much weaker than reported in the original studies.</p>
-<p>UP to here, cite Bern fallacy</p>
-<p>Bernoulli’s Fallacy</p>
-<p>Pub Date: November 2022</p>
-<p>ISBN: 9780231199957</p>
-<p>368 Pages</p>
-<p>Format: Paperback</p>
-<p>List Price: $26.95£22.00 Add To Cart</p>
-<p>Pub Date: August 2021</p>
-<p>ISBN: 9780231199940</p>
-<p>368 Pages</p>
-<p>Format: Hardcover</p>
-<p>List Price: $37.95£32.00 Add To Cart</p>
-<p>Pub Date: August 2021</p>
-<p>ISBN: 9780231553353</p>
-<p>368 Pages</p>
-<p>Format: E-book</p>
-<p>List Price: $25.99£22.00 Get the E-Book Bernoulli’s Fallacy</p>
-<p>Statistical Illogic and the Crisis of Modern Science</p>
-<p>Aubrey Clayton</p>
-<p>Columbia University Press</p>
-<p>The literature is full of studies that are a chance product of a small experiments. Extreme results are surprising and easier to publish. But that trend has left us with the replication crisis where many effects fail to be detected in follow-up replication studies.</p>
-<p>This is where Bayesian priors become more than a technicality. A <strong>shrinkage prior</strong> centred on zero reflects genuine scientific uncertainty: we have no reason to expect a large effect, so we should not start the analysis assuming one is plausible. Had Munday et al.&nbsp;used a sceptical prior, the data alone would not have been strong enough to push the posterior to an extreme conclusion.</p>
+<p>A later study attempted to replicate the many studies looking at how OA affects fish behaviour they found no effect in almost all cases (Clark et al.&nbsp;2020). Even when they did find an effect it was much weaker than reported in the original studies.</p>
+<p>The literature is full of studies that are a chance product of a small experiments. Extreme results are surprising and easier to publish. But that trend has left us with the replication crisis where many effects fail to be detected in follow-up replication studies (Clayton 2022).</p>
+<p>This is where Bayesian priors come into play. A <strong>shrinkage prior</strong> centred on zero reflects genuine scientific uncertainty: we have no reason to expect a large effect, so we should not start the analysis assuming one is plausible. Had the original ocean acidification study used a sceptical prior, the data alone would not have been strong enough to push the posterior to an extreme conclusion.</p>
 <h2 id="three-priors-to-try">Three priors to try</h2>
 <p>Keep the model from Module 12 exactly as-is, but change the prior on <code>beta_trt</code>:</p>
 <table class="caption-top">
@@ -592,7 +572,7 @@ $$</span></p>
 <tr class="even">
 <td>Weakly informative</td>
 <td><code>beta_trt ~ dnorm(0, 5)</code></td>
-<td>Effect likely within ±10 seconds</td>
+<td>Effect likely within ±10 percent</td>
 </tr>
 <tr class="odd">
 <td>Sceptical (shrinkage)</td>
@@ -601,7 +581,8 @@ $$</span></p>
 </tr>
 </tbody>
 </table>
-<p>For context, the control mean <code>alpha</code> is around 20 seconds, so a <code>beta_trt</code> of 100 seconds would mean acidified fish spent five times longer near the predator cue. The vague prior sees nothing wrong with that. The sceptical prior does.</p>
+<p>For context, the control mean <code>alpha</code> is around 20 percent, so a <code>beta_trt</code> of 100 percent would mean acidified fish spent five times longer near the predator cue. The vague prior sees nothing wrong with that. In fact, the vague prior would even allow for a <code>beta_trt</code> of greater than 100 percent, which would be nonsensical.</p>
+<p>The original study used a frequentist analysis that had no contraints on the effect size. That’s analogous to a Bayesian model with a vague prior that allows nonsensical effect sizes.</p>
 <h2 id="your-task">Your task</h2>
 <ol type="1">
 <li>Start with the model from Module 12 (still in FANGS if you haven’t closed the tab).</li>
@@ -625,6 +606,7 @@ $$</span></p>
 <h2 id="further-reading">Further reading</h2>
 <p>P.L. Munday, D.L. Dixson, M.I. McCormick, M. Meekan, M.C.O. Ferrari, &amp; D.P. Chivers, Replenishment of fish populations is threatened by ocean acidification, <em>Proc. Natl. Acad. Sci. U.S.A.</em> 107(29), 12930–12934 (2010). <a href="https://doi.org/10.1073/pnas.1004519107" class="uri">https://doi.org/10.1073/pnas.1004519107</a></p>
 <p>Clark, T.D., Raby, G.D., Roche, D.G. et al.&nbsp;Ocean acidification does not impair the behaviour of coral reef fishes. <em>Nature</em> 577, 370–375 (2020). <a href="https://doi.org/10.1038/s41586-019-1903-y" class="uri">https://doi.org/10.1038/s41586-019-1903-y</a></p>
+<p><a href="https://aubreyclayton.com/bernoulli">Clayton, A. (2022). Bernoulli’s Fallacy: Statistical Illogic and the Crisis of Modern Science, Columbia University Press.</a></p>
 </body></html>`,
   'm14-poisson-two-factor': `<html><head></head><body><h1 id="poisson-with-two-factors">Poisson with two factors</h1>
 <p>Real surveys rarely vary one thing at a time. Suppose fish counts depend on both <strong>habitat</strong> (e.g.&nbsp;reef vs seagrass) and <strong>season</strong> (e.g.&nbsp;wet vs dry). We can put both factors in the same Poisson model.</p>
@@ -1012,7 +994,7 @@ $$</span></p>
 <p>Look at the linear predictor: <span class="math inline">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>site[<em>i</em>]</sub></span>. You can add any constant <span class="math inline"><em>c</em></span> to <span class="math inline"><em>α</em></span> and subtract the same <span class="math inline"><em>c</em></span> from <em>every</em> <span class="math inline"><em>β</em><sub><em>j</em></sub></span>, and the predictions are completely unchanged:</p>
 <p><span class="math display">(<em>α</em> + <em>c</em>) + (<em>β</em><sub><em>j</em></sub> − <em>c</em>) = <em>α</em> + <em>β</em><sub><em>j</em></sub></span></p>
 <p>So the data can pin down each sum <span class="math inline"><em>α</em> + <em>β</em><sub><em>j</em></sub></span>, but never <span class="math inline"><em>α</em></span> and the <span class="math inline"><em>β</em><sub><em>j</em></sub></span> separately — there are infinitely many equally good answers along a ridge. The two diffuse <code>dnorm(0, 1000)</code> priors do nothing to break the tie, so the sampler slides up and down that ridge forever. That is exactly what high R-hat and tiny ESS are telling you.</p>
-<h2 id="the-fix-partial-pooling-and-sensible-priors">The fix: partial pooling and sensible priors</h2>
+<h2 id="fix-1-partial-pooling-and-sensible-priors">Fix 1: partial pooling and sensible priors</h2>
 <p>Make the site effects deviations around the global mean, drawn from a shared distribution whose width <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> the model estimates. Anchoring them at zero identifies <span class="math inline"><em>α</em></span> as the grand mean, and the shared prior pools information across sites — exactly the random-effects idea from Modules 18–19:</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -1031,6 +1013,13 @@ $$</span></p>
 <li><strong>Sensible priors</strong> — <code>dnorm(0, 10)</code> on the log-scale intercept and a bounded <code>dunif(0, 10)</code> on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> are weakly informative rather than absurdly vague.</li>
 </ol>
 <p>Refit and watch R-hat fall toward 1.0 and ESS climb into the hundreds.</p>
+<h2 id="fix-2-reparameterisation">Fix 2: Reparameterisation</h2>
+<p>In hierarchical models the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and the group effects <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the “centred” parameterisation). A <strong>non-centred</strong> form decouples them:</p>
+<pre><code>for (j in 1:J) {
+  z[j] ~ dnorm(0, 1)
+  b[j] &lt;- sigma.b * z[j]
+}</code></pre>
+<p>Same model, much friendlier geometry — chains for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> mix dramatically better.</p>
 <h2 id="your-task">Your task</h2>
 <ol type="1">
 <li>Fit the <strong>broken</strong> model and read the worst R-hat and minimum ESS from the <strong>Summary</strong> tab.</li>

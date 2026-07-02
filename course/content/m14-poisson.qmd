@@ -1,35 +1,18 @@
 # Poisson regression: counting fish near logging
 
-Counts — fish on a transect, eggs in a nest, individuals in a quadrat — are not
-Gaussian. They are non-negative integers, and their variance grows with their
-mean. The **Poisson** distribution is the natural starting point.
+Counts — fish on a transect, eggs in a nest, individuals in a quadrat — are not Gaussian. They are non-negative integers, and their variance grows with their mean. The **Poisson** distribution is the natural starting point.
 
 ## The data: a coral-reef nursery under pressure
 
-`fish-counts.csv` comes from surveys of juvenile **bumphead parrotfish**
-(*Bolbometopon muricatum*) at 49 reef sites in **Kia Province, Solomon
-Islands**. The bumphead is the largest parrotfish in the world and is both
-culturally and ecologically important — but its juveniles depend on healthy
-branching *Acropora* coral as nursery habitat.
+`fish-counts.csv` comes from surveys of juvenile **bumphead parrotfish** (*Bolbometopon muricatum*) at 49 reef sites in **Kia Province, Solomon Islands**. The bumphead is the largest parrotfish in the world and is both culturally and ecologically important. Its juveniles depend on healthy branching *Acropora* coral as nursery habitat.
 
-Across the bay, terrestrial **logging** washes sediment onto the reefs. Sediment
-smothers the branching coral the young fish shelter in, so the concern is that
-sites closer to logging operations support fewer juveniles. Each row is one site:
-`fish` is the number of juvenile bumpheads counted there, and
-`dist_to_logging_km` is the site's distance from the nearest logging operation,
-in kilometres.
+Across the bay, terrestrial **logging** washes sediment onto the reefs. Sediment smothers the branching coral the young fish shelter in, so the concern is that sites closer to logging operations support fewer juveniles. Each row is one site: `fish` is the number of juvenile bumpheads counted there, and `dist_to_logging_km` is the site's distance from the nearest logging operation, in kilometres.
 
-> **Data & attribution.** Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J.,
-> Peterson, N.A. & Choat, J.H. (2017) *Logging degrades nursery habitat for an
-> iconic coral reef fish.* **Biological Conservation** 210: 273–280.
-> <https://doi.org/10.1016/j.biocon.2017.04.025>. The copy used here has been
-> lightly modified for teaching with FANGS.
+> **Data & attribution.** Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., > Peterson, N.A. & Choat, J.H. (2017) *Logging degrades nursery habitat for an > iconic coral reef fish.* **Biological Conservation** 210: 273–280. > <https://doi.org/10.1016/j.biocon.2017.04.025>. The copy used here has been slightly modified for teaching with FANGS.
 
 ## The model
 
-We cannot model the expected count $\lambda$ directly with a straight line,
-because a line can go negative. Instead we model it on the **log scale** — the
-**log link**:
+We cannot model the expected count $\lambda$ directly with a straight line, because a line can go negative. Instead we model it on the **log scale** — the **log link**:
 
 $$
 \text{fish}_i \sim \text{Poisson}(\lambda_i), \qquad
@@ -51,14 +34,8 @@ model {
 
 ## Interpreting on the log scale
 
-Coefficients act **multiplicatively** on the count. A slope $\beta$ means each
-extra kilometre from logging multiplies the expected count by $e^{\beta}$. A
-**positive** $\beta$ therefore means *more* juvenile fish the further you get
-from logging — the statistical footprint of sediment damage on the nursery.
+Coefficients act **multiplicatively** on the count. A slope $\beta$ means each extra kilometre from logging multiplies the expected count by $e^{\beta}$. A **positive** $\beta$ therefore means *more* juvenile fish the further you get from logging — the statistical footprint of sediment damage on the nursery.
 
 ## Your task
 
-Load `fish-counts.csv`, fit the Poisson model, and read the *Summary* tab. Enter
-your posterior means for $\alpha$ and $\beta$ (both on the log scale). Then ask
-yourself: does the **sign** of $\beta$ support the idea that logging harms the
-nursery, and how many extra fish per kilometre does $e^{\beta}$ imply?
+Load `fish-counts.csv`, fit the Poisson model, and read the *Summary* tab. Enter your posterior means for $\alpha$ and $\beta$ (both on the log scale). Then ask yourself: does the **sign** of $\beta$ support the idea that logging harms the nursery, and how many extra fish per kilometre does $e^{\beta}$ imply?
