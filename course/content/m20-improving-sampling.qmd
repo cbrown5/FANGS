@@ -51,7 +51,7 @@ ridge. The two diffuse `dnorm(0, 1000)` priors do nothing to break the tie, so
 the sampler slides up and down that ridge forever. That is exactly what high
 R-hat and tiny ESS are telling you.
 
-## The fix: partial pooling and sensible priors
+## Fix 1: partial pooling and sensible priors
 
 Make the site effects deviations around the global mean, drawn from a shared
 distribution whose width $\sigma_b$ the model estimates. Anchoring them at zero
@@ -78,6 +78,22 @@ Two changes did the work:
 2. **Sensible priors** — `dnorm(0, 10)` on the log-scale intercept and a bounded `dunif(0, 10)` on $\sigma_b$ are weakly informative rather than absurdly vague.
 
 Refit and watch R-hat fall toward 1.0 and ESS climb into the hundreds.
+
+## Fix 2: Reparameterisation
+
+In hierarchical models the group SD $\sigma_b$ and the group effects $b_j$ are
+strongly coupled, creating a funnel-shaped posterior that is hard to sample
+(the "centred" parameterisation). A **non-centred** form decouples them:
+
+```
+for (j in 1:J) {
+  z[j] ~ dnorm(0, 1)
+  b[j] <- sigma.b * z[j]
+}
+```
+
+Same model, much friendlier geometry — chains for $\sigma_b$ mix dramatically
+better.
 
 ## Your task
 

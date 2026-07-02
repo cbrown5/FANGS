@@ -140,6 +140,7 @@ body {
 .challenge input[type="text"] { width: 90px; }
 .challenge-code { width: 100%; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.5; }
 
+.challenge-section-label { font-size: 0.85rem; font-weight: 600; margin: 14px 0 4px; color: var(--cyan); }
 .challenge-table { border-collapse: collapse; width: 100%; margin: 10px 0; }
 .challenge-table th { background: var(--blue-dark); padding: 6px 10px; text-align: left; font-size: 0.8rem; }
 .challenge-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); }

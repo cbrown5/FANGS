@@ -332,10 +332,23 @@ export const MODULES = [
     challenge: 'answer-check',
     config: {
       dataset: 'presence.csv',
-      params: [
-        { name: 'alpha',  label: 'Reference level α',    mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'beta_2', label: 'Level 2 vs reference', mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'beta_3', label: 'Level 3 vs reference', mean: 0, ci: [0, 0], tol: 0.4 },
+      sections: [
+        {
+          label: 'Reference (dummy) coding',
+          params: [
+            { name: 'alpha',  label: 'Intercept α (reference site log-odds)', mean: 0, ci: [0, 0], tol: 0.4 },
+            { name: 'beta_2', label: 'β₂ — site 2 vs reference',              mean: 0, ci: [0, 0], tol: 0.4 },
+            { name: 'beta_3', label: 'β₃ — site 3 vs reference',              mean: 0, ci: [0, 0], tol: 0.4 },
+          ],
+        },
+        {
+          label: 'Index (cell-means) coding',
+          params: [
+            { name: 'gamma_1', label: 'γ₁ — log-odds at site 1', mean: 0, ci: [0, 0], tol: 0.4 },
+            { name: 'gamma_2', label: 'γ₂ — log-odds at site 2', mean: 0, ci: [0, 0], tol: 0.4 },
+            { name: 'gamma_3', label: 'γ₃ — log-odds at site 3', mean: 0, ci: [0, 0], tol: 0.4 },
+          ],
+        },
       ],
     },
   },
