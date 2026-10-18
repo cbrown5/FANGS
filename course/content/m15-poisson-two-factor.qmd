@@ -1,24 +1,15 @@
 # Poisson with two predictors: distance and flow
 
-Real surveys rarely vary one thing at a time. The same Kia reef sites differ not
-only in their **distance from logging** but also in their **water flow**: some
-sit in strong tidal currents, others in sheltered, mild-flow water.
+Real surveys rarely vary one thing at a time. The same Kia reef sites differ not only in their **distance from logging** but also in their **water flow**: some sit in strong tidal currents, others in sheltered, mild-flow water.
 
-Flow matters ecologically. Strong currents flush logging sediment off the reef,
-so the branching coral — and the juvenile bumphead parrotfish that shelter in it
-— can persist even fairly close to a logging operation. In mild-flow sites the
-sediment settles out and smothers the coral. So we expect flow to shift the
-counts up or down *on top of* whatever the distance effect is.
+Flow matters ecologically. Strong currents flush logging sediment off the reef, so the branching coral — and the juvenile bumphead parrotfish that shelter in it — can persist even fairly close to a logging operation. In mild-flow sites the sediment settles out and smothers the coral. So we expect flow to shift the counts up or down *on top of* whatever the distance effect is.
 
 ## Adding a factor
 
-`flow` is a two-level factor (`Strong`, `Mild`). FANGS auto-encodes factors to
-integers in order of first appearance — here `Strong` = 1 and `Mild` = 2 — and
-we turn that code into a 0/1 indicator by subtracting 1, exactly as you did with
-the treatment factor earlier. That makes **strong flow the reference level**.
+`flow` is a two-level factor (`Strong`, `Mild`). FANGS auto-encodes factors to integers in order of first appearance — here `Strong` = 1 and `Mild` = 2 — and we turn that code into a 0/1 indicator by subtracting 1, exactly as you did with the treatment factor earlier. That makes **strong flow the reference level**.
 
 $$
-\log(\lambda_i) = \alpha + \beta\,\text{dist}_i + \beta_{\text{flow}}\,(\text{flow}_i - 1)
+\log(\lambda_i) = \alpha + \beta\,\text{dist}_i + \beta_{\text{flow}}*\,(\text{flow}_i - 1)
 $$
 
 ```
@@ -37,13 +28,10 @@ model {
 - $\beta$ — the distance effect, **holding flow constant**.
 - $\beta_{\text{flow}}$ — the mild-vs-strong effect, **holding distance constant**. A negative value means mild-flow sites hold fewer fish; $e^{\beta_{\text{flow}}}$ is the multiplicative drop.
 
-This is the additive (no-interaction) model: flow shifts the whole log-count up
-or down by the same amount at every distance. If you suspected the *distance*
-effect itself changed with flow, you would add an interaction term — but start
-simple.
+This is the additive (no-interaction) model: flow shifts the whole log-count up or down by the same amount at every distance. 
+
+If you suspected the *distance* effect itself changed with flow, you would add an interaction term. We're keeping it simple here, but in practice its best to start with the most complex model that is plausible. 
 
 ## Your task
 
-Fit the two-predictor model to `fish-counts.csv` and enter your posterior means
-for $\alpha$, $\beta$, and $\beta_{\text{flow}}$. How big is the flow effect once
-distance is accounted for — and which way does it go?
+Fit the two-predictor model to `fish-counts.csv` and enter your posterior means for $\alpha$, $\beta$, and $\beta_{\text{flow}}$. How big is the flow effect once distance is accounted for — and which way does it go?

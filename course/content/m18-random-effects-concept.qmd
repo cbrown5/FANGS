@@ -1,8 +1,6 @@
 # The idea of random effects
 
-You sampled fish at **12 reefs**. Reefs differ, and observations from the same
-reef are more alike than observations from different reefs. Ignoring that
-structure underestimates your uncertainty. **Random effects** handle it.
+You sampled fish at **12 reefs**. Reefs differ, and observations from the same reef are more alike than observations from different reefs. Ignoring that structure underestimates your uncertainty. **Random effects** handle it.
 
 ## Three ways to treat groups
 

@@ -310,7 +310,7 @@ export const MODULES = [
       params: [
         { name: 'alpha',     label: 'Intercept α (strong flow, log scale)', mean: 1.38,  ci: [1.09, 1.67],    tol: 0.25 },
         { name: 'beta',      label: 'Distance slope β (log scale)',         mean: 0.153, ci: [0.125, 0.183],  tol: 0.04 },
-        { name: 'beta_flow', label: 'Mild-flow effect β_flow (log scale)',  mean: -2.27, ci: [-2.78, -1.78],  tol: 0.4 },
+        { name: 'beta_flow', label: 'Mild-flow effect β_flow (log scale)',  mean: -3.46, ci: [-4.19, -2.8],  tol: 0.4 },
       ],
     },
   },
@@ -321,8 +321,8 @@ export const MODULES = [
     config: {
       dataset: 'presence.csv',
       params: [
-        { name: 'alpha', label: 'Intercept α (logit scale)', mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'beta',  label: 'Slope β (logit scale)',     mean: 0, ci: [0, 0], tol: 0.3 },
+        { name: 'alpha', label: 'Intercept α (logit scale)', mean: -0.41, ci: [0, 0], tol: 0.4 },
+        { name: 'beta',  label: 'Slope β (logit scale)',     mean: 1.5, ci: [0, 0], tol: 0.3 },
       ],
     },
   },
@@ -336,9 +336,9 @@ export const MODULES = [
         {
           label: 'Reference (dummy) coding',
           params: [
-            { name: 'alpha',  label: 'Intercept α (reference site log-odds)', mean: 0, ci: [0, 0], tol: 0.4 },
-            { name: 'beta_2', label: 'β₂ — site 2 vs reference',              mean: 0, ci: [0, 0], tol: 0.4 },
-            { name: 'beta_3', label: 'β₃ — site 3 vs reference',              mean: 0, ci: [0, 0], tol: 0.4 },
+            { name: 'alpha',  label: 'Intercept α (reference site log-odds)', mean: 1.32, ci: [0, 0], tol: 0.4 },
+            { name: 'beta_2', label: 'β₂ — site 2 vs reference',              mean: -1.17, ci: [0, 0], tol: 0.4 },
+            { name: 'beta_3', label: 'β₃ — site 3 vs reference',              mean: -1.93, ci: [0, 0], tol: 0.4 },
           ],
         },
         {
