@@ -52,10 +52,9 @@ All core modules are implemented and 275 tests pass.
 ## Next Steps
 
 ### USER todo
-- Check prediction tab with categorical predictors, should be fixed now? 
+- Prediction tab with categorical predictors shows a line, not group levels, need a fix for this. 
 - Check: Increase font size for 'Predictors auto-scaled for sampling' message
 - CHeck: Fix bug with syntax error. We get a pop-up and error message. However the model code text then shows a duplicate of the code overlaid the window with teh model box, so it is hard to edit the model. This disappears if you refresh, but then you lose edits to th emodel. 
-- Look into bug when you stop a chain partway. It keeps running, then won't restart when you hit starta gain. 
 - What happens if fixed factor variable has 3 or more levels? how does it handle that? - probably needs dummy encoding, or do like this beta[group[i]]. Do some more tests and then update course modules appropriately. 
 - test poisson gamma 
 - read the paper draft and suggest updates
@@ -71,7 +70,8 @@ All core modules are implemented and 275 tests pass.
 - Check all references in paper
 
 ### User course todo
-- Up to m17 with reviews (binomial three level). Need to check  quiz answers for M16–M17.
+- Up to m17 with reviews (binomial three level). Need to add a dataset to use for this. presence.csv has one site per row so won't do. 
+- Need to check  quiz answers for M16–M17.
 - Add references to course modules.
 - Edit/add M00 intro module.
 - Pin reference posteriors for M14–M19, M21 (currently self-report mode).
@@ -80,7 +80,7 @@ All core modules are implemented and 275 tests pass.
 
 
 ### Claude todo
-- Update readme for `course/data/README.md`. Add button to download zip file of `course/data`
+- Update readme for `course/data/README.md`. Add button to the course to download zip file of `course/data`
 - When I fit the index model in M17 for presence.csv, the trace plots don't update their parameter names to the new names. They still show alpha and beta, but the model has alpha, gamma[]. Then model pauses, apparently looking for beta, once it compiles. 
 - Issue with prior check. Need to check priors and how dnorm is specified. when I run it for my clownfish-oa dataset the prior for alpha is centered on 20, which is the mean of the posterior. But when I change the prior mean, the posterior in prior-check barely shifts from 20. Figure out how this happens and fix it. 
 - add references for books to the course in appropriate places. 
