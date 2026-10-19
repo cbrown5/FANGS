@@ -52,10 +52,6 @@ All core modules are implemented and 275 tests pass.
 ## Next Steps
 
 ### USER todo
-- Prediction tab with categorical predictors shows a line, not group levels, need a fix for this. 
-- Check: Increase font size for 'Predictors auto-scaled for sampling' message
-- CHeck: Fix bug with syntax error. We get a pop-up and error message. However the model code text then shows a duplicate of the code overlaid the window with teh model box, so it is hard to edit the model. This disappears if you refresh, but then you lose edits to th emodel. 
-- What happens if fixed factor variable has 3 or more levels? how does it handle that? - probably needs dummy encoding, or do like this beta[group[i]]. Do some more tests and then update course modules appropriately. 
 - test poisson gamma 
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper. I think there are still some mentions of conjugates
@@ -64,25 +60,25 @@ All core modules are implemented and 275 tests pass.
 - Confirm ESS and Rhat equations in help and JS code
 - edit pop-ups and help pages
 - Add a writing style and update the help pages. 
-- nimble tests covering conjugate and non conjugate dists
 - tests with x on different scales, mv X
 - Review paper draft, read whole thing. 
 - Check all references in paper
 
 ### User course todo
-- Up to m17 with reviews (binomial three level). Test with new dataset course/data/habitat-presence.csv
-- Need to check  quiz answers for M16–M17.
+- Up to m18 with reviews 
 - Add references to course modules.
 - Edit/add M00 intro module.
 - Pin reference posteriors for M14–M19, M21 (currently self-report mode).
-- Supply missing datasets: `jaw-length.csv` (M8–M9), `presence.csv` (M16–M17).
-- Check how FANGS encodes multi-level factor variables (3+ levels); update course modules accordingly.
-
 
 ### Claude todo
-- Update readme for `course/data/README.md`. 
-- When I fit the index model in M17 for presence.csv, the trace plots don't update their parameter names to the new names. They still show alpha and beta, but the model has alpha, gamma[]. Then model pauses, apparently looking for beta, once it compiles. 
+- Update claude.md - the datasets list at end needs habitat-presence.csv
+- Add option near the title of the trace plot tab to show all trace plots including for arrays (e.g. factor variables, random effects). Default to the current situation where we just show parameters that are single values. 
+- Check: Increase font size for 'Predictors auto-scaled for sampling' message
+- Confirm that all datasets used in the modules are available in the course data folder. 
 - Issue with prior check. Need to check priors and how dnorm is specified. when I run it for my clownfish-oa dataset the prior for alpha is centered on 20, which is the mean of the posterior. But when I change the prior mean, the posterior in prior-check barely shifts from 20. Figure out how this happens and fix it. 
+- Prior checks is carrying over parameter names from the last model run in a browser session. So it shows params for this model, as well as the last model run. need to fix this. 
+
+### Referencing TODO
 - add references for books to the course in appropriate places. 
 - - McElreath, R. (2020). [*Statistical Rethinking: A Bayesian Course with Examples in R and Stan*](https://xcelab.net/rm/statistical-rethinking/) (2nd ed.). CRC Press.
 - de Valpine, P., Turek, D., Paciorek, C. J., Anderson-Bergman, C., Temple Lang, D., & Bodik, R. (2017). Programming with models: writing statistical algorithms for general model structures with NIMBLE. *Journal of Computational and Graphical Statistics*, 26(2), 403–413. [doi:10.1080/10618600.2016.1172487](https://doi.org/10.1080/10618600.2016.1172487)

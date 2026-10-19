@@ -1,9 +1,9 @@
 ---
-title: "Regression Predictions"
+title: "Model Predictions"
 format: html
 ---
 
-# Regression Predictions
+# Model Predictions
 
 The **Predictions tab** shows how the expected response changes across the range of a chosen predictor, with a 95% credible interval ribbon.
 
@@ -21,7 +21,9 @@ Two prediction modes are available:
 
 ## Categorical focal covariate
 
-Selecting a factor as the focal covariate produces a **dot-and-CI** plot — one posterior mean with 95% credible interval per factor level.
+Selecting a character variable (factor) as the focal covariate produces a **dot-and-CI** plot — one posterior mean with 95% credible interval per factor level. 
+
+Note that if you use a design matrix to encode your factor as 0/1 values, FANGS will treat it as continuous and show a line instead. 
 
 ## Colour by factor
 

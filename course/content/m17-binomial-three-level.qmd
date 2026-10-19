@@ -34,11 +34,11 @@ If your CSV has a text `habitat` column with levels `Coral`, `Rubble`, `Seagrass
 | Rubble | 2 |
 | Seagrass | 3 |
 
-You could build the `is_rubble`/`is_seagrass` indicator columns yourself, but FANGS already hands you the integer codes — so there is an easier way to write the model.
+You could build the `is_rubble`/`is_seagrass` indicator columns yourself, but in FANGS so there is an easier way to write the model.
 
 ## Alternative parameterisation: index a coefficient vector
 
-Instead of one intercept plus contrasts, give **each habitat its own coefficient** and let FANGS's integer code pick the right one for each row. Because `habitat[i]` is `1`, `2`, or `3`, the expression `gamma[habitat[i]]` selects `gamma[1]`, `gamma[2]`, or `gamma[3]`:
+Instead of one intercept plus contrasts, give **each habitat its own coefficient**. FANGS's integer coding will then pick the right one for each row. Because `habitat[i]` is `1`, `2`, or `3`, the expression `gamma[habitat[i]]` selects `gamma[1]`, `gamma[2]`, or `gamma[3]`:
 
 $$
 \text{logit}(p_i) = \gamma_{\,\text{habitat}_i}
