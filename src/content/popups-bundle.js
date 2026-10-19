@@ -515,6 +515,24 @@ precision τ  = 1 / (sigma * sigma)</code></pre>
 <pre><code>sigma ~ dunif(0, 100)</code></pre>
 <p>This is weakly informative for most teaching datasets (the response is usually well within ±100 of its mean) and keeps σ positive. Because there is no conjugate update for the SD of a normal, FANGS samples <code>sigma</code> with the slice sampler — the mean parameters (<code>alpha</code>, <code>beta</code>, random effects) still receive exact conjugate updates.</p>
 </body></html>`,
+  'predictions-tab': `<html><head></head><body><h1 id="model-predictions">Model Predictions</h1>
+<p>The <strong>Predictions tab</strong> shows how the expected response changes across the range of a chosen predictor, with a 95% credible interval ribbon.</p>
+<h2 id="how-it-works">How it works</h2>
+<p>After sampling, FANGS sweeps a <strong>focal covariate</strong> from its minimum to its maximum value, plugging each grid point into the fitted model and collecting the resulting expected response across posterior draws. The ribbon shows the 2.5% and 97.5% quantiles of those draws.</p>
+<h2 id="conditional-vs-marginal-predictions">Conditional vs marginal predictions</h2>
+<p>Two prediction modes are available:</p>
+<p><strong>Conditional (hold at mean)</strong> — All other continuous covariates are fixed at their observed means; categorical covariates are fixed at the chosen level. This answers: <em>“What is the expected response for a typical unit as X varies?”</em></p>
+<p><strong>Marginal (average over data)</strong> — Predictions are averaged over the observed distribution of all other covariates. For each grid point, FANGS substitutes that focal value into every observed row and averages the resulting fitted values. This answers: <em>“What is the population-average response as X varies?”</em> The two modes agree when other covariates are uncorrelated with the focal predictor.</p>
+<h2 id="categorical-focal-covariate">Categorical focal covariate</h2>
+<p>Selecting a character variable (factor) as the focal covariate produces a <strong>dot-and-CI</strong> plot — one posterior mean with 95% credible interval per factor level.</p>
+<p>Note that if you use a design matrix to encode your factor as 0/1 values, FANGS will treat it as continuous and show a line instead.</p>
+<h2 id="colour-by-factor">Colour by factor</h2>
+<p>When the focal covariate is continuous, choosing a factor in the <strong>Colour by</strong> dropdown draws a separate prediction ribbon for each factor level. Data points are coloured to match.</p>
+<h2 id="link-scale">Link scale</h2>
+<p>For GLMs (Poisson, Binomial) you can toggle <strong>Show link scale</strong> to display predictions on the log or logit scale instead of the natural (response) scale. This is useful for checking linearity and comparing with coefficient estimates.</p>
+<h2 id="mixed-effects-models-re-0">Mixed-effects models (RE = 0)</h2>
+<p>For models with random effects (e.g.&nbsp;<code>b[group[i]]</code>), FANGS zeroes out the random effects and shows <strong>population-level</strong> (marginal) predictions. This is the prediction for a new, unobserved group drawn from the random-effects distribution.</p>
+</body></html>`,
   'predictor-scaling': `<html><head></head><body><h1 id="automatic-predictor-scaling">Automatic Predictor Scaling</h1>
 <p>FANGS automatically standardises continuous predictor variables (like <code>x</code>) before running the sampler, then converts all results back to your original data units before display.</p>
 <p>Note that the MCMC trace plots show the scaled parameters, the conversion is done after sampling is complete. In the summary tables and coefficient estimates, the back-transformed values are shown. This means you can interpret the results as if you had run the sampler on your original data, without needing to worry about the scaling step.</p>
@@ -716,22 +734,5 @@ precision τ  = 1 / (sigma * sigma)</code></pre>
 <p>The y-axis shows the parameter value on its natural scale. The range reflects the posterior spread — wide traces mean high posterior uncertainty.</p>
 <h2 id="burn-in">Burn-in</h2>
 <p>The period before the chain stabilises is the burn-in. It is normal for chains to start far apart and then converge. Only the post-burn-in samples are used for inference.</p>
-</body></html>`,
-  'predictions-tab': `<html><head></head><body><h1 id="regression-predictions">Regression Predictions</h1>
-<p>The <strong>Predictions tab</strong> shows how the expected response changes across the range of a chosen predictor, with a 95% credible interval ribbon.</p>
-<h2 id="how-it-works">How it works</h2>
-<p>After sampling, FANGS sweeps a <strong>focal covariate</strong> from its minimum to its maximum value, plugging each grid point into the fitted model and collecting the resulting expected response across posterior draws. The ribbon shows the 2.5% and 97.5% quantiles of those draws.</p>
-<h2 id="conditional-vs-marginal-predictions">Conditional vs marginal predictions</h2>
-<p>Two prediction modes are available:</p>
-<p><strong>Conditional (hold at mean)</strong> — All other continuous covariates are fixed at their observed means; categorical covariates are fixed at the chosen level. This answers: <em>"What is the expected response for a typical unit as X varies?"</em></p>
-<p><strong>Marginal (average over data)</strong> — Predictions are averaged over the observed distribution of all other covariates. For each grid point, FANGS substitutes that focal value into every observed row and averages the resulting fitted values. This answers: <em>"What is the population-average response as X varies?"</em> The two modes agree when other covariates are uncorrelated with the focal predictor.</p>
-<h2 id="categorical-focal-covariate">Categorical focal covariate</h2>
-<p>Selecting a factor as the focal covariate produces a <strong>dot-and-CI</strong> plot — one posterior mean with 95% credible interval per factor level.</p>
-<h2 id="colour-by-factor">Colour by factor</h2>
-<p>When the focal covariate is continuous, choosing a factor in the <strong>Colour by</strong> dropdown draws a separate prediction ribbon for each factor level. Data points are coloured to match.</p>
-<h2 id="link-scale">Link scale</h2>
-<p>For GLMs (Poisson, Binomial) you can toggle <strong>Show link scale</strong> to display predictions on the log or logit scale instead of the natural (response) scale. This is useful for checking linearity and comparing with coefficient estimates.</p>
-<h2 id="mixed-effects-models-re-0">Mixed-effects models (RE = 0)</h2>
-<p>For models with random effects (e.g. <code>b[group[i]]</code>), FANGS zeroes out the random effects and shows <strong>population-level</strong> (marginal) predictions. This is the prediction for a new, unobserved group drawn from the random-effects distribution.</p>
 </body></html>`
 };
