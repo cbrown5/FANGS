@@ -4,11 +4,37 @@
 // This bundle is a fallback for when fetch() is unavailable (e.g. file:// protocol).
 
 export const COURSE_CONTENT = {
+  'answers': `<html><head></head><body><h2 id="model-for-summative-question">Model for summative question</h2>
+<h3 id="the-model">The model</h3>
+<p>We treat per-cent cover as a count on the log scale, add the distance and flow effects, and let each site have its own random intercept to absorb transect-to-transect clustering:</p>
+<p><span class="math display">cover<sub><em>i</em></sub> ∼ Poisson(<em>λ</em><sub><em>i</em></sub>),   log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em> dist<sub><em>i</em></sub> + <em>β</em><sub>flow</sub> (flow<sub><em>i</em></sub> − 1) + <em>b</em><sub>site[<em>i</em>]</sub>,   <em>b</em><sub><em>j</em></sub> ∼ Normal(0, <em>σ</em><sub><em>b</em></sub>)</span></p>
+<pre><code>model {
+  for (i in 1:N) {
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) &lt;- alpha + beta * dist_to_logging_km[i] + beta_flow * (flow[i] - 1) + b[site[i]]
+  }
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
+  alpha     ~ dnorm(0, 10)
+  beta      ~ dnorm(0, 5)
+  beta_flow ~ dnorm(0, 5)
+  sigma.b   ~ dunif(0, 10)
+}</code></pre>
+<p>Set <code>N</code> and <code>J</code> (the number of sites, 20) in the constants.</p>
+</body></html>`,
   'm00-getting-started': `<html><head></head><body><h1 id="getting-started">Getting started</h1>
-<h2 id="further-reading">Further reading</h2>
-<ul>
-<li><strong>Bayesian workflow</strong> — Gelman, A., Vehtari, A., Simpson, D., et al.&nbsp;(2020). Bayesian workflow. <em>arXiv</em>:2011.01808. <a href="https://arxiv.org/abs/2011.01808" class="uri">https://arxiv.org/abs/2011.01808</a> — Section 7 discusses identifiability and prior choices as part of the modelling cycle.</li>
-</ul>
+<p>Bayesian statistics are some of the most useful inferential tools we have. They can deal with all of the messy problems we have in real world data and they offer an alternative philosophy to the more frequently taught frequentist methods. Bayesian probability theory is also much more intuitive than frequentist theory.</p>
+<p>But learning the statistical computing methods that enable Bayesian inference can be difficult. There is a steep learning curve. A reasonable proficiency with coding is required for use of the best packages.</p>
+<p>Overcoming this challenge was why I developed FANGS the Fast Accessible Numeric Gibbs Sampler.</p>
+<p>FANGS runs in your web browser. Students can get started with Bayesian computation in a flash. I built it because I wanted to give my students a taster of Bayesian stats, but I didn’t want them to waste the whole practical lesson trying to install software on their computers.</p>
+<p>Its relatively fast for small problems, both in terms of time to install it (just open the webpage) and time taken to compute the statistics. I tested it against leading R based Bayesian engines and its faster for small datasets. Perfect for teaching.</p>
+<p>FANGS is not a full Bayesian engine however. I don’t recommend you use it for real science. Its slow for larger datasets and doesn’t have all the features of a real Bayesian software. It hasn’t been extensively tested by 100s of researchers like the best R packages have (Stan, brms, NIMBLE, JAGS to name a few).</p>
+<p>Use it as a gateway to learning Bayesian concepts, model syntax and Bayesian workflows. I hope it then helps you decide to then invest time in learning one of the R based packages.</p>
+<p>I leaned heavily on Claude Code to build FANGS. In fact, I don’t know how to write Java Script (the language its written in). Claude wrote all the code, I reviewed exactly none of the Java Script. What I did do was extensive testing of FANGS against the same models and data written with R-NIMBLE. I think pretty much all scientific software will be written this way soon, FANGS is my early test of that process.</p>
+<p>The testing is how I’m confident it works and is accurate enough for teaching.</p>
+<p>A technical paper on how I built FANGS and the tests is forthcoming.</p>
+<p>Let’s get started on the course.</p>
 </body></html>`,
   'm01-discrete-bayes': `<html><head></head><body><h1 id="bayes-theorem-with-discrete-models">Bayes’ theorem with discrete models</h1>
 <p>Bayesian inference works on the idea of <strong>starting with what you already believe, then updating those beliefs in proportion to how well the new data fit your model.</strong></p>
@@ -136,6 +162,12 @@ $$</span></p>
   sigma ~ dunif(0, 50)
 }</code></pre>
 <p>Read it top to bottom: <em>every measured <code>length</code> is normally distributed around a shared <code>mu</code> (mean); our prior belief is that <code>mu</code> sits somewhere around 40 mm; and the spread <code>sigma</code> is somewhere between 0 and 50 mm.</em></p>
+<div>
+<blockquote>
+<p><strong>Tip</strong></p>
+<p>FANGS can save the model in the URL so you can re-use it later. Click the ‘Copy share link’ button and then save the URL or bookmark it for later. You can even email it to other people. Just be aware it only saves the model, not the data or results.</p>
+</blockquote>
+</div>
 <h2 id="a-key-difference-between-fangs-and-the-classic-jags-syntax">A key difference between FANGS and the classic JAGS syntax</h2>
 <p>FANGS describes the normal distribution by its <strong>standard deviation</strong>, not its precision: <code>dnorm(mean, SD)</code>. Most textbooks and classic JAGS/BUGS code instead use precision, <span class="math inline"><em>τ</em> = 1/<em>σ</em><sup>2</sup></span>. So if you copy a model from a textbook, you must convert: <span class="math inline">$\\sigma = 1/\\sqrt{\\tau}$</span>. Forgetting this is the single most common source of “why is my fit nonsense?”.</p>
 <p>Many modern Bayesian software packages, are now using the SD, because it is more intuitive and easier to set priors on. NIMBLE for instance let’s the user choose which parameterisation they prefer.</p>
@@ -599,8 +631,15 @@ $$</span></p>
 <ul>
 <li>Does the <strong>posterior mean</strong> of <code>beta_trt</code> shift across priors?</li>
 <li>Does the <strong>95% CI</strong> cross zero under the more sceptical prior?</li>
-<li>A conclusion that holds across all three priors is <strong>robust</strong>. One that flips with a defensible prior change is <strong>fragile</strong> — and should be treated with caution.</li>
+<li>A conclusion that holds across all three priors is <strong>robust</strong>. One that flips with a defensible prior change is <strong>fragile</strong> and should be treated with caution.</li>
+<li>Did you notice the estimate for the intercept parameter (mean of the control group) also changes. Why is that?</li>
 </ul>
+<div>
+<blockquote>
+<p><strong>Tip</strong></p>
+<p>If you have some trouble getting convergence, try another prior. FANGS guesses the starting values for the chains based on the prior, so a very tight prior can make it hard for FANGS find a good starting point. In real world modelling, you would choose a range of starting values for each chain and use a larger number of chains to avoid this problem.</p>
+</blockquote>
+</div>
 <h2 id="recording-your-runs">Recording your runs</h2>
 <p>Use the recorder below — it saves your runs <strong>in your browser</strong> (no account needed) and lets you export a CSV to compare results across runs.</p>
 <h2 id="further-reading">Further reading</h2>
@@ -633,10 +672,10 @@ $$</span></p>
   'm14-poisson': `<html><head></head><body><h1 id="poisson-regression-counting-fish-near-logging">Poisson regression: counting fish near logging</h1>
 <p>Counts — fish on a transect, eggs in a nest, individuals in a quadrat — are not Gaussian. They are non-negative integers, and their variance grows with their mean. The <strong>Poisson</strong> distribution is the natural starting point.</p>
 <h2 id="the-data-a-coral-reef-nursery-under-pressure">The data: a coral-reef nursery under pressure</h2>
-<p><code>fish-counts.csv</code> comes from surveys of juvenile <strong>bumphead parrotfish</strong> (<em>Bolbometopon muricatum</em>) at 49 reef sites in <strong>Kia Province, Solomon Islands</strong>. The bumphead is the largest parrotfish in the world and is both culturally and ecologically important — but its juveniles depend on healthy branching <em>Acropora</em> coral as nursery habitat.</p>
+<p><code>fish-counts.csv</code> comes from surveys of juvenile <strong>bumphead parrotfish</strong> (<em>Bolbometopon muricatum</em>) at 49 reef sites in <strong>Kia Province, Solomon Islands</strong>. The bumphead is the largest parrotfish in the world and is both culturally and ecologically important. Its juveniles depend on healthy branching <em>Acropora</em> coral as nursery habitat.</p>
 <p>Across the bay, terrestrial <strong>logging</strong> washes sediment onto the reefs. Sediment smothers the branching coral the young fish shelter in, so the concern is that sites closer to logging operations support fewer juveniles. Each row is one site: <code>fish</code> is the number of juvenile bumpheads counted there, and <code>dist_to_logging_km</code> is the site’s distance from the nearest logging operation, in kilometres.</p>
 <blockquote>
-<p><strong>Data &amp; attribution.</strong> Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) <em>Logging degrades nursery habitat for an iconic coral reef fish.</em> <strong>Biological Conservation</strong> 210: 273–280. <a href="https://doi.org/10.1016/j.biocon.2017.04.025" class="uri">https://doi.org/10.1016/j.biocon.2017.04.025</a>. The copy used here has been lightly modified for teaching with FANGS.</p>
+<p><strong>Data &amp; attribution.</strong> Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., &gt; Peterson, N.A. &amp; Choat, J.H. (2017) <em>Logging degrades nursery habitat for an &gt; iconic coral reef fish.</em> <strong>Biological Conservation</strong> 210: 273–280. &gt; <a href="https://doi.org/10.1016/j.biocon.2017.04.025" class="uri">https://doi.org/10.1016/j.biocon.2017.04.025</a>. The copy used here has been slightly modified for teaching with FANGS.</p>
 </blockquote>
 <h2 id="the-model">The model</h2>
 <p>We cannot model the expected count <span class="math inline"><em>λ</em></span> directly with a straight line, because a line can go negative. Instead we model it on the <strong>log scale</strong> — the <strong>log link</strong>:</p>
@@ -682,7 +721,7 @@ $$</span></p>
 <p>Flow matters ecologically. Strong currents flush logging sediment off the reef, so the branching coral — and the juvenile bumphead parrotfish that shelter in it — can persist even fairly close to a logging operation. In mild-flow sites the sediment settles out and smothers the coral. So we expect flow to shift the counts up or down <em>on top of</em> whatever the distance effect is.</p>
 <h2 id="adding-a-factor">Adding a factor</h2>
 <p><code>flow</code> is a two-level factor (<code>Strong</code>, <code>Mild</code>). FANGS auto-encodes factors to integers in order of first appearance — here <code>Strong</code> = 1 and <code>Mild</code> = 2 — and we turn that code into a 0/1 indicator by subtracting 1, exactly as you did with the treatment factor earlier. That makes <strong>strong flow the reference level</strong>.</p>
-<p><span class="math display">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em> dist<sub><em>i</em></sub> + <em>β</em><sub>flow</sub> (flow<sub><em>i</em></sub> − 1)</span></p>
+<p><span class="math display">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em> dist<sub><em>i</em></sub> + <em>β</em><sub>flow</sub>* (flow<sub><em>i</em></sub> − 1)</span></p>
 <pre><code>model {
   for (i in 1:N) {
     fish[i] ~ dpois(lambda[i])
@@ -697,7 +736,8 @@ $$</span></p>
 <li><span class="math inline"><em>β</em></span> — the distance effect, <strong>holding flow constant</strong>.</li>
 <li><span class="math inline"><em>β</em><sub>flow</sub></span> — the mild-vs-strong effect, <strong>holding distance constant</strong>. A negative value means mild-flow sites hold fewer fish; <span class="math inline"><em>e</em><sup><em>β</em><sub>flow</sub></sup></span> is the multiplicative drop.</li>
 </ul>
-<p>This is the additive (no-interaction) model: flow shifts the whole log-count up or down by the same amount at every distance. If you suspected the <em>distance</em> effect itself changed with flow, you would add an interaction term — but start simple.</p>
+<p>This is the additive (no-interaction) model: flow shifts the whole log-count up or down by the same amount at every distance.</p>
+<p>If you suspected the <em>distance</em> effect itself changed with flow, you would add an interaction term. We’re keeping it simple here, but in practice its best to start with the most complex model that is plausible.</p>
 <h2 id="your-task">Your task</h2>
 <p>Fit the two-predictor model to <code>fish-counts.csv</code> and enter your posterior means for <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em></span>, and <span class="math inline"><em>β</em><sub>flow</sub></span>. How big is the flow effect once distance is accounted for — and which way does it go?</p>
 </body></html>`,
@@ -754,7 +794,7 @@ $$</span></p>
 <p>In FANGS:</p>
 <pre><code>model {
   for (i in 1:N) {
-    present[i] ~ dbern(p[i])
+    y[i] ~ dbern(p[i])
     logit(p[i]) &lt;- alpha + beta * x[i]
   }
   alpha ~ dnorm(0, 10)
@@ -763,7 +803,8 @@ $$</span></p>
 <h2 id="interpreting-on-the-logit-scale">Interpreting on the logit scale</h2>
 <p>A slope <span class="math inline"><em>β</em></span> is a change in <strong>log-odds</strong> per unit <span class="math inline"><em>x</em></span>; <span class="math inline"><em>e</em><sup><em>β</em></sup></span> is an <strong>odds ratio</strong>. Positive <span class="math inline"><em>β</em></span> → presence becomes more likely as <span class="math inline"><em>x</em></span> increases. To get a probability for a given <span class="math inline"><em>x</em></span>, push the linear predictor through the inverse logit.</p>
 <h2 id="your-task">Your task</h2>
-<p>Fit the logistic model to <code>presence.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span> (logit scale).</p>
+<p>We will model the Kia reef surveys again, but this time instead of the count of fish we’ll model the presence verse absence of the fish on surveys. Load the dataset <code>presence.csv</code>.</p>
+<p>Now re-write the model above for this dataset to fit the logistic model to <code>pres</code> (the variable for whether they saw the fish on that survey or not), with <code>dist_to_logging_km</code> as the predictor. Check your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span> (logit scale).</p>
 </body></html>`,
   'm17-binomial-three-level': `<html><head></head><body><h1 id="binomial-with-a-3-level-factor">Binomial with a 3-level factor</h1>
 <p>What if the predictor is a category with <strong>more than two</strong> levels — say three habitat types: <strong>Coral</strong>, <strong>Rubble</strong>, <strong>Seagrass</strong>? You cannot code three groups with a single 0/1 column. You need a small <strong>design matrix</strong>.</p>
@@ -795,13 +836,13 @@ $$</span></p>
 </tr>
 </tbody>
 </table>
-<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>2</sub> is_rubble<sub><em>i</em></sub> + <em>β</em><sub>3</sub> is_seagrass<sub><em>i</em></sub></span></p>
+<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>2</sub> is_rubble<sub><em>i</em></sub> + <em>β</em><sub>3</sub> is_seagrass<sub><em>i</em></sub></span></p>
 <ul>
 <li><span class="math inline"><em>α</em></span> — log-odds for the <strong>reference</strong> habitat, Coral.</li>
 <li><span class="math inline"><em>β</em><sub>2</sub></span> — difference (Rubble <strong>vs</strong> Coral).</li>
 <li><span class="math inline"><em>β</em><sub>3</sub></span> — difference (Seagrass <strong>vs</strong> Coral).</li>
 </ul>
-<p>There is <strong>no separate coefficient for Coral</strong> — it is absorbed into the intercept. That is why <span class="math inline"><em>k</em></span> levels need <span class="math inline"><em>k</em> − 1</span> indicator columns.</p>
+<p>There is <strong>no separate coefficient for Coral</strong> — it is absorbed into the intercept. That is why <span class="math inline"><em>k</em></span> levels need <span class="math inline"><em>k</em> − 1</span> indicator columns.</p>
 <h2 id="in-fangs">In FANGS</h2>
 <p>If your CSV has a text <code>habitat</code> column with levels <code>Coral</code>, <code>Rubble</code>, <code>Seagrass</code>, FANGS encodes it to integers automatically, using the order of first appearance:</p>
 <table class="caption-top">
@@ -826,10 +867,10 @@ $$</span></p>
 </tr>
 </tbody>
 </table>
-<p>You could build the <code>is_rubble</code>/<code>is_seagrass</code> indicator columns yourself, but FANGS already hands you the integer codes — so there is an easier way to write the model.</p>
+<p>You could build the <code>is_rubble</code>/<code>is_seagrass</code> indicator columns yourself, but in FANGS so there is an easier way to write the model.</p>
 <h2 id="alternative-parameterisation-index-a-coefficient-vector">Alternative parameterisation: index a coefficient vector</h2>
-<p>Instead of one intercept plus contrasts, give <strong>each habitat its own coefficient</strong> and let FANGS’s integer code pick the right one for each row. Because <code>habitat[i]</code> is <code>1</code>, <code>2</code>, or <code>3</code>, the expression <code>gamma[habitat[i]]</code> selects <code>gamma[1]</code>, <code>gamma[2]</code>, or <code>gamma[3]</code>:</p>
-<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>γ</em><sub> habitat<sub><em>i</em></sub></sub></span></p>
+<p>Instead of one intercept plus contrasts, give <strong>each habitat its own coefficient</strong>. FANGS’s integer coding will then pick the right one for each row. Because <code>habitat[i]</code> is <code>1</code>, <code>2</code>, or <code>3</code>, the expression <code>gamma[habitat[i]]</code> selects <code>gamma[1]</code>, <code>gamma[2]</code>, or <code>gamma[3]</code>:</p>
+<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>γ</em><sub> habitat<sub><em>i</em></sub></sub></span></p>
 <pre><code>model {
   for (i in 1:N) {
     pres[i] ~ dbern(p[i])
@@ -841,9 +882,9 @@ $$</span></p>
 }</code></pre>
 <p>This is the <strong>means (cell-means) parameterisation</strong>: each <span class="math inline"><em>γ</em><sub><em>k</em></sub></span> is the log-odds of presence <strong>in that habitat directly</strong>, with no reference level. It maps back to the dummy coding exactly:</p>
 <ul>
-<li><span class="math inline"><em>γ</em><sub>1</sub> = <em>α</em></span> — the reference habitat, Coral.</li>
-<li><span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>2</sub></span> — the Rubble-vs-Coral contrast.</li>
-<li><span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>3</sub></span> — the Seagrass-vs-Coral contrast.</li>
+<li><span class="math inline"><em>γ</em><sub>1</sub> = <em>α</em></span> — the reference habitat, Coral.</li>
+<li><span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>2</sub></span> — the Rubble-vs-Coral contrast.</li>
+<li><span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>3</sub></span> — the Seagrass-vs-Coral contrast.</li>
 </ul>
 <p>The two models fit the same data and give the same predicted probabilities; they just package the three numbers differently. Index coding is handy when you care about <strong>each level’s value on its own</strong> (and it scales to many levels without writing an indicator column for each). Reference coding is handy when you care about <strong>differences from a baseline</strong>, because the contrasts come straight out of the summary table with their own credible intervals.</p>
 <div>
@@ -856,7 +897,7 @@ $$</span></p>
 <blockquote>
 <p><strong>Mind the prior scale on the logit scale</strong></p>
 <p>Remember that FANGS parameterises <code>dnorm</code> by <strong>standard deviation</strong>, so <code>dnorm(0, 2)</code> means SD = 2. On the logit scale that is already generous: it puts most prior mass on probabilities between about 0.02 and 0.98.</p>
-<p>Something like <code>dnorm(0, 10)</code> looks harmlessly vague but is <strong>far too wide</strong> here — it says log-odds of ±20 are plausible, i.e. probabilities of <span class="math inline">10<sup>−9</sup></span>. Chains wander into that flat region, the likelihood underflows, and you get terrible R-hat and ESS. If a logistic model will not converge, an over-wide prior on the coefficients is the first thing to check.</p>
+<p>Something like <code>dnorm(0, 10)</code> looks harmlessly vague but is <strong>far too wide</strong> here — it says log-odds of ±20 are plausible, i.e.&nbsp;probabilities of <span class="math inline">10<sup>−9</sup></span>. Chains wander into that flat region, the likelihood underflows, and you get terrible R-hat and ESS. If a logistic model will not converge, an over-wide prior on the coefficients is the first thing to check.</p>
 </blockquote>
 </div>
 <div>
@@ -871,7 +912,7 @@ $$</span></p>
 <li><strong>Index coding</strong> — fit the <code>gamma[habitat[i]]</code> model above. Each <span class="math inline"><em>γ</em><sub><em>k</em></sub></span> is the log-odds of presence in habitat <span class="math inline"><em>k</em></span>; push each through the inverse logit to get the probability of presence in that habitat.</li>
 <li><strong>Reference coding</strong> — the CSV already contains the <code>is_rubble</code> and <code>is_seagrass</code> indicator columns, so you can fit the reference-coded model directly. Read off the reference log-odds <span class="math inline"><em>α</em></span> and the contrasts <span class="math inline"><em>β</em><sub>2</sub></span>, <span class="math inline"><em>β</em><sub>3</sub></span>, and say which habitat each contrast compares against.</li>
 </ol>
-<p>Then check that the two parameterisations agree: confirm that <span class="math inline"><em>γ</em><sub>1</sub> ≈ <em>α</em></span>, <span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>2</sub></span>, and <span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>3</sub></span>.</p>
+<p>Then check that the two parameterisations agree: confirm that <span class="math inline"><em>γ</em><sub>1</sub> ≈ <em>α</em></span>, <span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>2</sub></span>, and <span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>3</sub></span>.</p>
 <div>
 <blockquote>
 <p><strong>Note</strong></p>
@@ -899,16 +940,16 @@ $$</span></p>
 <p>Answer the concept quiz below before we fit one.</p>
 </body></html>`,
   'm18-random-effects-concept': `<html><head></head><body><h1 id="the-idea-of-random-effects">The idea of random effects</h1>
-<p>You sampled fish at <strong>12 reefs</strong>. Reefs differ, and observations from the same reef are more alike than observations from different reefs. Ignoring that structure underestimates your uncertainty. <strong>Random effects</strong> handle it.</p>
+<p>Samples often come in groups. Say you sampled fish at <strong>12 reefs</strong>. Reefs differ, and observations from the same reef are more alike than observations from different reefs. If you ignored reefs and ran your model assuming each fish was a sample you would underestimates the uncertainty. <strong>Random effects</strong> handle these grouping variables.</p>
 <h2 id="three-ways-to-treat-groups">Three ways to treat groups</h2>
 <ul>
-<li><strong>Complete pooling</strong> — one intercept for all reefs. Ignores reef differences.</li>
-<li><strong>No pooling</strong> — a separate, independent intercept per reef. Wastes information; noisy for reefs with little data.</li>
+<li><strong>Complete pooling</strong> — one intercept for all reefs. Ignores the differences among reefs.</li>
+<li><strong>No pooling</strong> — a separate, independent intercept per reef. You would fit reef as a typical fixed effect. This wastes information and is noisy for reefs with little data.</li>
 <li><strong>Partial pooling (random effects)</strong> — reef intercepts are drawn from a shared distribution. Reefs <strong>borrow strength</strong> from each other.</li>
 </ul>
 <p><span class="math display"><em>b</em><sub><em>j</em></sub> ∼ Normal(0,&nbsp;<em>σ</em><sub><em>b</em></sub>),   <em>μ</em><sub><em>i</em></sub> = <em>α</em> + <em>b</em><sub>reef[<em>i</em>]</sub> + …</span></p>
 <h2 id="shrinkage">Shrinkage</h2>
-<p>Partial pooling pulls each reef’s estimate <strong>toward the overall mean</strong>, and it pulls hardest on reefs with <strong>little data</strong> (which are the least trustworthy on their own). The amount of pooling is learned from the data through the group-level SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>:</p>
+<p>Partial pooling pulls each reef’s estimate <strong>toward the overall mean</strong>, and it shrinks reefs with <strong>little data</strong> back towards the global mean (which are the least trustworthy on their own). The amount of pooling is learned from the data through the group-level SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>:</p>
 <ul>
 <li>small <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> → reefs are similar → strong pooling;</li>
 <li>large <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> → reefs genuinely differ → little pooling.</li>
@@ -968,7 +1009,10 @@ $$</span></p>
   'm19-random-effects-fit': `<html><head></head><body><h1 id="fit-a-random-effects-model">Fit a random-effects model</h1>
 <p>Now we fit the mixed-effects model: a population-level regression <strong>plus</strong> random intercepts for each group (reef/site).</p>
 <h2 id="the-model">The model</h2>
-<p><span class="math display"><em>y</em><sub><em>i</em></sub> ∼ Normal(<em>μ</em><sub><em>i</em></sub>,&nbsp;<em>σ</em>),   <em>μ</em><sub><em>i</em></sub> = <em>α</em> + <em>β</em> <em>x</em><sub><em>i</em></sub> + <em>b</em><sub>group[<em>i</em>]</sub>,   <em>b</em><sub><em>j</em></sub> ∼ Normal(0,&nbsp;<em>σ</em><sub><em>b</em></sub>)</span></p>
+<p>Here’s an example of a random effects model. Pay attention, in a minute I’ll ask you to re-write this for a new dataset.</p>
+<p>$$ y_i (_i,&nbsp;), </p>
+<p><em>i = + ,x_i + b</em>{[i]}, </p>
+<p>b_j (0,&nbsp;_b) $$</p>
 <p>In FANGS:</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -983,18 +1027,32 @@ $$</span></p>
   sigma   ~ dunif(0, 50)
   sigma.b ~ dunif(0, 50)
 }</code></pre>
+<p><code>alpha + beta * x[i]</code> is the fixed effect part of the model, that drives the mean in response to a covariate <code>x</code>.</p>
+<p><code>b[group[i]]</code> are the group means. Note how each value is drawn from a shared distribution with a SD that is estimated: <code>b[j] ~ dnorm(0, sigma.b)</code>. This is what makes it a random effect.</p>
+<p>Compare to the fixed effect parameter <code>beta</code> which is drawn directly from a prior.</p>
+<p>The SD for the <code>sigma.b</code> prior (50) is what we call a hyper-parameter, a parameter that controls other parameters. Lower values of the SD will shrink our random effects closer to the global mean.</p>
+<p>Other differences to note in the model definition from earlier models:</p>
 <ul>
 <li><code>J</code> — the number of groups. Set it in the constants alongside <code>N</code>.</li>
 <li><code>group[i]</code> — which group observation <code>i</code> belongs to (FANGS encodes a text column for you).</li>
-<li><span class="math inline"><em>σ</em><sub><em>b</em></sub></span> — the <strong>group-level SD</strong>. It quantifies how much groups differ and controls the shrinkage.</li>
 </ul>
+<h2 id="run-the-model">Run the model</h2>
+<p>Go to FANGS and click the preset options for ‘Load example data’ and ‘mixed-effects model’. It will load up this data. Run the model and inspect the results.</p>
+<p>Note that it will only show trace plots for the scalar parameters (single values), click the tick-box at the top of the trace plot panel if you want to see traces for the <code>b</code> parameter (which is an array).</p>
 <h2 id="what-to-check">What to check</h2>
 <p>The <strong>Summary</strong> tab now includes <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and each <code>b[j]</code>. Watch R-hat for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> especially — variance parameters are the slowest to mix.</p>
 <h2 id="your-task">Your task</h2>
 <p>Fit the random-intercepts model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em></span>, and the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>.</p>
+<p>A few tips: don’t forget to change the variable names for the new dataset; you will need to update the distribution for the response variable (its count data…); don’t forget to enter a value for J, the number of sites.</p>
 </body></html>`,
   'm20-improving-sampling': `<html><head></head><body><h1 id="improving-sampling-fixing-an-over-specified-model">Improving sampling: fixing an over-specified model</h1>
-<p>Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that wander across enormous ranges or drift apart and never settle. The first instinct is “the sampler is broken”, but far more often the model is asking the data to estimate something it <strong>cannot</strong>. This is an <em>over-specified</em> model, and the cure is to respecify it, not to sample harder.</p>
+<p>Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that wander across enormous ranges or drift apart and never settle. The first instinct is “the sampler is broken”, but far more often the model is asking the data to estimate something it <strong>cannot</strong>. This is an <em>over-specified</em> model, and the cure is to respecify it, not to try and fix the algorithm.</p>
+<div>
+<blockquote>
+<p><strong>Tip</strong></p>
+<p>The Folk Theorem of Statistical Computing (Gelman 2008): “When you have computational problems, often there’s a problem with your model.”</p>
+</blockquote>
+</div>
 <h2 id="the-data">The data</h2>
 <p>We use <code>random-effects.csv</code> — the benthic-cover survey from the same Kia Province reefs you met with the fish counts. Each row is one transect, and <code>cover</code> is the per-cent cover of branching <em>Acropora</em> coral. There are several transects per site, so <code>site</code> is a natural grouping variable for random effects.</p>
 <h2 id="a-broken-model">A broken model</h2>
@@ -1009,13 +1067,14 @@ $$</span></p>
     beta[j] ~ dnorm(0, 1000)
   }
 }</code></pre>
-<p>Set <code>J</code> to the number of sites (49) alongside <code>N</code> in the constants, then fit it. The diagnostics will be dreadful: R-hat for <code>alpha</code> and the <code>beta[j]</code> will be huge, and ESS will collapse to single digits.</p>
-<h2 id="why-it-fails-non-identifiability">Why it fails: non-identifiability</h2>
-<p>Look at the linear predictor: <span class="math inline">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>site[<em>i</em>]</sub></span>. You can add any constant <span class="math inline"><em>c</em></span> to <span class="math inline"><em>α</em></span> and subtract the same <span class="math inline"><em>c</em></span> from <em>every</em> <span class="math inline"><em>β</em><sub><em>j</em></sub></span>, and the predictions are completely unchanged:</p>
+<p>Set <code>J</code> to the number of sites (20) alongside <code>N</code> in the constants, then fit it. The diagnostics will be dreadful: R-hat for <code>alpha</code> and the <code>beta[j]</code> will be huge, and ESS be in the single digits.</p>
+<h2 id="non-identifiability">Non-identifiability</h2>
+<p>Non-identifiability is a common problem, but it’s not always that obvious. Here’s a really obvious example to start you off.</p>
+<p>Consider the linear predictor: <span class="math inline">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>site[<em>i</em>]</sub></span>. You can add any constant <span class="math inline"><em>c</em></span> to <span class="math inline"><em>α</em></span> and subtract the same <span class="math inline"><em>c</em></span> from <em>every</em> <span class="math inline"><em>β</em><sub><em>j</em></sub></span>, and the predictions are completely unchanged:</p>
 <p><span class="math display">(<em>α</em> + <em>c</em>) + (<em>β</em><sub><em>j</em></sub> − <em>c</em>) = <em>α</em> + <em>β</em><sub><em>j</em></sub></span></p>
-<p>So the data can pin down each sum <span class="math inline"><em>α</em> + <em>β</em><sub><em>j</em></sub></span>, but never <span class="math inline"><em>α</em></span> and the <span class="math inline"><em>β</em><sub><em>j</em></sub></span> separately — there are infinitely many equally good answers along a ridge. The two diffuse <code>dnorm(0, 1000)</code> priors do nothing to break the tie, so the sampler slides up and down that ridge forever. That is exactly what high R-hat and tiny ESS are telling you.</p>
+<p>So the data can nail each sum <span class="math inline"><em>α</em> + <em>β</em><sub><em>j</em></sub></span>, but never <span class="math inline"><em>α</em></span> and the <span class="math inline"><em>β</em><sub><em>j</em></sub></span> separately — there are infinitely many equally good answers along a ridge. The two diffuse <code>dnorm(0, 1000)</code> priors do nothing to break the tie, so the sampler slides up and down that ridge forever. That is what a high R-hat and tiny ESS are telling you.</p>
 <h2 id="fix-1-partial-pooling-and-sensible-priors">Fix 1: partial pooling and sensible priors</h2>
-<p>Make the site effects deviations around the global mean, drawn from a shared distribution whose width <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> the model estimates. Anchoring them at zero identifies <span class="math inline"><em>α</em></span> as the grand mean, and the shared prior pools information across sites — exactly the random-effects idea from Modules 18–19:</p>
+<p>Back to our model of reefs. Make the site effects deviations around the global mean, drawn from a shared distribution whose width <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> the model estimates. Anchoring them at zero identifies <span class="math inline"><em>α</em></span> as the grand mean, and the shared prior pools information across sites:</p>
 <pre><code>model {
   for (i in 1:N) {
     cover[i] ~ dpois(lambda[i])
@@ -1027,10 +1086,10 @@ $$</span></p>
   alpha   ~ dnorm(0, 10)
   sigma.b ~ dunif(0, 10)
 }</code></pre>
-<p>Two changes did the work:</p>
+<p>Two changes fixed our issue:</p>
 <ol type="1">
 <li><strong>Identifiability</strong> — the <code>b[j]</code> are centred on 0 with a shared, estimated SD, so they can no longer trade off freely against <code>alpha</code>.</li>
-<li><strong>Sensible priors</strong> — <code>dnorm(0, 10)</code> on the log-scale intercept and a bounded <code>dunif(0, 10)</code> on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> are weakly informative rather than absurdly vague.</li>
+<li><strong>Sensible priors</strong> — <code>dnorm(0, 10)</code> on the log-scale intercept and a bounded <code>dunif(0, 10)</code> on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> are weakly informative rather than absurdly wide.</li>
 </ol>
 <p>Refit and watch R-hat fall toward 1.0 and ESS climb into the hundreds.</p>
 <h2 id="fix-2-reparameterisation">Fix 2: Reparameterisation</h2>
@@ -1039,7 +1098,7 @@ $$</span></p>
   z[j] ~ dnorm(0, 1)
   b[j] &lt;- sigma.b * z[j]
 }</code></pre>
-<p>Same model, much friendlier geometry — chains for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> mix dramatically better.</p>
+<p>This is the same model, it just has a much friendlier geometry for the sampling algorithm.</p>
 <h2 id="your-task">Your task</h2>
 <ol type="1">
 <li>Fit the <strong>broken</strong> model and read the worst R-hat and minimum ESS from the <strong>Summary</strong> tab.</li>
@@ -1076,9 +1135,9 @@ $$</span></p>
 <p>Fit the full model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em><sub><em>A</em></sub></span>, <span class="math inline"><em>β</em><sub><em>B</em></sub></span>, and the reef SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>
 </body></html>`,
   'm21-summative': `<html><head></head><body><h1 id="summative-challenge-coral-cover-logging-random-effects">Summative challenge: coral cover, logging &amp; random effects</h1>
-<p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: count-like data, a log link, a continuous predictor, a factor, and random effects for grouping.</p>
+<p>This brings the whole day together. You will build and fit a model that combine <strong>everything</strong>: count-like data, a log link, a continuous predictor, a factor, and random effects for grouping.</p>
 <h2 id="the-scenario">The scenario</h2>
-<p>Same Kia Province case study as the fish counts (Module 14), but now we look at the habitat itself. On each reef, divers ran several transects and recorded the per-cent cover of branching <em>Acropora</em> coral — the nursery habitat the juvenile bumphead parrotfish depend on. The worry is the same: terrestrial logging washes sediment onto the reef and smothers the branching coral, so cover should be lower closer to logging.</p>
+<p>We’ll use the same Kia Province case study as the fish counts (Module 14), but now we look at the habitat itself. On each reef, divers ran several transects and recorded the per-cent cover of branching <em>Acropora</em> coral — the nursery habitat the juvenile bumphead parrotfish depend on. The worry is the same: terrestrial logging washes sediment onto the reef and smothers the branching coral, so cover should be lower closer to logging.</p>
 <p><code>random-effects.csv</code> has one row per transect:</p>
 <ul>
 <li><code>cover</code> — per-cent cover of branching <em>Acropora</em> (our response).</li>
@@ -1089,23 +1148,6 @@ $$</span></p>
 <blockquote>
 <p><strong>Data &amp; attribution.</strong> From the same study as Module 14: Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) <em>Logging degrades nursery habitat for an iconic coral reef fish.</em> <strong>Biological Conservation</strong> 210: 273–280. <a href="https://doi.org/10.1016/j.biocon.2017.04.025" class="uri">https://doi.org/10.1016/j.biocon.2017.04.025</a>. Lightly modified for teaching with FANGS.</p>
 </blockquote>
-<h2 id="the-model">The model</h2>
-<p>We treat per-cent cover as a count on the log scale, add the distance and flow effects, and let each site have its own random intercept to absorb transect-to-transect clustering:</p>
-<p><span class="math display">cover<sub><em>i</em></sub> ∼ Poisson(<em>λ</em><sub><em>i</em></sub>),   log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em> dist<sub><em>i</em></sub> + <em>β</em><sub>flow</sub> (flow<sub><em>i</em></sub> − 1) + <em>b</em><sub>site[<em>i</em>]</sub>,   <em>b</em><sub><em>j</em></sub> ∼ Normal(0, <em>σ</em><sub><em>b</em></sub>)</span></p>
-<pre><code>model {
-  for (i in 1:N) {
-    cover[i] ~ dpois(lambda[i])
-    log(lambda[i]) &lt;- alpha + beta * dist_to_logging_km[i] + beta_flow * (flow[i] - 1) + b[site[i]]
-  }
-  for (j in 1:J) {
-    b[j] ~ dnorm(0, sigma.b)
-  }
-  alpha     ~ dnorm(0, 10)
-  beta      ~ dnorm(0, 5)
-  beta_flow ~ dnorm(0, 5)
-  sigma.b   ~ dunif(0, 10)
-}</code></pre>
-<p>Set <code>N</code> and <code>J</code> (the number of sites, 49) in the constants.</p>
 <h2 id="bring-your-whole-toolkit">Bring your whole toolkit</h2>
 <ul>
 <li>Set sensible, weakly informative priors, and avoid the over-specification trap from Module 20.</li>
