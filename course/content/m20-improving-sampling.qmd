@@ -1,22 +1,18 @@
 # Improving sampling: fixing an over-specified model
 
-Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that
-wander across enormous ranges or drift apart and never settle. The first
-instinct is "the sampler is broken", but far more often the model is asking the
-data to estimate something it **cannot**. This is an *over-specified* model, and
-the cure is to respecify it, not to sample harder.
+Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that wander across enormous ranges or drift apart and never settle. The first instinct is "the sampler is broken", but far more often the model is asking the data to estimate something it **cannot**. This is an *over-specified* model, and the cure is to respecify it, not to try and fix the algorithm.
+
+::: callout-tip
+The Folk Theorem of Statistical Computing (Gelman 2008): "When you have computational problems, often there’s a problem with your model. "
+:::
 
 ## The data
 
-We use `random-effects.csv` — the benthic-cover survey from the same Kia
-Province reefs you met with the fish counts. Each row is one transect, and
-`cover` is the per-cent cover of branching *Acropora* coral. There are several
-transects per site, so `site` is a natural grouping variable for random effects.
+We use `random-effects.csv` — the benthic-cover survey from the same Kia Province reefs you met with the fish counts. Each row is one transect, and `cover` is the per-cent cover of branching *Acropora* coral. There are several transects per site, so `site` is a natural grouping variable for random effects.
 
 ## A broken model
 
-Here is a model that tries to give every site its own free mean, on top of a
-global intercept, with very diffuse priors:
+Here is a model that tries to give every site its own free mean, on top of a global intercept, with very diffuse priors:
 
 ```
 model {
@@ -31,32 +27,23 @@ model {
 }
 ```
 
-Set `J` to the number of sites (49) alongside `N` in the constants, then fit it.
-The diagnostics will be dreadful: R-hat for `alpha` and the `beta[j]` will be
-huge, and ESS will collapse to single digits.
+Set `J` to the number of sites (20) alongside `N` in the constants, then fit it. The diagnostics will be dreadful: R-hat for `alpha` and the `beta[j]` will be huge, and ESS be in the single digits.
 
-## Why it fails: non-identifiability
+## Non-identifiability
 
-Look at the linear predictor: $\log(\lambda_i) = \alpha + \beta_{\text{site}[i]}$.
-You can add any constant $c$ to $\alpha$ and subtract the same $c$ from *every*
-$\beta_j$, and the predictions are completely unchanged:
+Non-identifiability is a common problem, but it's not always that obvious. Here's a really obvious example to start you off. 
+
+Consider the linear predictor: $\log(\lambda_i) = \alpha + \beta_{\text{site}[i]}$. You can add any constant $c$ to $\alpha$ and subtract the same $c$ from *every* $\beta_j$, and the predictions are completely unchanged:
 
 $$
 (\alpha + c) + (\beta_j - c) = \alpha + \beta_j
 $$
 
-So the data can pin down each sum $\alpha + \beta_j$, but never $\alpha$ and the
-$\beta_j$ separately — there are infinitely many equally good answers along a
-ridge. The two diffuse `dnorm(0, 1000)` priors do nothing to break the tie, so
-the sampler slides up and down that ridge forever. That is exactly what high
-R-hat and tiny ESS are telling you.
+So the data can nail each sum $\alpha + \beta_j$, but never $\alpha$ and the $\beta_j$ separately — there are infinitely many equally good answers along a ridge. The two diffuse `dnorm(0, 1000)` priors do nothing to break the tie, so the sampler slides up and down that ridge forever. That is what a high R-hat and tiny ESS are telling you.
 
 ## Fix 1: partial pooling and sensible priors
 
-Make the site effects deviations around the global mean, drawn from a shared
-distribution whose width $\sigma_b$ the model estimates. Anchoring them at zero
-identifies $\alpha$ as the grand mean, and the shared prior pools information
-across sites — exactly the random-effects idea from Modules 18–19:
+Back to our model of reefs. Make the site effects deviations around the global mean, drawn from a shared distribution whose width $\sigma_b$ the model estimates. Anchoring them at zero identifies $\alpha$ as the grand mean, and the shared prior pools information across sites:
 
 ```
 model {
@@ -72,18 +59,16 @@ model {
 }
 ```
 
-Two changes did the work:
+Two changes fixed our issue:
 
 1. **Identifiability** — the `b[j]` are centred on 0 with a shared, estimated SD, so they can no longer trade off freely against `alpha`.
-2. **Sensible priors** — `dnorm(0, 10)` on the log-scale intercept and a bounded `dunif(0, 10)` on $\sigma_b$ are weakly informative rather than absurdly vague.
+2. **Sensible priors** — `dnorm(0, 10)` on the log-scale intercept and a bounded `dunif(0, 10)` on $\sigma_b$ are weakly informative rather than absurdly wide.
 
 Refit and watch R-hat fall toward 1.0 and ESS climb into the hundreds.
 
 ## Fix 2: Reparameterisation
 
-In hierarchical models the group SD $\sigma_b$ and the group effects $b_j$ are
-strongly coupled, creating a funnel-shaped posterior that is hard to sample
-(the "centred" parameterisation). A **non-centred** form decouples them:
+In hierarchical models the group SD $\sigma_b$ and the group effects $b_j$ are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the "centred" parameterisation). A **non-centred** form decouples them:
 
 ```
 for (j in 1:J) {
@@ -92,8 +77,7 @@ for (j in 1:J) {
 }
 ```
 
-Same model, much friendlier geometry — chains for $\sigma_b$ mix dramatically
-better.
+This is the same model, it just has a much friendlier geometry for the sampling algorithm.
 
 ## Your task
 

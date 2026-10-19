@@ -5,9 +5,13 @@ intercepts for each group (reef/site).
 
 ## The model
 
+Here's an example of a random effects model. Pay attention, in a minute I'll ask you to re-write this for a new dataset. 
+
 $$
 y_i \sim \text{Normal}(\mu_i,\ \sigma), \qquad
+
 \mu_i = \alpha + \beta\,x_i + b_{\text{group}[i]}, \qquad
+
 b_j \sim \text{Normal}(0,\ \sigma_b)
 $$
 
@@ -29,11 +33,25 @@ model {
 }
 ```
 
+`alpha + beta * x[i]` is the fixed effect part of the model, that drives the mean in response to a covariate `x`. 
+
+`b[group[i]]` are the group means. Note how each value is drawn from a shared distribution with a SD that is estimated: `b[j] ~ dnorm(0, sigma.b)`. This is what makes it a random effect. 
+
+Compare to the fixed effect parameter `beta` which is drawn directly from a prior. 
+
+The SD for the `sigma.b` prior (50) is what we call a hyper-parameter, a parameter that controls other parameters. Lower values of the SD will shrink our random effects closer to the global mean. 
+
+Other differences to note in the model definition from earlier models: 
+
 - `J` — the number of groups. Set it in the constants alongside `N`.
 - `group[i]` — which group observation `i` belongs to (FANGS encodes a text
   column for you).
-- $\sigma_b$ — the **group-level SD**. It quantifies how much groups differ and
-  controls the shrinkage.
+
+## Run the model 
+
+Go to FANGS and click the preset options for 'Load example data' and 'mixed-effects model'. It will load up this data. Run the model and inspect the results. 
+
+Note that it will only show trace plots for the scalar parameters (single values), click the tick-box at the top of the trace plot panel if you want to see traces for the `b` parameter (which is an array). 
 
 ## What to check
 
@@ -43,4 +61,6 @@ $\sigma_b$ especially — variance parameters are the slowest to mix.
 ## Your task
 
 Fit the random-intercepts model to `random-effects.csv` and check $\alpha$,
-$\beta$, and the group SD $\sigma_b$.
+$\beta$, and the group SD $\sigma_b$. 
+
+A few tips: don't forget to change the variable names for the new dataset; you will need to update the distribution for the response variable (its count data...); don't forget to enter a value for J, the number of sites. 

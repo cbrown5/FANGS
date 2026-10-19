@@ -12,7 +12,7 @@ modules reference these by filename in `../modules.js`.
 | `fish-counts.csv` | M14, M15 | `site`, `fish` (count), `flow` (factor: Strong/Mild), `logged` (factor), `dist_to_logging_km` (continuous), `fish_pres` (binary) |
 | `presence.csv` | M16 | `site`, `pres` (binary response), `logged` (factor), `habitat` (factor), `dist_to_logging_km` (continuous) |
 | `habitat-presence.csv` | M17 | `site`, `pres` (binary response), `habitat` (3-level factor: Coral/Rubble/Seagrass), `depth_m` (continuous), `is_rubble`, `is_seagrass` (dummy indicators for the reference-coded model) |
-| `random-effects.csv` | M19, M20, M21 | `site`, `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
+| `random-effects.csv` | M19, M20, M21 | `site` (20 levels), `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
 
 `jaw-length.csv` is also present in this folder but is **not used by any module** —
 M8/M9 were reworked onto `fish-lengths.csv`. It is kept for the R-reference
@@ -45,7 +45,14 @@ Clark, T.D., et al. 2020. Ocean acidification does not impair the behaviour of c
 
 ### Reef fish and benthic surveys (`fish-counts.csv`, `random-effects.csv`)
 
-Surveys of benthic organisms and juvenile reef fish at 49 sites in Kia Province, Solomon Islands. Sites were surveyed for juvenile bumphead parrotfish (*Bolbometopon muricatum*) counts. Four transects were done at each site to get benthic cover (branching *Acropora* coral) using point-intercept transects. Predictors include water flow, logging status, and distance to logging operations.
+Surveys of benthic organisms and juvenile reef fish at 49 sites in Kia Province, Solomon Islands. Sites were surveyed for juvenile bumphead parrotfish (*Bolbometopon muricatum*) counts. Transects were done at each site to get benthic cover (branching *Acropora* coral) using point-intercept transects. Predictors include water flow, logging status, and distance to logging operations.
+
+`random-effects.csv` is a 20-site, 3-transect-per-site subset (60 rows) of the
+full survey, chosen to span both flow levels, both logging levels and the whole
+distance gradient. Hierarchical models fit roughly nine times faster on it than
+on the full 49-site survey, which matters because every site adds a random
+intercept for the sampler to update. The original 245-row survey is kept
+alongside it as `random-effects-full.csv` (not included in the student zip).
 
 For reef fish data:
 

@@ -1,0 +1,27 @@
+## Model for summative question
+
+### The model
+
+We treat per-cent cover as a count on the log scale, add the distance and flow effects, and let each site have its own random intercept to absorb transect-to-transect clustering:
+
+$$
+\text{cover}_i \sim \text{Poisson}(\lambda_i), \qquad \log(\lambda_i) = \alpha + \beta\,\text{dist}_i + \beta_{\text{flow}}\,(\text{flow}_i - 1) + b_{\text{site}[i]}, \qquad b_j \sim \text{Normal}(0, \sigma_b)
+$$
+
+```
+model {
+  for (i in 1:N) {
+    cover[i] ~ dpois(lambda[i])
+    log(lambda[i]) <- alpha + beta * dist_to_logging_km[i] + beta_flow * (flow[i] - 1) + b[site[i]]
+  }
+  for (j in 1:J) {
+    b[j] ~ dnorm(0, sigma.b)
+  }
+  alpha     ~ dnorm(0, 10)
+  beta      ~ dnorm(0, 5)
+  beta_flow ~ dnorm(0, 5)
+  sigma.b   ~ dunif(0, 10)
+}
+```
+
+Set `N` and `J` (the number of sites, 20) in the constants.

@@ -35,7 +35,10 @@ const STAMP = new Date(Date.UTC(2026, 0, 1, 0, 0, 0));
 // (older drafts and R-reference work still refer to them) but are excluded from
 // the student download so the archive holds only what the modules actually need.
 // jaw-length.csv was superseded by fish-lengths.csv for M8/M9.
-const EXCLUDE = new Set(['jaw-length.csv']);
+// random-effects-full.csv is the original 49-site survey, kept for reference;
+// the course uses the 20-site subset in random-effects.csv so hierarchical fits
+// finish in a workshop-friendly time.
+const EXCLUDE = new Set(['jaw-length.csv', 'random-effects-full.csv']);
 
 function shouldInclude(name) {
   if (name === ZIP_NAME) return false;        // never nest the archive in itself
