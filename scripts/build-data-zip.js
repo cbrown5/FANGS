@@ -31,9 +31,16 @@ const ARCHIVE_ROOT = 'course-data';
 // datasets have not changed, so the committed zip doesn't churn in git.
 const STAMP = new Date(Date.UTC(2026, 0, 1, 0, 0, 0));
 
+// Datasets kept in the repo but not used by any course module. They stay on disk
+// (older drafts and R-reference work still refer to them) but are excluded from
+// the student download so the archive holds only what the modules actually need.
+// jaw-length.csv was superseded by fish-lengths.csv for M8/M9.
+const EXCLUDE = new Set(['jaw-length.csv']);
+
 function shouldInclude(name) {
   if (name === ZIP_NAME) return false;        // never nest the archive in itself
   if (name.startsWith('.')) return false;     // .DS_Store and friends
+  if (EXCLUDE.has(name)) return false;        // present but unused by any module
   return /\.(csv|md|txt)$/i.test(name);
 }
 

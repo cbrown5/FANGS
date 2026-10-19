@@ -43,6 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const scatter      = new ScatterPlot(document.getElementById('joint-container'));
   const predictions  = new PredictionsPlot(document.getElementById('predictions-container'));
 
+  // -- Trace tab: toggle trace plots for indexed/array parameters --
+  // Default is unchecked (scalars only). Array samples are always buffered by
+  // TracePlot, so toggling works during live sampling and after a run.
+  const chkShowArrayParams = document.getElementById('chk-show-array-params');
+  if (chkShowArrayParams) {
+    trace.setShowArrayParams(chkShowArrayParams.checked);
+    chkShowArrayParams.addEventListener('change', () => {
+      trace.setShowArrayParams(chkShowArrayParams.checked);
+    });
+  }
+
   // -- Initialise educational popups --
   initPopups();
 
@@ -762,6 +773,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const cfg = settings.getSettings();
 
       if (samplerWorker) samplerWorker.terminate();
+
+      // Reset prior-check display so only this model's parameters are shown.
+      // (priorDensity/priorSummary are long-lived, so stale parameters from a
+      // previous run would otherwise persist alongside the current ones.)
+      priorDensity.clear();
+      priorSummary.clear();
 
       let priorSamples = {};
 

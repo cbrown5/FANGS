@@ -51,6 +51,8 @@ All core modules are implemented and 275 tests pass.
 
 ## Next Steps
 
+App is fully functional and good to use. 
+
 ### USER todo
 - test poisson gamma 
 - read the paper draft and suggest updates
@@ -71,12 +73,7 @@ All core modules are implemented and 275 tests pass.
 - Pin reference posteriors for M14–M19, M21 (currently self-report mode).
 
 ### Claude todo
-- Update claude.md - the datasets list at end needs habitat-presence.csv
-- Add option near the title of the trace plot tab to show all trace plots including for arrays (e.g. factor variables, random effects). Default to the current situation where we just show parameters that are single values. 
-- Check: Increase font size for 'Predictors auto-scaled for sampling' message
-- Confirm that all datasets used in the modules are available in the course data folder. 
-- Issue with prior check. Need to check priors and how dnorm is specified. when I run it for my clownfish-oa dataset the prior for alpha is centered on 20, which is the mean of the posterior. But when I change the prior mean, the posterior in prior-check barely shifts from 20. Figure out how this happens and fix it. 
-- Prior checks is carrying over parameter names from the last model run in a browser session. So it shows params for this model, as well as the last model run. need to fix this. 
+- In the modules menu add a cheatsheet that has URLs that give the model for each module. For user to use if they get stuck solving the problems themselves
 
 ### Referencing TODO
 - add references for books to the course in appropriate places. 

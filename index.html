@@ -607,6 +607,36 @@
       border-bottom: 2px solid var(--border);
     }
 
+    /* Pane title with a small control on the right */
+    .pane-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .pane-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .pane-toggle input[type="checkbox"] {
+      accent-color: var(--accent);
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .pane-toggle:hover {
+      color: var(--text);
+    }
+
     /* -- Empty state -- */
     .empty-state {
       display: flex;
@@ -854,7 +884,7 @@
         <button id="btn-run">&#9654; Run</button>
         <button id="btn-stop" disabled>&#9632; Stop</button>
       </div>
-      <div id="scaling-note" style="display:none; font-size:0.85em; color:#8be9fd; margin-top:8px;">
+      <div id="scaling-note" style="display:none; font-size:0.9rem; color:#8be9fd; margin-top:8px;">
         Predictors auto-scaled for sampling <button class="popup-trigger" data-popup="predictor-scaling" style="font-size:0.9em; padding:0 4px; margin-left:2px;">?</button>
       </div>
     </div>
@@ -907,7 +937,13 @@
 
       <!-- Trace -->
       <div class="tab-pane active" id="pane-trace" role="tabpanel">
-        <div class="pane-title" data-popup="trace-plot">Chain Trace Plots</div>
+        <div class="pane-title pane-title-row">
+          <span data-popup="trace-plot">Chain Trace Plots</span>
+          <label class="pane-toggle" for="chk-show-array-params">
+            <input type="checkbox" id="chk-show-array-params">
+            Show array parameters (random effects, factor levels)
+          </label>
+        </div>
         <div id="trace-container">
           <div class="empty-state">
             <span class="empty-icon">&#128200;</span>

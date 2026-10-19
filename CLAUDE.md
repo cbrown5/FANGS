@@ -328,9 +328,14 @@ User-supplied CSVs in `course/data/`. For each `answer-check` module, fit the mo
 
 | CSV | Used by modules | Status |
 |-----|----------------|--------|
-| `fish-lengths.csv` | M5, M6, M7 | ✅ present |
+| `fish-lengths.csv` | M5, M6, M8, M9, M11 | ✅ present |
 | `clownfish-oa.csv` | M12, M13 | ✅ present |
 | `fish-counts.csv` | M14, M15 | ✅ present |
-| `random-effects.csv` | M19, M21 | ✅ present |
-| `jaw-length.csv` | M8, M9 | ✅ present |
-| `presence.csv` | M16, M17 | ✅ present |
+| `presence.csv` | M16 | ✅ present |
+| `habitat-presence.csv` | M17 (3-level factor; simulated — see `course/data/README.md`) | ✅ present |
+| `random-effects.csv` | M19, M20, M21 | ✅ present |
+
+`course/data/course-data.zip` is a generated bundle of all the CSVs plus
+`course/data/README.md`, linked from the course landing page for students to
+download. Regenerate it with `node scripts/build-data-zip.js` after adding or
+changing a dataset.

@@ -141,7 +141,15 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
   }
 
   // Attempt conjugate updates first.
-  switch (node.conjugateType) {
+  //
+  // IMPORTANT: every conjugate update below combines the prior with the
+  // *likelihood* contributions of observed children. In prior-only mode
+  // (prior predictive check) the likelihood must be dropped entirely, so the
+  // conjugate branch is skipped and the parameter is updated from its prior
+  // alone via the generic path below. Without this guard a prior check for an
+  // intercept such as `alpha ~ dnorm(0, 10)` returns draws centred near the
+  // data mean instead of near 0.
+  switch (options.priorOnly ? null : node.conjugateType) {
     case 'normal-normal':
       paramValues[paramName] = conjugateNormalNormal(node, graph, paramValues);
       return;

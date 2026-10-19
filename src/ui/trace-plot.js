@@ -6,6 +6,11 @@
  * colour. The x-axis is fixed from 1 to maxSamples so the scale stays
  * constant as sampling progresses. Redraws are batched every 100 new
  * samples to keep the UI responsive.
+ *
+ * Samples for indexed (array) parameters such as `b[1]` or `beta[2]` are
+ * always buffered, but their canvases are only shown when
+ * `setShowArrayParams(true)` is called (see the "Show array parameters"
+ * toggle on the Trace tab). Scalar parameters are always shown.
  */
 
 /** Chain colours (up to 5 chains; cycles if more). */
@@ -33,6 +38,32 @@ export class TracePlot {
     this._dirty = new Set(); // params that need redrawing
     this._pendingCounts = new Map(); // paramName -> samples since last redraw
     this._rafId = null;
+    /** Whether indexed/array parameters (e.g. b[1]) get their own trace plot. */
+    this._showArrayParams = false;
+  }
+
+  /**
+   * Show or hide trace plots for indexed/array parameters (e.g. `b[1]`,
+   * `beta[2]`). Scalar parameters are unaffected. Safe to call during live
+   * sampling or after a run completes — array samples are always buffered,
+   * so toggling on reveals the full history collected so far.
+   *
+   * @param {boolean} show
+   */
+  setShowArrayParams(show) {
+    const next = !!show;
+    if (next === this._showArrayParams) return;
+    this._showArrayParams = next;
+    for (const [name, entry] of this._params) {
+      if (!_isArrayParam(name)) continue;
+      entry.wrapper.hidden = !next;
+      if (next) this._drawParam(name);
+    }
+  }
+
+  /** @returns {boolean} Whether array-parameter traces are currently shown. */
+  getShowArrayParams() {
+    return this._showArrayParams;
   }
 
   // ------------------------------------------------------------------ //
@@ -51,11 +82,28 @@ export class TracePlot {
     this._maxSamples = Math.max(1, maxSamples);
 
     for (const name of paramNames) {
-      const entry = this._createCanvas(name, nChains);
-      this._params.set(name, entry);
-      this._pendingCounts.set(name, 0);
-      this.container.appendChild(entry.wrapper);
+      this._ensureParam(name);
     }
+  }
+
+  /**
+   * Get the entry for a parameter, creating its canvas on first sight.
+   * Array parameters are created hidden unless the toggle is on.
+   * @param {string} paramName
+   * @returns {{ wrapper, canvas, ctx, chains }}
+   */
+  _ensureParam(paramName) {
+    let entry = this._params.get(paramName);
+    if (entry) return entry;
+
+    entry = this._createCanvas(paramName, this._nChains);
+    if (_isArrayParam(paramName)) {
+      entry.wrapper.hidden = !this._showArrayParams;
+    }
+    this._params.set(paramName, entry);
+    this._pendingCounts.set(paramName, 0);
+    this.container.appendChild(entry.wrapper);
+    return entry;
   }
 
   /**
@@ -66,8 +114,8 @@ export class TracePlot {
    * @param {number} value
    */
   addSample(paramName, chainIdx, value) {
-    const entry = this._params.get(paramName);
-    if (!entry) return;
+    if (this._nChains === 0) return; // not initialised for a run yet
+    const entry = this._ensureParam(paramName);
 
     let chain = entry.chains.get(chainIdx);
     if (!chain) {
@@ -193,6 +241,9 @@ export class TracePlot {
   _drawParam(paramName) {
     const entry = this._params.get(paramName);
     if (!entry) return;
+    // Hidden canvases have no layout width; skip them (they are redrawn when
+    // the array-parameter toggle reveals them).
+    if (entry.wrapper.hidden) return;
 
     const { canvas, ctx, chains } = entry;
     const dpr = window.devicePixelRatio || 1;
@@ -318,6 +369,16 @@ export class TracePlot {
 // ------------------------------------------------------------------ //
 // Utility                                                             //
 // ------------------------------------------------------------------ //
+
+/**
+ * Is this parameter name an indexed (array) element, e.g. `b[1]`, `beta[2]`
+ * or `mu[1,2]`? Scalar names such as `alpha` or `sigma.b` are not.
+ * @param {string} paramName
+ * @returns {boolean}
+ */
+function _isArrayParam(paramName) {
+  return paramName.includes('[');
+}
 
 /**
  * Generate nice round tick values for an axis range.

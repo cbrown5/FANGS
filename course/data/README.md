@@ -7,11 +7,17 @@ modules reference these by filename in `../modules.js`.
 
 | File | Used by | Columns |
 |------|---------|---------|
-| `fish-lengths.csv` | M5, M6, M7, M8, M9 | `Tree_name` (species), `Standard_length`, `Lower_jaw_length`, `Mouth_width` (all continuous, mm) |
-| `clownfish-oa.csv` | M11, M12 | `group` (treatment: "Normal seawater" / acidified), `time` (continuous growth response) |
+| `fish-lengths.csv` | M5, M6, M7, M8, M9, M11 | `Tree_name` (species), `Standard_length`, `Lower_jaw_length`, `Mouth_width` (all continuous, mm) |
+| `clownfish-oa.csv` | M12, M13 | `treatment` (factor: "Normal seawater" / "Acidified seawater"), `time` (% of time in predator-cue arm), `is_OA` (0/1 dummy) |
 | `fish-counts.csv` | M14, M15 | `site`, `fish` (count), `flow` (factor: Strong/Mild), `logged` (factor), `dist_to_logging_km` (continuous), `fish_pres` (binary) |
-| `random-effects.csv` | M18, M20 | `site`, `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
+| `presence.csv` | M16 | `site`, `pres` (binary response), `logged` (factor), `habitat` (factor), `dist_to_logging_km` (continuous) |
 | `habitat-presence.csv` | M17 | `site`, `pres` (binary response), `habitat` (3-level factor: Coral/Rubble/Seagrass), `depth_m` (continuous), `is_rubble`, `is_seagrass` (dummy indicators for the reference-coded model) |
+| `random-effects.csv` | M19, M20, M21 | `site`, `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
+
+`jaw-length.csv` is also present in this folder but is **not used by any module** —
+M8/M9 were reworked onto `fish-lengths.csv`. It is kept for the R-reference
+scripts (`tests/r-reference/simulate-course-data.R` generates it) and is excluded
+from the student download `course-data.zip`.
 
 Factors may be text columns — FANGS auto-encodes them to 1-based integers and
 records the mapping, so no manual design-matrix prep is needed.
