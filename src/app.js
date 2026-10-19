@@ -23,6 +23,7 @@ import { renderDataTable } from './ui/data-table.js';
 import { initPopups, attachPopupTrigger, showErrorModal } from './ui/popups.js';
 import { ScatterPlot }       from './ui/scatter-plot.js';
 import { PredictionsPlot }  from './ui/predictions-plot.js';
+import { buildShareUrl, decodeModel, readModelFromHash } from './utils/share-url.js';
 
 // ------------------------------------------------------------------ //
 // Bootstrap                                                            //
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function setActiveModel(activeBtn) {
     modelBtns.forEach(b => b && b.classList.remove('active'));
     if (activeBtn) activeBtn.classList.add('active');
+    setShareStatus('');
   }
 
   btn1.addEventListener('click', () => {
@@ -88,6 +90,53 @@ document.addEventListener('DOMContentLoaded', () => {
       updateConstantsPanel();
     });
   }
+
+  // -- Shareable model links (model text only, stored in the URL fragment) --
+  const btnShare    = document.getElementById('btn-share-model');
+  const shareStatus = document.getElementById('share-status');
+
+  function setShareStatus(text, cls = '') {
+    shareStatus.textContent = text;
+    shareStatus.className = cls;
+  }
+
+  /** Load a model from `#m=...` in the URL, if present. */
+  async function loadModelFromHash() {
+    const encoded = readModelFromHash(location.hash);
+    if (!encoded) return;
+    try {
+      editor.setValue(await decodeModel(encoded));
+      setActiveModel(null);
+      updateConstantsPanel();
+      setShareStatus('Model loaded from shared link', 'ok');
+    } catch (err) {
+      showErrorModal(
+        'Could not load shared model',
+        err.message,
+        'The link may have been cut off when it was copied. The default model has been loaded instead.',
+      );
+    }
+  }
+
+  btnShare.addEventListener('click', async () => {
+    const url = await buildShareUrl(editor.getValue(), location.href);
+    // replaceState updates the address bar without adding a history entry
+    // (and without firing hashchange).
+    history.replaceState(null, '', url);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareStatus('Link copied (model only, not data)', 'ok');
+    } catch {
+      // Clipboard API unavailable (e.g. file:// or permission denied)
+      window.prompt('Copy this link to share the model:', url);
+      setShareStatus('');
+    }
+  });
+
+  document.getElementById('model-editor').addEventListener('input', () => setShareStatus(''));
+
+  loadModelFromHash();
+  window.addEventListener('hashchange', loadModelFromHash);
 
   // Update constants panel whenever the model text changes (debounced)
   {

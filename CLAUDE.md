@@ -89,7 +89,8 @@ FANGS/
 │   └── utils/
 │       ├── math.js             # Statistical math helpers
 │       ├── distributions.js    # Distribution log-densities and samplers
-│       └── diagnostics.js      # Rhat, ESS, convergence checks
+│       ├── diagnostics.js      # Rhat, ESS, convergence checks
+│       └── share-url.js        # Compress model text into a shareable URL fragment
 ├── tests/
 │   ├── r-reference/            # R scripts using nimble for reference results
 │   │   ├── linear-model.R
@@ -110,6 +111,7 @@ FANGS/
 │   ├── distributions.test.js
 │   ├── integration.test.js     # End-to-end model fitting tests
 │   ├── predictor-scaling.test.js
+│   ├── share-url.test.js
 │   ├── course-challenges.test.js
 │   ├── course-smoke.mjs        # Course page smoke test
 │   └── popup-e2e.mjs           # Popup end-to-end test
