@@ -38,6 +38,10 @@ model {
 
 Read it top to bottom: *every measured `length` is normally distributed around a shared `mu` (mean); our prior belief is that `mu` sits somewhere around 40 mm; and the spread `sigma` is somewhere between 0 and 50 mm.*
 
+::: callout-tip
+FANGS can save the model in the URL so you can re-use it later. Click the 'Copy share link' button and then save the URL or bookmark it for later. You can even email it to other people. Just be aware it only saves the model, not the data or results. 
+:::
+
 ## A key difference between FANGS and the classic JAGS syntax
 
 FANGS describes the normal distribution by its **standard deviation**, not its precision: `dnorm(mean, SD)`. Most textbooks and classic JAGS/BUGS code instead use precision, $\tau = 1/\sigma^2$. So if you copy a model from a textbook, you must convert: $\sigma = 1/\sqrt{\tau}$. Forgetting this is the single most common source of "why is my fit nonsense?". 
