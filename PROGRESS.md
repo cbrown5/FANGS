@@ -65,11 +65,14 @@ App is fully functional and good to use.
 - tests with x on different scales, mv X
 - Review paper draft, read whole thing. 
 - Check all references in paper
+- Add report/ report bug button
 
 ### User course todo
-- Up to m18 with reviews 
+- m19 - random effects are too slow and overlaps with the summative test. So need a new random effects database for the task in m19 (maybe not poisson?) and one that works easily
+- Then edit the summative task dataset its too slow. Current options are course/data/random-effects.csv which is subset of course/data/random-effects-full.csv, but still does not sample well. 
+- Edit text in opening sections
+- Up to m19 with reviews 
 - Add references to course modules.
-- Edit/add M00 intro module.
 - Pin reference posteriors for M14–M19, M21 (currently self-report mode).
 
 ### Claude todo

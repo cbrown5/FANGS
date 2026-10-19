@@ -2,23 +2,13 @@
 
 Bayesian inference works on the idea of **starting with what you already believe, then updating those beliefs in proportion to how well the new data fit your model.**
 
-You begin with a belief held *before* the data arrive — the **prior**. You ask how
-well each explanation accounts for what you saw — the **likelihood**. Multiply the
-two, tidy up so the numbers add to one, and you have your belief *after* the data
-— the **posterior**.
+You begin with a belief held *before* the data arrive — the **prior**. You ask how well each explanation accounts for what you saw — the **likelihood**. Multiply the two, tidy up so the numbers add to one, and you have your belief *after* the data — the **posterior**.
 
 ## A fish that could have come from three reefs
 
-Imagine you are tracking fish on a reef system with acoustic tags. A tagged fish
-swims past a line of underwater receivers and leaves a trail of detections. From
-the pattern of pings you want to know one thing:
-**which reef did this fish come from — North, Mid, or South?**
+Imagine you are tracking fish on a reef system with acoustic tags. A tagged fish swims past a line of underwater receivers and leaves a trail of detections. From the pattern of pings you want to know one thing: **which reef did this fish come from — North, Mid, or South?**
 
-The detections are not a clean answer. The same trail could plausibly have been
-left by a fish from any of the three reefs — just with different odds. From years
-of past tracking you know roughly how often *this particular* detection pattern
-shows up for fish from each reef. Those three numbers are your **likelihoods**:
-how well each reef explains the data.
+The detections are not a clean answer. The same trail could plausibly have been left by a fish from any of the three reefs — just with different odds. From years of past tracking you know roughly how often *this particular* detection pattern shows up for fish from each reef. Those three numbers are your **likelihoods**: how well each reef explains the data.
 
 ## The theorem, term by term
 
