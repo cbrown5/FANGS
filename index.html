@@ -366,6 +366,16 @@
       font-family: var(--font-mono);
     }
 
+    .share-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    #share-status { font-size: 0.75rem; color: #6272a4; }
+    #share-status.ok  { color: #50fa7b; }
+    #share-status.err { color: #ff5555; }
+
     /* -- Model constants panel -- */
     .constants-grid {
       display: flex;
@@ -804,6 +814,10 @@
       <textarea id="model-editor" spellcheck="false" autocorrect="off" autocapitalize="off"
         aria-label="BUGS model code"></textarea>
       <div id="editor-error" role="alert" aria-live="polite"></div>
+      <div class="share-row">
+        <button class="btn-sm" id="btn-share-model" title="Copy a link that opens FANGS with this model (data is not included)">&#128279; Copy share link</button>
+        <span id="share-status" aria-live="polite"></span>
+      </div>
     </div>
 
     <!-- Model constants -->
