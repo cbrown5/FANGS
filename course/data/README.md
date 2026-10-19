@@ -11,6 +11,7 @@ modules reference these by filename in `../modules.js`.
 | `clownfish-oa.csv` | M11, M12 | `group` (treatment: "Normal seawater" / acidified), `time` (continuous growth response) |
 | `fish-counts.csv` | M14, M15 | `site`, `fish` (count), `flow` (factor: Strong/Mild), `logged` (factor), `dist_to_logging_km` (continuous), `fish_pres` (binary) |
 | `random-effects.csv` | M18, M20 | `site`, `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
+| `habitat-presence.csv` | M17 | `site`, `pres` (binary response), `habitat` (3-level factor: Coral/Rubble/Seagrass), `depth_m` (continuous), `is_rubble`, `is_seagrass` (dummy indicators for the reference-coded model) |
 
 Factors may be text columns — FANGS auto-encodes them to 1-based integers and
 records the mapping, so no manual design-matrix prep is needed.
@@ -47,3 +48,29 @@ Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A., Choat, J.H.
 For benthic cover data:
 
 Brown, C.J., Hamilton, R.J. 2018. Estimating the footprint of pollution on coral reefs with models of species turnover. *Conservation Biology*. https://doi.org/10.1111/cobi.13079
+
+### Habitat presence (`habitat-presence.csv`) — simulated
+
+**This dataset is simulated, not observed.** It is modelled on the Kia Province
+reef surveys above (juvenile parrotfish presence/absence against a habitat
+class), but M17 needs a 3-level factor with balanced levels, and no such
+variable exists in the real survey data: `presence.csv` has only 2 of 49 sites
+in its third `habitat` level ("Mixed"), which leaves that level's coefficient
+effectively unidentified.
+
+Simulated from known cell-means log-odds with 24 sites per level (n = 72):
+
+| Habitat | True log-odds | Implied P(present) | Realised |
+|---------|---------------|--------------------|----------|
+| Coral    | 1.20  | 0.77 | 19/24 |
+| Rubble   | −0.90 | 0.29 | 7/24  |
+| Seagrass | 0.10  | 0.52 | 12/24 |
+
+Levels appear in the order Coral, Rubble, Seagrass, so FANGS's
+order-of-first-appearance encoding gives Coral = 1 (the reference level the
+module text assumes). `depth_m` is a continuous nuisance covariate, not used by
+the M17 model, available for extension exercises.
+
+Reference posteriors in `../modules.js` were produced with the FANGS engine
+itself (4 chains, 2000 burn-in, 4000 samples, `dnorm(0, 2)` priors) via
+`tests/bench/fangs-cli.mjs`; all R-hat = 1.00.

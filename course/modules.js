@@ -331,22 +331,22 @@ export const MODULES = [
     title: 'Binomial with a 3-level factor', mode: 'fangs',
     challenge: 'answer-check',
     config: {
-      dataset: 'presence.csv',
+      dataset: 'habitat-presence.csv',
       sections: [
-        {
-          label: 'Reference (dummy) coding',
-          params: [
-            { name: 'alpha',  label: 'Intercept α (reference site log-odds)', mean: 1.32, ci: [0, 0], tol: 0.4 },
-            { name: 'beta_2', label: 'β₂ — site 2 vs reference',              mean: -1.17, ci: [0, 0], tol: 0.4 },
-            { name: 'beta_3', label: 'β₃ — site 3 vs reference',              mean: -1.93, ci: [0, 0], tol: 0.4 },
-          ],
-        },
         {
           label: 'Index (cell-means) coding',
           params: [
-            { name: 'gamma_1', label: 'γ₁ — log-odds at site 1', mean: 0, ci: [0, 0], tol: 0.4 },
-            { name: 'gamma_2', label: 'γ₂ — log-odds at site 2', mean: 0, ci: [0, 0], tol: 0.4 },
-            { name: 'gamma_3', label: 'γ₃ — log-odds at site 3', mean: 0, ci: [0, 0], tol: 0.4 },
+            { name: 'gamma_1', label: 'γ₁ — log-odds of presence, Coral',    mean: 1.32, ci: [0.41, 2.33], tol: 0.4 },
+            { name: 'gamma_2', label: 'γ₂ — log-odds of presence, Rubble',   mean: -0.88, ci: [-1.80, -0.03], tol: 0.4 },
+            { name: 'gamma_3', label: 'γ₃ — log-odds of presence, Seagrass', mean: 0.00, ci: [-0.78, 0.79], tol: 0.4 },
+          ],
+        },
+        {
+          label: 'Reference (dummy) coding — Coral is the reference',
+          params: [
+            { name: 'alpha',  label: 'Intercept α (Coral log-odds)', mean: 1.16, ci: [0.31, 2.11], tol: 0.4 },
+            { name: 'beta_2', label: 'β₂ — Rubble vs Coral',         mean: -1.98, ci: [-3.23, -0.80], tol: 0.5 },
+            { name: 'beta_3', label: 'β₃ — Seagrass vs Coral',       mean: -1.11, ci: [-2.31, 0.01], tol: 0.5 },
           ],
         },
       ],

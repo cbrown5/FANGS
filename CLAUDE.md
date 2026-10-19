@@ -332,5 +332,3 @@ User-supplied CSVs in `course/data/`. For each `answer-check` module, fit the mo
 | `random-effects.csv` | M19, M21 | ✅ present |
 | `jaw-length.csv` | M8, M9 | ✅ present |
 | `presence.csv` | M16, M17 | ✅ present |
-
-Note: `clownfish-oa.csv` replaces the originally planned `oa-study.csv`. Two datasets still needed: `jaw-length.csv` and `presence.csv`.

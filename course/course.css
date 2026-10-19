@@ -41,8 +41,10 @@ body {
 }
 #course-header h1 { font-size: 1.3rem; letter-spacing: 0.04em; }
 #course-header .subtitle { color: var(--muted); font-style: italic; font-size: 0.85rem; }
-#course-header .header-link { margin-left: auto; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+#course-header .header-link { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
 #course-header .header-link:hover { text-decoration: underline; }
+/* First link in the group starts the right-aligned cluster; the rest follow it. */
+#course-header .header-link:first-of-type { margin-left: auto; }
 
 /* ---- Layout ---- */
 #course-layout { flex: 1; display: flex; min-height: 0; }

@@ -1,66 +1,66 @@
 # Binomial with a 3-level factor
 
-What if the predictor is a category with **more than two** levels — say three sites: **A**, **B**, **C**? You cannot code three groups with a single 0/1 column. You need a small **design matrix**.
+What if the predictor is a category with **more than two** levels — say three habitat types: **Coral**, **Rubble**, **Seagrass**? You cannot code three groups with a single 0/1 column. You need a small **design matrix**.
 
 ## Reference (dummy) coding
 
-Pick one level as the **reference** (say A). Create an indicator for each of the
-others:
+Pick one level as the **reference** (say Coral). Create an indicator for each of
+the others:
 
-| Site | `is_B` | `is_C` |
-|------|--------|--------|
-| A    | 0 | 0 |
-| B    | 1 | 0 |
-| C    | 0 | 1 |
+| Habitat | `is_rubble` | `is_seagrass` |
+|---------|-------------|---------------|
+| Coral    | 0 | 0 |
+| Rubble   | 1 | 0 |
+| Seagrass | 0 | 1 |
 
 $$
-\text{logit}(p_i) = \alpha + \beta_2\,\text{is\_B}_i + \beta_3\,\text{is\_C}_i
+\text{logit}(p_i) = \alpha + \beta_2\,\text{is\_rubble}_i + \beta_3\,\text{is\_seagrass}_i
 $$
 
-- $\alpha$ — log-odds for the **reference** site A.
-- $\beta_2$ — difference (B **vs** A).
-- $\beta_3$ — difference (C **vs** A).
+- $\alpha$ — log-odds for the **reference** habitat, Coral.
+- $\beta_2$ — difference (Rubble **vs** Coral).
+- $\beta_3$ — difference (Seagrass **vs** Coral).
 
-There is **no separate coefficient for A** — it is absorbed into the intercept.
+There is **no separate coefficient for Coral** — it is absorbed into the intercept.
 That is why $k$ levels need $k-1$ indicator columns.
 
 ## In FANGS
 
-If your CSV has a text `site` column with levels `A`, `B`, `C`, FANGS encodes it to integers automatically, using the order of first appearance:
+If your CSV has a text `habitat` column with levels `Coral`, `Rubble`, `Seagrass`, FANGS encodes it to integers automatically, using the order of first appearance:
 
 | Level | Code |
 |-------|------|
-| A | 1 |
-| B | 2 |
-| C | 3 |
+| Coral | 1 |
+| Rubble | 2 |
+| Seagrass | 3 |
 
-You could build the `is_B`/`is_C` indicator columns yourself, but FANGS already hands you the integer codes — so there is an easier way to write the model.
+You could build the `is_rubble`/`is_seagrass` indicator columns yourself, but FANGS already hands you the integer codes — so there is an easier way to write the model.
 
 ## Alternative parameterisation: index a coefficient vector
 
-Instead of one intercept plus contrasts, give **each site its own coefficient** and let FANGS's integer code pick the right one for each row. Because `site[i]` is `1`, `2`, or `3`, the expression `gamma[site[i]]` selects `gamma[1]`, `gamma[2]`, or `gamma[3]`:
+Instead of one intercept plus contrasts, give **each habitat its own coefficient** and let FANGS's integer code pick the right one for each row. Because `habitat[i]` is `1`, `2`, or `3`, the expression `gamma[habitat[i]]` selects `gamma[1]`, `gamma[2]`, or `gamma[3]`:
 
 $$
-\text{logit}(p_i) = \gamma_{\,\text{site}_i}
+\text{logit}(p_i) = \gamma_{\,\text{habitat}_i}
 $$
 
 ```
 model {
   for (i in 1:N) {
-    present[i] ~ dbern(p[i])
-    logit(p[i]) <- gamma[site[i]]
+    pres[i] ~ dbern(p[i])
+    logit(p[i]) <- gamma[habitat[i]]
   }
   for (k in 1:3) {
-    gamma[k] ~ dnorm(0, 10)
+    gamma[k] ~ dnorm(0, 2)
   }
 }
 ```
 
-This is the **means (cell-means) parameterisation**: each $\gamma_k$ is the log-odds of presence **at that site directly**, with no reference level. It maps back to the dummy coding exactly:
+This is the **means (cell-means) parameterisation**: each $\gamma_k$ is the log-odds of presence **in that habitat directly**, with no reference level. It maps back to the dummy coding exactly:
 
-- $\gamma_1 = \alpha$ — the reference site A.
-- $\gamma_2 - \gamma_1 = \beta_2$ — the B-vs-A contrast.
-- $\gamma_3 - \gamma_1 = \beta_3$ — the C-vs-A contrast.
+- $\gamma_1 = \alpha$ — the reference habitat, Coral.
+- $\gamma_2 - \gamma_1 = \beta_2$ — the Rubble-vs-Coral contrast.
+- $\gamma_3 - \gamma_1 = \beta_3$ — the Seagrass-vs-Coral contrast.
 
 The two models fit the same data and give the same predicted probabilities; they just package the three numbers differently. Index coding is handy when you care about **each level's value on its own** (and it scales to many levels without
 writing an indicator column for each). Reference coding is handy when you care
@@ -68,16 +68,49 @@ about **differences from a baseline**, because the contrasts come straight out o
 the summary table with their own credible intervals.
 
 ::: callout-tip
-The `for (k in 1:3)` loop assigns the same prior to every site. Set the loop bound (here `3`) to the number of levels in your factor — FANGS reports the levels it found when you load the data.
+The `for (k in 1:3)` loop assigns the same prior to every habitat. Set the loop bound (here `3`) to the number of levels in your factor — FANGS reports the levels it found when you load the data.
+:::
+
+::: callout-important
+## Mind the prior scale on the logit scale
+
+Remember that FANGS parameterises `dnorm` by **standard deviation**, so
+`dnorm(0, 2)` means SD = 2. On the logit scale that is already generous: it puts
+most prior mass on probabilities between about 0.02 and 0.98.
+
+Something like `dnorm(0, 10)` looks harmlessly vague but is **far too wide** here
+— it says log-odds of ±20 are plausible, i.e. probabilities of $10^{-9}$. Chains
+wander into that flat region, the likelihood underflows, and you get terrible
+R-hat and ESS. If a logistic model will not converge, an over-wide prior on the
+coefficients is the first thing to check.
 :::
 
 ::: callout-tip
-Different Bayesian software packages handle character variables in different ways. Not all support automatic translation of characters to index coding in the same way that FANGS does. So check the documentation for the software you are using. 
+Different Bayesian software packages handle character variables in different ways. Not all support automatic translation of characters to index coding in the same way that FANGS does. So check the documentation for the software you are using.
 :::
 
 ## Your task
 
-Fit the 3-level model to `presence.csv` with `habitat` as the explanatory factor (you will have to re-write the model given above). Try it **both ways**:
+Fit the 3-level model to `habitat-presence.csv`, using `habitat` as the
+explanatory factor. The response `pres` is whether juvenile parrotfish were
+recorded at that site (1) or not (0). Try it **both ways**:
 
-1. **Reference coding** — Add reference columns for habitat types into `presence.csv`, then fit your model using reference coding. Read off the reference log-odds $\alpha$ and the contrasts $\beta_2$, $\beta_3$, and say which site each contrast compares against. 
-2. **Index coding** — fit the `gamma[site[i]]` model above and confirm that $\gamma_1 \approx \alpha$, $\gamma_2 - \gamma_1 \approx \beta_2$, and $\gamma_3 - \gamma_1 \approx \beta_3$.
+1. **Index coding** — fit the `gamma[habitat[i]]` model above. Each $\gamma_k$ is
+   the log-odds of presence in habitat $k$; push each through the inverse logit
+   to get the probability of presence in that habitat.
+2. **Reference coding** — the CSV already contains the `is_rubble` and
+   `is_seagrass` indicator columns, so you can fit the reference-coded model
+   directly. Read off the reference log-odds $\alpha$ and the contrasts
+   $\beta_2$, $\beta_3$, and say which habitat each contrast compares against.
+
+Then check that the two parameterisations agree: confirm that
+$\gamma_1 \approx \alpha$, $\gamma_2 - \gamma_1 \approx \beta_2$, and
+$\gamma_3 - \gamma_1 \approx \beta_3$.
+
+::: callout-note
+The two sets of numbers will be close but not identical. The same `dnorm(0, 2)`
+prior means something slightly different in each parameterisation — in one it
+applies to cell means, in the other to contrasts — so the shrinkage differs a
+little. Agreement to within a credible interval is what you are looking for, not
+agreement to three decimal places.
+:::

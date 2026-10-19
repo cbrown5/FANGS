@@ -766,44 +766,44 @@ $$</span></p>
 <p>Fit the logistic model to <code>presence.csv</code> and check your posterior means for <span class="math inline"><em>α</em></span> and <span class="math inline"><em>β</em></span> (logit scale).</p>
 </body></html>`,
   'm17-binomial-three-level': `<html><head></head><body><h1 id="binomial-with-a-3-level-factor">Binomial with a 3-level factor</h1>
-<p>What if the predictor is a category with <strong>more than two</strong> levels — say three sites: <strong>A</strong>, <strong>B</strong>, <strong>C</strong>? You cannot code three groups with a single 0/1 column. You need a small <strong>design matrix</strong>.</p>
+<p>What if the predictor is a category with <strong>more than two</strong> levels — say three habitat types: <strong>Coral</strong>, <strong>Rubble</strong>, <strong>Seagrass</strong>? You cannot code three groups with a single 0/1 column. You need a small <strong>design matrix</strong>.</p>
 <h2 id="reference-dummy-coding">Reference (dummy) coding</h2>
-<p>Pick one level as the <strong>reference</strong> (say A). Create an indicator for each of the others:</p>
+<p>Pick one level as the <strong>reference</strong> (say Coral). Create an indicator for each of the others:</p>
 <table class="caption-top">
 <thead>
 <tr class="header">
-<th>Site</th>
-<th><code>is_B</code></th>
-<th><code>is_C</code></th>
+<th>Habitat</th>
+<th><code>is_rubble</code></th>
+<th><code>is_seagrass</code></th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>A</td>
+<td>Coral</td>
 <td>0</td>
 <td>0</td>
 </tr>
 <tr class="even">
-<td>B</td>
+<td>Rubble</td>
 <td>1</td>
 <td>0</td>
 </tr>
 <tr class="odd">
-<td>C</td>
+<td>Seagrass</td>
 <td>0</td>
 <td>1</td>
 </tr>
 </tbody>
 </table>
-<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>2</sub> is_B<sub><em>i</em></sub> + <em>β</em><sub>3</sub> is_C<sub><em>i</em></sub></span></p>
+<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>2</sub> is_rubble<sub><em>i</em></sub> + <em>β</em><sub>3</sub> is_seagrass<sub><em>i</em></sub></span></p>
 <ul>
-<li><span class="math inline"><em>α</em></span> — log-odds for the <strong>reference</strong> site A.</li>
-<li><span class="math inline"><em>β</em><sub>2</sub></span> — difference (B <strong>vs</strong> A).</li>
-<li><span class="math inline"><em>β</em><sub>3</sub></span> — difference (C <strong>vs</strong> A).</li>
+<li><span class="math inline"><em>α</em></span> — log-odds for the <strong>reference</strong> habitat, Coral.</li>
+<li><span class="math inline"><em>β</em><sub>2</sub></span> — difference (Rubble <strong>vs</strong> Coral).</li>
+<li><span class="math inline"><em>β</em><sub>3</sub></span> — difference (Seagrass <strong>vs</strong> Coral).</li>
 </ul>
-<p>There is <strong>no separate coefficient for A</strong> — it is absorbed into the intercept. That is why <span class="math inline"><em>k</em></span> levels need <span class="math inline"><em>k</em> − 1</span> indicator columns.</p>
+<p>There is <strong>no separate coefficient for Coral</strong> — it is absorbed into the intercept. That is why <span class="math inline"><em>k</em></span> levels need <span class="math inline"><em>k</em> − 1</span> indicator columns.</p>
 <h2 id="in-fangs">In FANGS</h2>
-<p>If your CSV has a text <code>site</code> column with levels <code>A</code>, <code>B</code>, <code>C</code>, FANGS encodes it to integers automatically, using the order of first appearance:</p>
+<p>If your CSV has a text <code>habitat</code> column with levels <code>Coral</code>, <code>Rubble</code>, <code>Seagrass</code>, FANGS encodes it to integers automatically, using the order of first appearance:</p>
 <table class="caption-top">
 <thead>
 <tr class="header">
@@ -813,51 +813,71 @@ $$</span></p>
 </thead>
 <tbody>
 <tr class="odd">
-<td>A</td>
+<td>Coral</td>
 <td>1</td>
 </tr>
 <tr class="even">
-<td>B</td>
+<td>Rubble</td>
 <td>2</td>
 </tr>
 <tr class="odd">
-<td>C</td>
+<td>Seagrass</td>
 <td>3</td>
 </tr>
 </tbody>
 </table>
-<p>You could build the <code>is_B</code>/<code>is_C</code> indicator columns yourself, but FANGS already hands you the integer codes — so there is a neater way to write the model.</p>
+<p>You could build the <code>is_rubble</code>/<code>is_seagrass</code> indicator columns yourself, but FANGS already hands you the integer codes — so there is an easier way to write the model.</p>
 <h2 id="alternative-parameterisation-index-a-coefficient-vector">Alternative parameterisation: index a coefficient vector</h2>
-<p>Instead of one intercept plus contrasts, give <strong>each site its own coefficient</strong> and let FANGS’s integer code pick the right one for each row. Because <code>site[i]</code> is <code>1</code>, <code>2</code>, or <code>3</code>, the expression <code>gamma[site[i]]</code> selects <code>gamma[1]</code>, <code>gamma[2]</code>, or <code>gamma[3]</code>:</p>
-<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>γ</em><sub> site<sub><em>i</em></sub></sub></span></p>
+<p>Instead of one intercept plus contrasts, give <strong>each habitat its own coefficient</strong> and let FANGS’s integer code pick the right one for each row. Because <code>habitat[i]</code> is <code>1</code>, <code>2</code>, or <code>3</code>, the expression <code>gamma[habitat[i]]</code> selects <code>gamma[1]</code>, <code>gamma[2]</code>, or <code>gamma[3]</code>:</p>
+<p><span class="math display">logit(<em>p</em><sub><em>i</em></sub>) = <em>γ</em><sub> habitat<sub><em>i</em></sub></sub></span></p>
 <pre><code>model {
   for (i in 1:N) {
-    present[i] ~ dbern(p[i])
-    logit(p[i]) &lt;- gamma[site[i]]
+    pres[i] ~ dbern(p[i])
+    logit(p[i]) &lt;- gamma[habitat[i]]
   }
   for (k in 1:3) {
-    gamma[k] ~ dnorm(0, 10)
+    gamma[k] ~ dnorm(0, 2)
   }
 }</code></pre>
-<p>This is the <strong>means (cell-means) parameterisation</strong>: each <span class="math inline"><em>γ</em><sub><em>k</em></sub></span> is the log-odds of presence <strong>at that site directly</strong>, with no reference level. It maps back to the dummy coding exactly:</p>
+<p>This is the <strong>means (cell-means) parameterisation</strong>: each <span class="math inline"><em>γ</em><sub><em>k</em></sub></span> is the log-odds of presence <strong>in that habitat directly</strong>, with no reference level. It maps back to the dummy coding exactly:</p>
 <ul>
-<li><span class="math inline"><em>γ</em><sub>1</sub> = <em>α</em></span> — the reference site A.</li>
-<li><span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>2</sub></span> — the B-vs-A contrast.</li>
-<li><span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>3</sub></span> — the C-vs-A contrast.</li>
+<li><span class="math inline"><em>γ</em><sub>1</sub> = <em>α</em></span> — the reference habitat, Coral.</li>
+<li><span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>2</sub></span> — the Rubble-vs-Coral contrast.</li>
+<li><span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> = <em>β</em><sub>3</sub></span> — the Seagrass-vs-Coral contrast.</li>
 </ul>
 <p>The two models fit the same data and give the same predicted probabilities; they just package the three numbers differently. Index coding is handy when you care about <strong>each level’s value on its own</strong> (and it scales to many levels without writing an indicator column for each). Reference coding is handy when you care about <strong>differences from a baseline</strong>, because the contrasts come straight out of the summary table with their own credible intervals.</p>
 <div>
 <blockquote>
 <p><strong>Tip</strong></p>
-<p>The <code>for (k in 1:3)</code> loop assigns the same prior to every site. Set the loop bound (here <code>3</code>) to the number of levels in your factor — FANGS reports the levels it found when you load the data.</p>
+<p>The <code>for (k in 1:3)</code> loop assigns the same prior to every habitat. Set the loop bound (here <code>3</code>) to the number of levels in your factor — FANGS reports the levels it found when you load the data.</p>
+</blockquote>
+</div>
+<div>
+<blockquote>
+<p><strong>Mind the prior scale on the logit scale</strong></p>
+<p>Remember that FANGS parameterises <code>dnorm</code> by <strong>standard deviation</strong>, so <code>dnorm(0, 2)</code> means SD = 2. On the logit scale that is already generous: it puts most prior mass on probabilities between about 0.02 and 0.98.</p>
+<p>Something like <code>dnorm(0, 10)</code> looks harmlessly vague but is <strong>far too wide</strong> here — it says log-odds of ±20 are plausible, i.e. probabilities of <span class="math inline">10<sup>−9</sup></span>. Chains wander into that flat region, the likelihood underflows, and you get terrible R-hat and ESS. If a logistic model will not converge, an over-wide prior on the coefficients is the first thing to check.</p>
+</blockquote>
+</div>
+<div>
+<blockquote>
+<p><strong>Tip</strong></p>
+<p>Different Bayesian software packages handle character variables in different ways. Not all support automatic translation of characters to index coding in the same way that FANGS does. So check the documentation for the software you are using.</p>
 </blockquote>
 </div>
 <h2 id="your-task">Your task</h2>
-<p>Fit the 3-level model to <code>presence.csv</code>. Try it <strong>both ways</strong>:</p>
+<p>Fit the 3-level model to <code>habitat-presence.csv</code>, using <code>habitat</code> as the explanatory factor. The response <code>pres</code> is whether juvenile parrotfish were recorded at that site (1) or not (0). Try it <strong>both ways</strong>:</p>
 <ol type="1">
-<li><strong>Reference coding</strong> — read off the reference log-odds <span class="math inline"><em>α</em></span> and the contrasts <span class="math inline"><em>β</em><sub>2</sub></span>, <span class="math inline"><em>β</em><sub>3</sub></span>, and say which site each contrast compares against.</li>
-<li><strong>Index coding</strong> — fit the <code>gamma[site[i]]</code> model above and confirm that <span class="math inline"><em>γ</em><sub>1</sub> ≈ <em>α</em></span>, <span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>2</sub></span>, and <span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>3</sub></span>.</li>
+<li><strong>Index coding</strong> — fit the <code>gamma[habitat[i]]</code> model above. Each <span class="math inline"><em>γ</em><sub><em>k</em></sub></span> is the log-odds of presence in habitat <span class="math inline"><em>k</em></span>; push each through the inverse logit to get the probability of presence in that habitat.</li>
+<li><strong>Reference coding</strong> — the CSV already contains the <code>is_rubble</code> and <code>is_seagrass</code> indicator columns, so you can fit the reference-coded model directly. Read off the reference log-odds <span class="math inline"><em>α</em></span> and the contrasts <span class="math inline"><em>β</em><sub>2</sub></span>, <span class="math inline"><em>β</em><sub>3</sub></span>, and say which habitat each contrast compares against.</li>
 </ol>
+<p>Then check that the two parameterisations agree: confirm that <span class="math inline"><em>γ</em><sub>1</sub> ≈ <em>α</em></span>, <span class="math inline"><em>γ</em><sub>2</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>2</sub></span>, and <span class="math inline"><em>γ</em><sub>3</sub> − <em>γ</em><sub>1</sub> ≈ <em>β</em><sub>3</sub></span>.</p>
+<div>
+<blockquote>
+<p><strong>Note</strong></p>
+<p>The two sets of numbers will be close but not identical. The same <code>dnorm(0, 2)</code> prior means something slightly different in each parameterisation — in one it applies to cell means, in the other to contrasts — so the shrinkage differs a little. Agreement to within a credible interval is what you are looking for, not agreement to three decimal places.</p>
+</blockquote>
+</div>
 </body></html>`,
   'm17-random-effects-concept': `<html><head></head><body><h1 id="the-idea-of-random-effects">The idea of random effects</h1>
 <p>You sampled fish at <strong>12 reefs</strong>. Reefs differ, and observations from the same reef are more alike than observations from different reefs. Ignoring that structure underestimates your uncertainty. <strong>Random effects</strong> handle it.</p>
