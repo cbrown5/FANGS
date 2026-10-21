@@ -1,0 +1,860 @@
+---
+title: "From FANGS to Nimble: a hierarchical GLM of coral cover"
+subtitle: "Coral cover, logging and random effects, coded by hand in R"
+author: "Christopher J. Brown"
+date: today
+format:
+  html:
+    theme: darkly
+    highlight-style: dracula
+    toc: true
+    toc-depth: 2
+    code-copy: true
+    code-overflow: wrap
+    fig-width: 7
+    fig-height: 4.5
+    include-in-header:
+      text: |
+        <style>
+        :root {
+          --fangs-bg: #1e1f29; --fangs-panel: #21222c; --fangs-dark: #282a36;
+          --fangs-border: #44475a; --fangs-muted: #6272a4; --fangs-text: #f8f8f2;
+          --fangs-accent: #bd93f9; --fangs-cyan: #8be9fd; --fangs-green: #50fa7b;
+          --fangs-orange: #ffb86c; --fangs-red: #ff5555;
+          --bs-body-bg: var(--fangs-bg); --bs-body-color: var(--fangs-text);
+        }
+        body {
+          background: var(--fangs-bg); color: var(--fangs-text);
+          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        h1, h2, h3, h4, .title { color: var(--fangs-accent); }
+        .subtitle { color: var(--fangs-muted); }
+        a { color: var(--fangs-cyan); }
+        a:hover { color: var(--fangs-green); }
+        code { font-family: 'Fira Mono', Consolas, Menlo, monospace; }
+        p code, li code, td code {
+          color: var(--fangs-green); background: var(--fangs-panel);
+          border-radius: 3px; padding: 0 3px;
+        }
+        div.sourceCode, pre.sourceCode {
+          background: var(--fangs-panel) !important;
+          border: 1px solid var(--fangs-border); border-radius: 6px;
+        }
+        pre:not(.sourceCode) { background: var(--fangs-dark); color: var(--fangs-text); }
+        #TOC a, .sidebar nav a { color: var(--fangs-muted); }
+        #TOC a.active, .sidebar nav a.active { color: var(--fangs-accent); }
+        .callout { background: var(--fangs-panel) !important; border-color: var(--fangs-border) !important; }
+        .callout.callout-style-default { border-left: 5px solid var(--fangs-accent) !important; }
+        .callout-warning { border-left-color: var(--fangs-orange) !important; }
+        .callout-tip { border-left-color: var(--fangs-green) !important; }
+        .callout-header { background: var(--fangs-dark) !important; }
+        blockquote { border-left: 4px solid var(--fangs-accent); color: var(--fangs-text); }
+        table { color: var(--fangs-text); }
+        </style>
+execute:
+  warning: false
+  message: false
+knitr:
+  opts_chunk:
+    dev.args: !expr list(bg = "#1e1f29")
+---
+
+## Where we are
+
+This morning you fit Bayesian models in the FANGS app. This afternoon we fit the same kind of model by writing the code ourselves in R with [Nimble](https://r-nimble.org). We build up to the summative challenge in small steps:
+
+1. Read the data and look at coral cover.
+2. Fit a Poisson GLM to site totals.
+3. Add site random effects and fit the full transect data.
+4. Fix poor mixing with a non-centred parameterisation.
+5. Check the model and make publication-quality plots.
+6. Add an observation-level random effect to deal with overdispersion.
+
+**The scenario.** In Kia Province, Solomon Islands, divers ran three transects on each reef and recorded the per-cent cover of branching *Acropora*. This coral is the nursery habitat for juvenile bumphead parrotfish. Logging washes sediment onto reefs, so we expect cover to be lower closer to logging.
+
+> **Data.** Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. & Choat, J.H. (2017) Logging degrades nursery habitat for an iconic coral reef fish. *Biological Conservation* 210: 273–280. <https://doi.org/10.1016/j.biocon.2017.04.025>. Lightly modified for teaching.
+
+
+## Bayesian software options for R users
+
+FANGS is for learning. For research you will want one of the established engines. The choice is mostly a trade-off between how much code you write and how much control you get.
+
+| Package | Computational speed | Code complexity | Flexibility | Installation requirements | Use in ecology |
+|---|---|---|---|---|---|
+| **Stan** (`rstan`, `cmdstanr`) | Fast for continuous parameters; gradient-based HMC/NUTS scales well to many parameters | High — you write the full model in Stan's own C++-like language, with declared blocks and types | Very high, but no discrete parameters (they must be marginalised out) | Needs a working C++ toolchain; models compile before running (slow first run) | Widespread, and the standard in the quantitative ecology literature |
+| **brms** | Same engine as Stan, so same sampling speed, plus compile time per model | Low — one-line `lmer`-style formulas, e.g. `cover ~ logged + (1 \| site)` | Moderate-high: huge range of built-in families and terms, but hard to go outside them | As Stan (it generates and compiles Stan code for you) | Very widespread; now the default first choice for most applied ecologists |
+| **INLA** | Very fast — approximates the posterior instead of sampling, often seconds where MCMC takes minutes | Low-moderate — formula interface, but priors and spatial terms use their own idiom | Restricted to latent Gaussian models (covers GLMMs, spatial and temporal models) | Not on CRAN; installed from the R-INLA repository with bundled binaries | Common in spatial ecology and species distribution modelling; less so elsewhere |
+| **JAGS** (`rjags`, `R2jags`) | Slowest of these for large or hierarchical models; Gibbs/slice sampling, pure interpreter | Moderate — BUGS language, close to how you'd write the model on paper (this is FANGS' syntax) | High; handles discrete parameters, which Stan cannot | Needs the JAGS program installed separately from R, then the R package | Historically the workhorse and still very common in older papers and textbooks |
+| **Nimble** | Faster than JAGS — compiles models to C++; usually slower than Stan for big continuous models | Moderate — BUGS language like JAGS, plus some R boilerplate to build and compile the model | Highest — you can write your own distributions and samplers in R-like code | CRAN package, but needs a C++ toolchain to compile models | Growing steadily, especially in population ecology and capture-recapture work |
+
+A rough rule: use **brms** for anything that fits a standard formula, **INLA** when you have spatial data and need speed, and **Nimble** or **Stan** when the model is unusual enough that you need to write it out yourself. We use Nimble this afternoon because its model code is the same BUGS language you already used in FANGS, so the step up from the app is a short one. Its also easy to install from CRAN. 
+
+
+## Setup
+
+```{r}
+#| label: packages
+library(tidyverse)
+library(nimble)
+library(coda)
+library(MCMCvis)
+library(bayesplot)
+library(ggdist)
+library(tidybayes)
+```
+
+We'll style every plot on a `theme_classic()` base.
+
+```{r}
+#| label: plot-theme
+# colour theme for plots -- matches the FANGS app
+fangs <- c(
+  bg     = "#1e1f29",   # page background
+  panel  = "#21222c",   # panel background
+  dark   = "#282a36",   # Dracula background
+  border = "#44475a",   # gridlines, borders
+  muted  = "#6272a4",   # de-emphasised text
+  text   = "#f8f8f2",   # foreground text
+  accent = "#bd93f9",   # purple -- primary accent
+  cyan   = "#8be9fd",   # secondary accent
+  green  = "#50fa7b",
+  orange = "#ffb86c",   # reference lines
+  red    = "#ff5555"
+)
+
+theme_set(theme_classic(base_size = 16))
+bayesplot_theme_set(theme_classic(base_size = 16))
+color_scheme_set(c(fangs[["border"]], fangs[["muted"]], fangs[["accent"]],
+                   fangs[["cyan"]],   fangs[["green"]], fangs[["text"]]))
+```
+
+## 1. Read and explore the data
+
+We read the data straight from the course website.
+
+```{r}
+#| label: read-data
+url <- "https://www.seascapemodels.org/FANGS/course/data/random-effects.csv"
+dat <- read_csv(url)
+glimpse(dat)
+```
+
+Each row is one transect. There are 20 sites and 3 transects per site.
+
+### Why a Poisson?
+
+```{r}
+#| label: cover-summary
+summary(dat$cover)
+mean(dat$cover < 20)   # proportion of transects below 20% cover
+
+ggplot(dat, aes(x = cover)) +
+  geom_histogram(binwidth = 2, fill = fangs[["accent"]]) +
+  labs(x = "Branching Acropora cover (%)", y = "Number of transects")
+```
+
+Cover is a per cent, so strictly it can't go above 100 and a binomial would be the textbook choice. But when the counts are small relative to the maximum, the binomial and Poisson are nearly identical. Our transects average about 11% cover, well below 100, so the upper bound almost never matters and a Poisson is a reasonable approximation.
+
+A few transects reach 40–50%, where the approximation is weaker.
+
+::: {.callout-tip}
+## Extension
+Fit a binomial model with a size of 100 and compare the results with the Poisson.
+:::
+
+### Site totals
+
+For our first model we ignore the transects and work with one value per site. We **sum** the three transects rather than averaging them. Nimble's Poisson only accepts whole numbers, and a sum of counts is still a count.
+
+```{r}
+#| label: site-totals
+site_dat <- dat |>
+  group_by(site, flow, logged, dist_to_logging_km) |>
+  summarise(cover = sum(cover), .groups = "drop")
+
+site_dat
+```
+
+## 2. A Poisson GLM on site totals
+
+### The model
+
+We let each flow level have its own intercept and its own distance slope. We write this the way you would write a linear model in R: an intercept, a distance slope, a flow effect, and an interaction between flow and distance.
+
+```{r}
+summary(glm(cover ~ flow * dist_to_logging_km, data = dat))
+```
+
+```{r}
+#| label: glm-code
+glm_code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 2)   # intercept:   Strong flow, average distance
+  beta1 ~ dnorm(0, sd = 1)   # distance slope, Strong flow
+  beta2 ~ dnorm(0, sd = 2)   # flow effect:  Mild vs Strong
+  beta3 ~ dnorm(0, sd = 1)   # interaction:  change in distance slope under Mild
+
+  for (i in 1:N) {
+    log(mu[i]) <- beta0 + beta1 * dist[i] + beta2 * mild[i] +
+                  beta3 * mild[i] * dist[i]
+    cover[i] ~ dpois(mu[i])
+    y_rep[i] ~ dpois(mu[i])   # replicate data for the posterior predictive check
+  }
+})
+```
+
+Step by step:
+
+1. **`nimbleCode()`** holds the model description. It looks like R, but Nimble reads it as a model definition, much like the model text in FANGS.
+2. **The four priors** are the regression coefficients. The `~` means "is distributed as".
+3. **`mild[i]` is a dummy variable**: 0 for a Strong-flow site, 1 for a Mild-flow site. This is exactly what R does behind the scenes when you write `cover ~ dist * flow`.
+4. **The loop runs over the 20 sites.** The `<-` is a fixed calculation, not a random draw.
+5. **`log(mu[i])` is the log link.** The expected count is the exponential of the linear predictor, so it is always positive.
+6. **`cover[i] ~ dpois(mu[i])`** says the observed total cover follows a Poisson distribution with mean `mu[i]`.
+7. **`y_rep[i]`** has the same distribution as `cover[i]`, but we don't give it any data. On each iteration Nimble simulates it from the Poisson, using that iteration's `mu[i]`. This gives draws from the posterior predictive distribution, which we use for the posterior predictive check. It's the same as the "generated quantities" idea you may have seen in Stan.
+
+::: {.callout-note}
+## Reading the coefficients
+Because `mild` is 0/1, each coefficient has a plain meaning:
+
+| Coefficient | Meaning |
+|---|---|
+| `beta0` | log cover for a Strong-flow site at average distance |
+| `beta1` | distance slope for **Strong** flow |
+| `beta2` | how much higher (on the log scale) Mild flow is at average distance |
+| `beta3` | how much the distance slope **changes** under Mild flow |
+
+So the Mild-flow intercept is `beta0 + beta2` and the Mild-flow distance slope is `beta1 + beta3`. An interaction coefficient is always a *difference between slopes*, which is why `beta3` is the parameter to look at if you want to ask "does flow change the effect of logging?".
+:::
+
+::: {.callout-warning}
+## A note on `dnorm` in Nimble
+In FANGS, `dnorm(0, 2)` means a normal distribution with mean 0 and standard deviation 2. Nimble follows the older BUGS convention, where the second number is the *precision*, which is 1 / variance. So `dnorm(0, 2)` in Nimble means an SD of about 0.71, a much tighter prior than you intended.
+
+Always name the argument: `dnorm(0, sd = 2)`. Then your priors mean the same thing they meant in FANGS this morning.
+
+```{r}
+#| label: precision-demo
+1 / sqrt(2)   # the SD you would get from dnorm(0, 2) in Nimble
+```
+:::
+
+### Data and constants
+
+Nimble separates **data**, which are things the model has a likelihood for, from **constants**, which are fixed inputs such as indices, sample sizes and covariates.
+
+We standardise distance. Distance goes up to about 20 km, so on the raw scale a slope prior with SD 1 would allow effects as large as $e^{20}$ across the gradient. After standardising, `beta` is the effect per SD of distance, which is about 5 km, and our priors become sensible.
+
+```{r}
+#| label: glm-data
+consts <- list(
+  N    = nrow(site_dat),
+  mild = as.integer(site_dat$flow == "Mild"),
+  dist = as.numeric(scale(site_dat$dist_to_logging_km))
+)
+data <- list(cover = site_dat$cover)
+```
+
+Strong flow is the reference level, coded 0, and Mild is coded 1. Strong is the reference because it is the first level alphabetically in FANGS this morning, and it keeps the coefficients comparable.
+
+### Prior predictive check
+
+The model block is a recipe for generating data. If we run it forwards with no data, Nimble draws the parameters from their priors, then calculates `mu`, then simulates `cover`. That's the prior predictive distribution.
+
+```{r}
+#| label: glm-prior-pred
+# A copy of the model with no data, so Nimble can simulate every node
+prior_model <- nimbleModel(glm_code, constants = consts)
+c_prior     <- compileNimble(prior_model)
+
+# 1000 simulated data sets: one row per draw, one column per site
+sim_cover <- t(replicate(1000, {
+  c_prior$simulate()   # draw the betas from the priors, then mu, then cover
+  c_prior$cover
+}))
+
+summary(as.vector(sim_cover))
+mean(sim_cover > 300)   # proportion of impossible values
+
+tibble(cover = as.vector(sim_cover)) |>
+  ggplot(aes(x = cover + 1)) +
+  geom_histogram(bins = 40, fill = fangs[["cyan"]]) +
+  geom_vline(xintercept = 301, linetype = "dashed", colour = fangs[["orange"]]) +
+  scale_x_log10() +
+  labs(x = "Simulated site total cover + 1 (log scale)", y = "Count")
+```
+
+A few things to note about the code:
+
+- **We build a separate model object without data.** `simulate()` skips data nodes by default, so on a model with data, `cover` would never change. A copy with no data also leaves the model we fit later untouched.
+- **`c_prior$simulate()` and `c_prior$cover`** use `$` to call a method and read a value from the model object. This is how you work with Nimble models from R.
+- **`t()` transposes the result.** `replicate()` returns one column per draw, and we want one row per draw, the same layout as `y_rep` later.
+
+Three transects of up to 100% cover means a site total can't go above 300, and the largest observed total is 137. Most prior draws should sit below 300, while still allowing a wide range of plausible values.
+
+### Fitting the model
+
+Fitting in Nimble takes a few more steps than pressing *Run* in FANGS, because Nimble compiles the model and the sampler to C++.
+
+```{r}
+#| label: glm-fit
+# Build and compile the model
+glm_model <- nimbleModel(glm_code, constants = consts, data = data,
+                         inits = list(beta0 = 0, beta1 = 0, beta2 = 0, beta3 = 0))
+c_model <- compileNimble(glm_model)
+
+# Set up, build and compile the sampler
+mcmc_conf <- configureMCMC(glm_model,
+                           monitors = c("beta0", "beta1", "beta2", "beta3", "y_rep"))
+glm_mcmc  <- buildMCMC(mcmc_conf)
+c_mcmc    <- compileNimble(glm_mcmc, project = glm_model)
+
+# Run: 4 chains, 2000 burn-in, 4000 kept samples per chain
+samples <- runMCMC(c_mcmc,
+                   nchains = 4,
+                   niter   = 6000,
+                   nburnin = 2000,
+                   samplesAsCodaMCMC = TRUE)
+```
+
+::: {.callout-note}
+In Nimble, `niter` **includes** the burn-in. To keep 4000 samples after a 2000-iteration burn-in, set `niter = 6000`.
+:::
+
+`nimbleMCMC()` wraps all of these steps into one call. It's handy once you know what each step does.
+
+::: {.callout-note}
+## Predictions inside the model
+Print `mcmc_conf` and you'll see that Nimble has given the `y_rep` nodes `posterior_predictive` samplers. These simply simulate new values each iteration and don't change the parameter estimates. Two trade-offs:
+
+- Every monitored prediction adds a column to the output. Use `params` or `pars` in summaries and plots so they only show the parameters you want.
+- To change what you predict, for example a new prediction grid, you need to rebuild and recompile the model.
+- If you want you can assemble predictions after the model fitting by just taking samples and applying the model formula to those. This gives more flexibility but increases the risk of mistakes if you change the model definition but then forget to change the prediction calculation. 
+:::
+
+### Summary, R-hat and ESS
+
+```{r}
+#| label: glm-summary
+MCMCsummary(samples, params = c("beta0", "beta1", "beta2", "beta3"), round = 2)
+```
+
+There is one row per parameter, with the posterior mean, SD and quantiles, then `Rhat` and `n.eff` (the effective sample size). We want R-hat at about 1.00 and n.eff in the hundreds or more.
+
+### Trace plots
+
+```{r}
+#| label: glm-trace
+mcmc_trace(samples, pars = c("beta0", "beta1", "beta2", "beta3"))
+mcmc_dens_overlay(samples, pars = c("beta0", "beta1", "beta2", "beta3"))
+```
+
+Each parameter gets a panel with the four chains in different colours. If the chains have mixed well, the four density curves sit almost on top of each other.
+
+### Posterior predictive check
+
+The `ppc_` functions in bayesplot are the posterior predictive plots the brms community use. They need the observed data and a matrix of simulated data sets, with one row per posterior draw. Nimble has already simulated these as `y_rep`, so we just pull out those columns.
+
+```{r}
+#| label: glm-ppc
+# Stack all chains into one matrix of draws
+post <- as.matrix(samples)
+
+# One row per draw, one column per site, in site order
+y_rep <- post[, paste0("y_rep[", 1:consts$N, "]")]
+
+ppc_dens_overlay(site_dat$cover, y_rep[1:100, ])
+ppc_rootogram(site_dat$cover, y_rep)
+```
+
+The site totals vary far more than a Poisson allows. Some sites have zero cover and others well over 100. The observed data sit outside most of the simulated data sets, so the model is **overdispersed**. Reefs differ for many reasons that distance and flow don't capture. That is what random effects are for.
+
+## 3. Adding site random effects
+
+Now we use the full transect data. Each site gets its own random intercept, and a hyperparameter controls how far apart those intercepts can spread.
+
+```{r}
+#| label: re-code
+re_code <- nimbleCode({
+  # Fixed effects
+  beta0 ~ dnorm(0, sd = 2)   # intercept:   Strong flow, average distance
+  beta1 ~ dnorm(0, sd = 1)   # distance slope, Strong flow
+  beta2 ~ dnorm(0, sd = 2)   # flow effect:  Mild vs Strong
+  beta3 ~ dnorm(0, sd = 1)   # interaction:  change in distance slope under Mild
+
+  # Hyperparameter: SD of site effects
+  sigma_b ~ dexp(1.54)
+
+  # Site random effects
+  for (s in 1:Nsite) {
+    b[s] ~ dnorm(0, sd = sigma_b)
+  }
+
+  # Likelihood, one row per transect
+  for (i in 1:N) {
+    log(mu[i]) <- beta0 + beta1 * dist[i] + beta2 * mild[i] +
+                  beta3 * mild[i] * dist[i] + b[site[i]]
+    cover[i] ~ dpois(mu[i])
+  }
+})
+
+re_consts <- list(
+  N     = nrow(dat),
+  Nsite = n_distinct(dat$site),
+  site  = as.integer(factor(dat$site)),
+  mild  = as.integer(dat$flow == "Mild"),
+  dist  = as.numeric(scale(dat$dist_to_logging_km))
+)
+re_data <- list(cover = dat$cover)
+```
+
+What is new compared with the GLM:
+
+1. **The site effects `b[s]`.** There is one per site, all drawn from a normal distribution centred on zero. The mean is zero because `beta0` already holds the average. If `b` had its own mean as well, the model couldn't tell that mean apart from `beta0`. That's the over-specification trap from Module 20.
+2. **The hyperparameter `sigma_b`.** This is the SD of the site effects: how different the reefs are from each other. It is estimated from the data, which is what makes the model hierarchical. Sites borrow strength from one another, and when `sigma_b` is small, each site is pulled more strongly towards the average.
+3. **The prior on `sigma_b`.** It must be positive, so we use an exponential prior. This puts the most weight near zero, so unless the data say otherwise, it pulls the model towards "the reefs aren't very different". See the aside below for how we chose the rate of 1.54.
+4. **Avoid vague priors on SDs.** A very wide prior such as `dunif(0, 100)` might feel safe, but on the log scale it allows reefs to differ by absurd factors. With only 20 sites, the data can't rule those values out, and the variance parameter mixes badly.
+5. **The `site[i]` indexing** is the one place we still look a value up by index: each transect picks out the effect of its own reef. With 20 sites, writing 20 dummy variables by hand would be unbearable, which is exactly why random effects use indexing instead.
+6. **Distance is scaled on the transect data.** Every site has three transects, so this gives the same scaling as scaling the site totals.
+
+::: {.callout-note}
+## Aside: choosing the rate of an exponential prior
+Following McElreath (*Statistical Rethinking*, 2nd edition, 2020), we use an exponential prior for the site SD. To pick its rate, work backwards from something you can picture.
+
+1. **Choose a multiple.** How different could a typical reef's cover be from the average reef? Say that a reef with about 7 times more (or less) cover than average would be surprising.
+2. **Choose a probability.** Allow only a 5% chance that reef differences are bigger than that.
+3. **Convert the multiple to the log scale.** The model works on log cover, so a multiple of 7 is an SD of $\log(7) \approx 1.95$.
+4. **Solve for the rate.** For an exponential distribution, $P(\sigma_b > s) = e^{-\lambda s}$. Setting that equal to 0.05 gives
+
+$$\lambda = \frac{-\log(0.05)}{\log(7)}$$
+
+```{r}
+#| label: exp-rate
+multiple <- 7      # reef-to-reef multiple we'd find surprising
+p_exceed <- 0.05   # probability the SD is larger than that
+
+s_max <- log(multiple)
+rate  <- -log(p_exceed) / s_max
+rate
+
+# Check it worked
+1 - pexp(s_max, rate)
+```
+
+That gives a rate of about 1.54, so the model line is `sigma_b ~ dexp(1.54)`.
+
+Try other numbers. If you think a multiple of 20 is plausible, the rate drops to 1. A larger rate pulls harder towards zero.
+:::
+
+### Prior predictive check
+
+The same three lines work for the hierarchical model. We just swap in the new code and constants. `simulate()` now also draws `sigma_b`, then a site effect for each reef, before simulating cover for every transect.
+
+```{r}
+#| label: re-prior-pred
+re_prior   <- nimbleModel(re_code, constants = re_consts)
+c_re_prior <- compileNimble(re_prior)
+
+re_sim_cover <- t(replicate(1000, {
+  c_re_prior$simulate()
+  c_re_prior$cover
+}))
+
+summary(as.vector(re_sim_cover))
+mean(re_sim_cover > 100)   # proportion of impossible transect values
+
+tibble(cover = as.vector(re_sim_cover)) |>
+  ggplot(aes(x = cover + 1)) +
+  geom_histogram(bins = 40, fill = fangs[["cyan"]]) +
+  geom_vline(xintercept = 101, linetype = "dashed", colour = fangs[["orange"]]) +
+  scale_x_log10() +
+  labs(x = "Simulated transect cover + 1 (log scale)", y = "Count")
+```
+
+Each transect's cover can't go above 100%. The site effects add an extra layer of variation, so expect a longer right tail than for the GLM. If a large share of draws are above 100, go back to the aside and choose a smaller reef-to-reef multiple, which gives a tighter prior on `sigma_b`.
+
+The centred and non-centred versions have the same priors, so this one check covers both.
+
+### Fitting the centred model
+
+The steps are the same as for the GLM. We add `sigma_b` and `b` to the inits and monitors.
+
+```{r}
+#| label: re-fit
+re_model <- nimbleModel(re_code, constants = re_consts, data = re_data,
+                        inits = list(beta0 = 0, beta1 = 0, beta2 = 0, beta3 = 0,
+                                     sigma_b = 1, b = rep(0, re_consts$Nsite)))
+c_re_model <- compileNimble(re_model)
+
+re_conf   <- configureMCMC(re_model, monitors = c("beta0", "beta1", "beta2",
+                                                  "beta3", "sigma_b", "b"))
+re_mcmc   <- buildMCMC(re_conf)
+c_re_mcmc <- compileNimble(re_mcmc, project = re_model)
+
+re_samples <- runMCMC(c_re_mcmc, nchains = 4, niter = 6000, nburnin = 2000,
+                      samplesAsCodaMCMC = TRUE)
+```
+
+### Checks
+
+```{r}
+#| label: re-checks
+MCMCsummary(re_samples, params = c("beta0", "beta1", "beta2", "beta3", "sigma_b"),
+            round = 2)
+
+mcmc_trace(re_samples, pars = c("sigma_b", "beta0", "beta2"))
+
+# The funnel: a site effect against log(sigma_b)
+mcmc_scatter(re_samples, pars = c("b[1]", "sigma_b"),
+             transformations = list(sigma_b = "log"))
+```
+
+What to look for:
+
+- **`sigma_b` is the parameter to watch.** In the summary, look for an R-hat above 1.01 or an n.eff much lower than the others.
+- **The scatter plot shows why.** When `sigma_b` is small, the site effects are squeezed close to zero. When it is large, they can spread out. This makes a funnel shape, and the sampler gets stuck in the narrow neck.
+- **The intercept can mix badly too**, because `beta0` and the site effects trade off against each other.
+
+## 4. The non-centred parameterisation
+
+```{r}
+#| label: re-nc-code
+re_nc_code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 2)
+  beta1 ~ dnorm(0, sd = 1)
+  beta2 ~ dnorm(0, sd = 2)
+  beta3 ~ dnorm(0, sd = 1)
+  sigma_b ~ dexp(1.54)
+
+  for (s in 1:Nsite) {
+    z[s] ~ dnorm(0, sd = 1)       # standardised site effect
+    b[s] <- sigma_b * z[s]        # rescaled to the real site effect
+  }
+
+  for (i in 1:N) {
+    log(mu[i]) <- beta0 + beta1 * dist[i] + beta2 * mild[i] +
+                  beta3 * mild[i] * dist[i] + b[site[i]]
+    cover[i] ~ dpois(mu[i])
+    y_rep[i] ~ dpois(mu[i])       # replicate data for the PPC
+  }
+
+  # --- Generated quantities -------------------------------------------
+  # Predicted cover for a typical reef (b = 0) along the distance gradient
+  for (k in 1:Npred) {
+    log(mu_pred[k]) <- beta0 + beta1 * dist_pred[k] + beta2 * mild_pred[k] +
+                       beta3 * mild_pred[k] * dist_pred[k]
+  }
+
+  # Effects as multipliers
+  mult_strong <- exp(beta1 * d5)              # per 5 km, Strong flow
+  mult_mild   <- exp((beta1 + beta3) * d5)    # per 5 km, Mild flow
+  flow_ratio  <- exp(beta2)                   # Mild vs Strong, at average distance
+})
+```
+
+Apart from the generated quantities at the end, the model hasn't changed, only the way it's written. Instead of drawing site effects directly from a distribution whose width depends on `sigma_b`, we draw standard normal values `z` and multiply them by `sigma_b`. The sampler now explores `z` and `sigma_b` separately, and the funnel disappears.
+
+The generated quantities are all deterministic (`<-`) or have no data, so they don't affect the fit:
+
+- **`mu_pred`** is the expected cover along a grid of distances, for each flow level. We'll plot it as the prediction curve.
+- **`mult_strong` and `mult_mild`** are the distance effects as multipliers per 5 km. `d5` converts 5 km into standardised distance units. Note how the Mild slope is `beta1 + beta3`: the baseline slope plus the interaction.
+- **`flow_ratio`** is how much more (or less) cover Mild-flow reefs have than Strong-flow reefs at the average distance. With dummy coding this is just `exp(beta2)`, with no subtraction needed.
+
+Calculating these inside the model is worth the effort. Each is a non-linear function of several coefficients, and doing it on each draw propagates the uncertainty correctly — you can't get `mult_mild` by exponentiating the posterior mean of `beta1 + beta3`.
+
+The prediction grid has to be passed in as constants, so we build it before the model. We only predict over the distances actually sampled for each flow level.
+
+```{r}
+#| label: pred-grid
+dist_mean <- mean(dat$dist_to_logging_km)
+dist_sd   <- sd(dat$dist_to_logging_km)
+
+pred_grid <- dat |>
+  group_by(flow) |>
+  reframe(dist_km = seq(min(dist_to_logging_km), max(dist_to_logging_km),
+                        length.out = 50)) |>
+  mutate(k       = row_number(),
+         mild    = as.integer(flow == "Mild"),
+         dist_z  = (dist_km - dist_mean) / dist_sd)
+
+re_nc_consts <- c(re_consts, list(
+  Npred     = nrow(pred_grid),
+  mild_pred = pred_grid$mild,
+  dist_pred = pred_grid$dist_z,
+  d5        = 5 / dist_sd
+))
+```
+
+```{r}
+#| label: re-nc-fit
+re_nc_model <- nimbleModel(re_nc_code, constants = re_nc_consts, data = re_data,
+                           inits = list(beta0 = 0, beta1 = 0, beta2 = 0, beta3 = 0,
+                                        sigma_b = 1, z = rep(0, re_consts$Nsite)))
+c_re_nc_model <- compileNimble(re_nc_model)
+
+re_nc_conf   <- configureMCMC(re_nc_model,
+                              monitors = c("beta0", "beta1", "beta2", "beta3",
+                                           "sigma_b", "b", "y_rep", "mu_pred",
+                                           "mult_strong", "mult_mild", "flow_ratio"))
+re_nc_mcmc   <- buildMCMC(re_nc_conf)
+c_re_nc_mcmc <- compileNimble(re_nc_mcmc, project = re_nc_model)
+
+re_nc_samples <- runMCMC(c_re_nc_mcmc, nchains = 4, niter = 6000, nburnin = 2000,
+                         samplesAsCodaMCMC = TRUE)
+```
+
+`b` is now calculated from `z` and `sigma_b`, but we can still monitor and plot it.
+
+### Checks, again
+
+```{r}
+#| label: re-nc-checks
+MCMCsummary(re_nc_samples, params = c("beta0", "beta1", "beta2", "beta3", "sigma_b"),
+            round = 2)
+
+mcmc_trace(re_nc_samples, pars = c("sigma_b", "beta0", "beta2"))
+
+mcmc_scatter(re_nc_samples, pars = c("b[1]", "sigma_b"),
+             transformations = list(sigma_b = "log"))
+```
+
+Compare these with the centred model. R-hat and n.eff for `sigma_b` should improve, and the funnel should be gone.
+
+## 5. Checking and interpreting the random effects model
+
+### Posterior predictive check
+
+```{r}
+#| label: re-ppc
+post_re  <- as.matrix(re_nc_samples)
+y_rep_re <- post_re[, paste0("y_rep[", 1:re_consts$N, "]")]
+
+ppc_dens_overlay(dat$cover, y_rep_re[1:100, ])
+ppc_rootogram(dat$cover, y_rep_re)
+
+# Does the model reproduce the number of zeros?
+prop_zero <- function(y) mean(y == 0)
+ppc_stat(dat$cover, y_rep_re, stat = "prop_zero")
+```
+
+Look closely at the zeros check. 26 of the 60 transects have zero cover. If the model predicts far fewer, the transects within a site still vary more than a Poisson allows. Site 8, for example, has transects of 7, 18 and 1. We come back to this in section 6.
+
+A plot that's easier for readers to interpret shows each observed transect against its predictive interval:
+
+```{r}
+#| label: re-ppc-intervals
+ppc_intervals_grouped(dat$cover, y_rep_re,
+                      x = dat$dist_to_logging_km, group = dat$flow) +
+  labs(x = "Distance to logging (km)", y = "Cover (%)")
+```
+
+### Parameter estimates
+
+```{r}
+#| label: re-estimates
+# Fixed effects and site SD
+mcmc_areas(re_nc_samples,
+           pars = c("beta0", "beta1", "beta2", "beta3", "sigma_b"),
+           prob = 0.9)
+
+# Distance effects as multipliers per SD of distance (about 5 km)
+mcmc_intervals(re_nc_samples, pars = c("mult_strong", "mult_mild"))
+
+# Site effects: which reefs are above or below average?
+mcmc_intervals(re_nc_samples, regex_pars = "^b\\[")
+```
+
+How to read these:
+
+- **The multipliers** are the multiplicative effects from Modules 14 and 15. A value of 1.5 means cover is 50% higher for every 5 km further from logging. If the interval crosses 1, the direction is uncertain.
+- **The flow difference** is `flow_ratio`, already calculated in the model. That gives the Mild-to-Strong ratio of cover at the average distance.
+- **`beta3` is the interaction.** If its interval comfortably includes zero, the two flow levels have much the same distance slope and you could drop the interaction.
+- **Site effects** show shrinkage. Sites with all-zero transects are pulled towards the mean instead of going to minus infinity.
+
+### Joint posteriors
+
+```{r}
+#| label: re-pairs
+#| fig-height: 7
+mcmc_pairs(re_nc_samples,
+           pars = c("beta0", "beta1", "beta2", "beta3", "sigma_b"))
+```
+
+Things to discuss:
+
+- **Intercept against slope.** If `beta0` and `beta1` are correlated, the flow groups usually cover different ranges of distance. That's the case here: every site far from logging has Mild flow, so the Strong-flow slope comes from a narrow stretch of distance.
+- **`beta2` and `beta3` against the baseline terms.** Dummy-coded interaction terms are nearly always correlated with the terms they modify, because `beta2` and `beta3` are *differences* measured against `beta0` and `beta1`. Strong correlation here is normal and not a bug, but it does mean you should interpret the four coefficients jointly, through quantities like `mult_mild`, rather than one at a time.
+- **`sigma_b` against the intercept.** A sloping or curved shape shows that the overall level and the spread between reefs are partly confounded.
+- **Centred vs non-centred.** Run the same pairs plot on `re_samples` to see the funnel next to the clean non-centred version.
+
+### Publication-quality plots
+
+The multipliers and predictions were calculated inside the model, so we just need to get them out of the chains. `tidybayes` does this tidily. `gather_draws()` stacks the named quantities into long format, and `spread_draws()` splits indexed nodes like `mu_pred[k]` into a value column and an index column.
+
+```{r}
+#| label: effects-draws
+effects <- re_nc_samples |>
+  gather_draws(mult_strong, mult_mild, flow_ratio) |>
+  mutate(effect = case_match(.variable,
+    "mult_strong" ~ "Distance, Strong flow (per 5 km)",
+    "mult_mild"   ~ "Distance, Mild flow (per 5 km)",
+    "flow_ratio"  ~ "Mild vs Strong flow"))
+```
+
+**Effects as multipliers:**
+
+```{r}
+#| label: effects-eye
+ggplot(effects, aes(x = .value, y = effect)) +
+  stat_halfeye(.width = c(0.66, 0.95), fill = fangs[["accent"]],
+               colour = fangs[["text"]], slab_alpha = 0.8) +
+  geom_vline(xintercept = 1, linetype = "dashed", colour = fangs[["orange"]]) +
+  scale_x_log10() +
+  labs(x = "Multiplicative effect on coral cover", y = NULL)
+```
+
+- The x-axis is on a log scale, so doubling (2) and halving (0.5) sit the same distance from 1.
+- The thick bar is the 66% interval and the thin bar is the 95% interval.
+- If a distribution sits clearly above 1, cover rises with distance from logging, which is the direction the sediment story predicts.
+
+**Predicted cover along the distance gradient:**
+
+```{r}
+#| label: pred-plot
+# 1000 draws is plenty for smooth ribbons
+pred <- re_nc_samples |>
+  spread_draws(mu_pred[k], ndraws = 1000) |>
+  left_join(pred_grid, by = "k")
+
+ggplot(pred, aes(x = dist_km, y = mu_pred)) +
+  stat_lineribbon(.width = c(0.5, 0.8, 0.95), colour = fangs[["text"]]) +
+  geom_point(data = dat, aes(x = dist_to_logging_km, y = cover),
+             colour = fangs[["cyan"]], alpha = 0.6, inherit.aes = FALSE) +
+  scale_fill_manual(values = c(fangs[["border"]], fangs[["muted"]],
+                               fangs[["accent"]])) +
+  facet_wrap(~ flow) +
+  labs(x = "Distance to logging (km)", y = "Branching Acropora cover (%)",
+       fill = "Credible interval")
+```
+
+- **The lines stop where the data stop.** All the Strong-flow sites are 2.4–4.7 km from logging. A Strong-flow line drawn out to 20 km would be pure extrapolation, so the sampling design limits what we can conclude.
+- **The curve is for a typical reef**, with the site effect set to zero. Because of the log link, this is the *median* reef. The mean across reefs is higher by a factor of $e^{\sigma_b^2/2}$.
+
+::: {.callout-tip}
+## Extension
+Predict for an unsampled reef. Add `b_new ~ dnorm(0, sd = sigma_b)` to the model block, along with a second prediction, `log(mu_new[k]) <- beta0 + beta1 * dist_pred[k] + beta2 * mild_pred[k] + beta3 * mild_pred[k] * dist_pred[k] + b_new`. Monitor `mu_new` and plot it in the same way. The ribbon will be much wider, because it includes the variation between reefs.
+:::
+
+## 6. An observation-level random effect
+
+The zeros check showed that transects within a site still vary more than a Poisson allows. The fix uses the idea you have just learned: give every transect its own small random effect.
+
+```{r}
+#| label: olre-code
+olre_code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 2)
+  beta1 ~ dnorm(0, sd = 1)
+  beta2 ~ dnorm(0, sd = 2)
+  beta3 ~ dnorm(0, sd = 1)
+  sigma_b ~ dexp(1.54)   # reef-to-reef SD
+  sigma_e ~ dexp(1.54)   # transect-to-transect SD
+
+  for (s in 1:Nsite) {
+    z[s] ~ dnorm(0, sd = 1)
+    b[s] <- sigma_b * z[s]
+  }
+
+  for (i in 1:N) {
+    e_z[i] ~ dnorm(0, sd = 1)
+    log(mu[i]) <- beta0 + beta1 * dist[i] + beta2 * mild[i] +
+                  beta3 * mild[i] * dist[i] +
+                  b[site[i]] + sigma_e * e_z[i]
+    cover[i] ~ dpois(mu[i])
+
+    # Replicate data: a NEW transect on the same reef
+    e_new[i] ~ dnorm(0, sd = 1)
+    log(mu_rep[i]) <- beta0 + beta1 * dist[i] + beta2 * mild[i] +
+                      beta3 * mild[i] * dist[i] +
+                      b[site[i]] + sigma_e * e_new[i]
+    y_rep[i] ~ dpois(mu_rep[i])
+  }
+
+  mult_mild <- exp((beta1 + beta3) * d5)   # distance effect per 5 km, Mild flow
+})
+```
+
+1. **`e_z[i]` gives each transect its own multiplier.** This turns the Poisson into a Poisson-lognormal distribution, which allows extra spread and extra zeros. It is non-centred from the start, for the same reason as the site effects.
+2. **There are now two variance components.** `sigma_b` is how much reefs differ from each other. `sigma_e` is how much transects on the same reef differ. Comparing them is ecologically meaningful: is most of the variation in coral cover between reefs or within them?
+3. **The prior on `sigma_e`** uses the same "multiple of 7, 5% chance" reasoning. Redo the aside's calculation with your own belief about how much transects on one reef can differ.
+4. **Expect harder sampling.** The model now has 60 extra parameters. Check the n.eff for `sigma_e` especially, and be ready to increase `niter`.
+5. **The replicates use new transect effects, `e_new`.** See the warning in the posterior predictive check below for why.
+
+```{r}
+#| label: olre-fit
+olre_model <- nimbleModel(olre_code, constants = re_nc_consts, data = re_data,
+                          inits = list(beta0 = 0, beta1 = 0, beta2 = 0, beta3 = 0,
+                                       sigma_b = 1, z = rep(0, re_consts$Nsite),
+                                       sigma_e = 1, e_z = rep(0, re_consts$N)))
+c_olre_model <- compileNimble(olre_model)
+
+# Don't monitor e_z or e_new: we never look at them directly
+olre_conf   <- configureMCMC(olre_model,
+                             monitors = c("beta0", "beta1", "beta2", "beta3",
+                                          "sigma_b", "sigma_e", "b",
+                                          "y_rep", "mult_mild"))
+olre_mcmc   <- buildMCMC(olre_conf)
+c_olre_mcmc <- compileNimble(olre_mcmc, project = olre_model)
+
+olre_samples <- runMCMC(c_olre_mcmc, nchains = 4, niter = 6000, nburnin = 2000,
+                        samplesAsCodaMCMC = TRUE)
+
+MCMCsummary(olre_samples,
+            params = c("beta0", "beta1", "beta2", "beta3", "sigma_b", "sigma_e"),
+            round = 2)
+mcmc_trace(olre_samples, pars = c("sigma_b", "sigma_e"))
+```
+
+### Posterior predictive check
+
+::: {.callout-warning}
+## A trap
+If the replicates used the *fitted* transect effects, `y_rep[i] ~ dpois(mu[i])`, every transect would already have its own effect. The model would then reproduce the observations almost perfectly and the check would tell you nothing. So in the model block we draw a **new** transect effect, `e_new[i]`, for each replicate. That asks a fairer question: what would another transect on this reef look like?
+:::
+
+```{r}
+#| label: olre-ppc
+post_ol  <- as.matrix(olre_samples)
+y_rep_ol <- post_ol[, paste0("y_rep[", 1:re_consts$N, "]")]
+
+ppc_stat(dat$cover, y_rep_ol, stat = "prop_zero")
+ppc_rootogram(dat$cover, y_rep_ol)
+```
+
+### Comparing the two models
+
+```{r}
+#| label: model-compare
+bind_rows(
+  tibble(model = "Site RE only",       mult = post_re[, "mult_mild"]),
+  tibble(model = "Site + transect RE", mult = post_ol[, "mult_mild"])
+) |>
+  ggplot(aes(x = mult, y = model)) +
+  stat_halfeye(.width = c(0.66, 0.95), fill = fangs[["accent"]],
+               colour = fangs[["text"]], slab_alpha = 0.8) +
+  geom_vline(xintercept = 1, linetype = "dashed", colour = fangs[["orange"]]) +
+  scale_x_log10() +
+  labs(x = "Distance effect, Mild flow (multiplier per 5 km)", y = NULL)
+```
+
+The interval should be wider in the second model. If you ignore overdispersion, you're overconfident about the effects you care about.
+
+## Wrapping up
+
+Back to the question: does coral cover rise with distance from logging, as the sediment-damage story predicts? Use the final model's distance multipliers to answer it, and note how the flow levels differ in the range of distances they cover.
+
+A negative binomial likelihood is another common way to handle overdispersion, and it gives similar answers here. We used the observation-level random effect because it extends an idea you already know: adding one more level of variation to the model.
+
+## References
+
+Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. & Choat, J.H. (2017) Logging degrades nursery habitat for an iconic coral reef fish. *Biological Conservation* 210: 273–280.
+
+McElreath, R. (2020) *Statistical Rethinking: A Bayesian Course with Examples in R and Stan*. 2nd edition. CRC Press.
