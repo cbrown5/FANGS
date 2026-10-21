@@ -1,6 +1,6 @@
 ---
 title: "From FANGS to Nimble: a hierarchical GLM of coral cover"
-subtitle: "Branching coral, logging and random effects, coded by hand in R"
+subtitle: "Branching coral, logging and random effects, coded in R"
 author: "Christopher J. Brown"
 date: today
 format:
@@ -54,10 +54,14 @@ format:
 execute:
   warning: false
   message: false
-knitr:
-  opts_chunk:
-    dev.args: !expr list(bg = "#1e1f29")
 ---
+
+```{r}
+#| label: setup
+#| include: false
+# transparent-background devices so plots sit on the dark page
+knitr::opts_chunk$set(dev.args = list(bg = "#1e1f29"))
+```
 
 ## Where we are
 
@@ -233,7 +237,7 @@ Step by step:
 2. **The two priors** are the regression coefficients. The `~` means "is distributed as".
 3. **The loop runs over the 49 sites.** The `<-` is a fixed calculation, not a random draw.
 4. **`logit(p[i])` is the logit link.** It maps the linear predictor onto a probability between 0 and 1, so `p` can never stray outside the range a proportion is allowed to take.
-5. **`cover[i] ~ dbin(p[i], npts[i])`** says the points landing on branching coral follow a binomial with probability `p[i]` out of `npts[i]` trials. Note the argument order: BUGS and Nimble put the **probability first**, then the size. This catches people out — R's own `rbinom()` takes them the other way round.
+5. **`cover[i] ~ dbin(p[i], npts[i])`** says the points landing on branching coral follow a binomial with probability `p[i]` out of `npts[i]` trials. Note the argument order: BUGS and Nimble put the **probability first**, then the size. This catches people out because R's own `rbinom()` takes them the other way round.
 6. **`y_rep[i]`** has the same distribution as `cover[i]`, but we don't give it any data. On each iteration Nimble simulates it, using that iteration's `p[i]`. This gives draws from the posterior predictive distribution, which we use for the posterior predictive check. It's the same as the "generated quantities" idea you may have seen in Stan.
 
 ::: {.callout-note}
@@ -245,7 +249,7 @@ Both coefficients live on the logit scale, so neither is directly a per cent:
 | `beta0` | logit of cover on an **unlogged** reef |
 | `beta1` | change in logit cover on a **logged** reef |
 
-Two back-transformations make them readable. `plogis(beta0)` is the cover on an unlogged reef as a proportion, and `plogis(beta0 + beta1)` is the cover on a logged reef. Separately, `exp(beta1)` is the **odds ratio**: how the odds of a point landing on branching coral change with logging. A `beta1` below zero means less coral on logged reefs, which is the direction the sediment story predicts.
+Two back-transformations make them readable. `plogis(beta0)` is the cover on an unlogged reef as a proportion, and `plogis(beta0 + beta1)` is the cover on a logged reef. `exp(beta1)` is the **odds ratio**: how the odds of a point landing on branching coral change with logging. A `beta1` below zero means less coral on logged reefs, which is what we expect if sediment impacts coral reefs. 
 :::
 
 ::: {.callout-warning}
@@ -310,11 +314,11 @@ A few things to note about the code:
 - **`c_prior$simulate()` and `c_prior$cover`** use `$` to call a method and read a value from the model object. This is how you work with Nimble models from R.
 - **`t()` transposes the result.** `replicate()` returns one column per draw, and we want one row per draw, the same layout as `y_rep` later.
 
-The logit link does something useful here: no matter what the priors throw out, simulated cover is always between 0 and 100%. There is no "impossible value" check to run, because the link makes impossible values unreachable. What we are judging instead is whether the *spread* is reasonable. A `dnorm(0, sd = 2)` prior on the logit scale spans roughly 2% to 98% cover, which is wide but not absurd for a reef.
+The logit link ensures simulated cover is always between 0 and 100%. What we are judging is whether the *spread* is reasonable. A `dnorm(0, sd = 2)` prior on the logit scale spans roughly 2% to 98% cover, which is wide but not absurd for a reef.
 
 ::: {.callout-tip}
 ## Extension
-Re-run the prior predictive check with `beta0 ~ dnorm(0, sd = 10)`. You'll see the draws pile up at 0% and 100% with almost nothing in between. A prior that looks "uninformative" on the logit scale is in fact strongly informative, and it insists that reefs are either bare or carpeted. This is the single most common prior mistake in logistic models.
+Re-run the prior predictive check with `beta0 ~ dnorm(0, sd = 10)`. You'll see the draws pile up at 0% and 100% with almost nothing in between. A prior that looks "uninformative" on the logit scale is in fact strongly informative, and it says that reefs are either bare or carpeted.
 :::
 
 ### Fitting the model
@@ -438,9 +442,9 @@ What is new compared with the GLM:
 1. **The site effects `b[s]`.** There is one per site, all drawn from a normal distribution centred on zero. The mean is zero because `beta0` already holds the average. If `b` had its own mean as well, the model couldn't tell that mean apart from `beta0`. That's the over-specification issue covered in Module 20 of the FANGS course.
 2. **The hyperparameter `sigma_b`.** This is the SD of the site effects: how different the reefs are from each other. It is estimated from the data, which is what makes the model hierarchical. Sites borrow strength from one another, and when `sigma_b` is small, each site's mean is shrunk more strongly towards the average.
 3. **The prior on `sigma_b`.** It must be positive, so we use an exponential prior. This puts the most weight near zero, so unless the data say otherwise, it pulls the model towards "the reefs aren't very different". See the aside below for how we chose the rate of 1.54.
-4. **Avoid vague priors on SDs.** A very wide prior such as `dunif(0, 100)` might feel safe, but on the logit scale it allows reefs to differ by absurd factors. You may see such priors in older literature (`gamma(0.001, 0.001)` on the precision was also a common vague prior that is now widely regarded as problematic). The data can't rule those values out, and the variance parameter mixes badly.
-5. **The `site[i]` indexing** is how each transect picks out the effect of its own reef. Writing 49 dummy variables by hand would be unbearable, which is exactly why random effects use indexing instead.
-6. **`logged` is a site-level predictor repeated across transects.** All five transects on a reef share the same value. The random effect and the fixed effect are therefore working at the same level, which is why the two can trade off against each other — something we'll see directly in the diagnostics.
+4. **Avoid vague priors on SDs.** A very wide prior such as `dunif(0, 100)` will allows reefs to differ by absurd factors. You may see such priors in older literature (`gamma(0.001, 0.001)` on the precision was also a common vague prior that is now widely regarded as problematic). The data can't rule those values out, and the variance parameter mixes badly.
+5. **The `site[i]` indexing** is how each transect picks out the effect of its own reef. Writing 49 dummy variables by hand would be tedious, which is why random effects use indexing instead.
+6. **`logged` is a site-level predictor repeated across transects.** All five transects on a reef share the same value. The random effect and the fixed effect are therefore working at the same level, which is why the two can trade off against each other. We'll need to look carefully at the diagnostics for problems.
 
 ::: {.callout-note}
 ## Aside: choosing the rate of an exponential prior
@@ -535,16 +539,14 @@ mcmc_scatter(re_samples, pars = c("beta0", "beta1"))
 What to look for:
 
 - **`sigma_b` is fine.** Its R-hat sits at 1.00 with an n.eff in the thousands. The hierarchical variance is not the problem in this model.
-- **`beta0` is not.** Expect R-hat around 1.1 and n.eff of about 25 — out of 4800 saved draws. The traces drift rather than looking like white noise.
+- **`beta0` is not.** Expect R-hat > 1.1 and n.eff of about 25 — out of 4800 saved draws. The traces wander rather than looking like white noise.
 - **The scatter plot shows why.** `beta0` and `beta1` are strongly negatively correlated. `beta0` sets the level for unlogged reefs and `beta1` is the step down to logged reefs, so the sampler can raise one and lower the other and barely change the likelihood. It ends up crawling along a diagonal ridge.
 
-Nimble's default is a separate random-walk sampler for each parameter, and a one-at-a-time sampler cannot move along a diagonal — every step it tries goes off the ridge and gets rejected.
-
-UP TO HERE
+Nimble's default is a separate random-walk sampler for each parameter, and a one-at-a-time sampler cannot move along a diagonal. At every step it tries to go off the ridge and gets rejected.
 
 ::: {.callout-note}
-## Where's the funnel?
-If you've met hierarchical models before, you may expect the classic funnel between `sigma_b` and the site effects, fixed by a non-centred parameterisation. Try it:
+## Funnels and random effects
+Sometimes in hierarchical models we see a funnel in the samples between `sigma_b` and the site effects. Try this:
 
 ```{r}
 #| label: funnel-check
@@ -554,7 +556,7 @@ mcmc_scatter(re_samples, pars = c("b[1]", "sigma_b"),
 
 There isn't much of one here. Each site has five transects and about 375 points, so every site effect is well identified by its own data and never gets squeezed into the neck. Funnels happen when groups are small or numerous relative to the information in them.
 
-This is worth seeing: **the standard fix is not always the right fix.** Diagnose the actual geometry before reaching for a remedy.
+If your are building your own model and you notice a funnel in your diagnostics, then the non-centereed parameterization is the trick to try (see module 20 of the FANGS course.)
 :::
 
 ## 4. Fixing the sampler with a block update
@@ -586,7 +588,7 @@ re_nc_code <- nimbleCode({
 })
 ```
 
-The model block is unchanged apart from the generated quantities. What changes is how we *sample* it:
+The model block is unchanged apart from the generated quantities, which we will use to plot predictions. But we will change how we sample from the model: 
 
 ```{r}
 #| label: re-nc-fit
@@ -618,11 +620,11 @@ re_nc_samples <- runMCMC(c_re_nc_mcmc, nchains = 4, niter = 30000,
 
 Three things to note:
 
-- **`removeSamplers()` then `addSampler()`** is the standard Nimble idiom for changing how a parameter is updated. Being able to do this easily is one of Nimble's main advantages over JAGS.
+- **`removeSamplers()` then `addSampler()`** is the Nimble syntax for changing how a parameter is updated. Being able to do this easily is one of Nimble's main advantages over JAGS.
 - **`AF_slice`** is an automated-factor slice sampler. It learns the correlation structure and slices along the rotated axes, so the diagonal ridge becomes an axis it can travel.
-- **We also run longer and thin.** Block sampling fixes the geometry; running longer buys the effective sample size. Thinning just keeps the output a manageable size.
+- **We also run longer and thin.** Block sampling fixes the geometry; running longer increases the effective sample size. Thinning just keeps the output a manageable size.
 
-The generated quantities are all deterministic, so they don't affect the fit. They matter because each is a **non-linear** function of the coefficients, and computing them per draw propagates uncertainty correctly. Back-transforming a posterior mean is not the same as the mean of the back-transforms.
+The generated quantities are all deterministic, so they don't affect the fit. We added thoes because each is a **non-linear** function of the coefficients. Computing them per draw propagates uncertainty correctly. Back-transforming a posterior mean is not the same as the mean of the back-transforms.
 
 ### Checks, again
 
@@ -649,6 +651,8 @@ max(rhat_all, na.rm = TRUE)   # worst R-hat over every monitored node
 
 ### Posterior predictive check
 
+Let's compare the model predictions and parameters to the raw data. In below 'y' is the data 'y_rep' are predictions calculated from the model. 
+
 ```{r}
 #| label: re-ppc
 post_re  <- as.matrix(re_nc_samples)
@@ -665,9 +669,9 @@ ppc_stat(dat$cover_branching, y_rep_re, stat = "prop_zero")
 
 This is a big improvement on the GLM: the site effects soak up most of the reef-to-reef variation, and the density overlay looks broadly right.
 
-Two statistics still miss, both in the same direction:
+Two statistics area still off:
 
-- **The SD** of the observed transects is about 18, and the replicates average nearer 16. The model is slightly too tidy.
+- **The SD** of the observed transects is about 18, and the replicates average nearer 16. The model is slightly too tight.
 - **The zeros.** 29 of the 245 transects have no branching coral at all. The model predicts about half that many.
 
 Both say the same thing: transects *within* a site still vary more than a binomial allows. The site effect handles differences between reefs, but not patchiness along a single reef. We come back to this in section 6.
@@ -748,7 +752,7 @@ effects <- re_nc_samples |>
 #| label: effects-eye
 ggplot(effects, aes(x = .value, y = "Logging")) +
   stat_halfeye(.width = c(0.66, 0.95), fill = fangs[["accent"]],
-               colour = fangs[["text"]], slab_alpha = 0.8) +
+               colour = fangs[["border"]], slab_alpha = 0.8) +
   geom_vline(xintercept = 1, linetype = "dashed", colour = fangs[["orange"]]) +
   scale_x_log10() +
   labs(x = "Odds ratio for branching coral (logged vs unlogged)", y = NULL)
@@ -775,7 +779,7 @@ obs <- dat |>
 
 ggplot(group_means, aes(x = reef, y = 100 * .value)) +
   stat_halfeye(.width = c(0.66, 0.95), fill = fangs[["accent"]],
-               colour = fangs[["text"]], slab_alpha = 0.8,
+               colour = fangs[["border"]], slab_alpha = 0.8,
                position = position_nudge(x = 0.1)) +
   geom_jitter(data = obs, aes(x = reef, y = pct),
               width = 0.06, colour = fangs[["cyan"]], alpha = 0.4,
@@ -784,7 +788,7 @@ ggplot(group_means, aes(x = reef, y = 100 * .value)) +
 ```
 
 - **The halfeye is the posterior for a typical reef**, with the site effect set to zero. The blue points are the raw transects.
-- **The posterior is much narrower than the data**, and that's correct. The transects scatter because reefs differ and transects within a reef differ; the posterior is our uncertainty about the *average*, which many transects pin down well.
+- **The posterior is much narrower than the data**. The transects scatter because reefs differ and transects within a reef differ; the posterior is our uncertainty about the *average*, which many transects pin down well.
 - **This is the median reef, not the mean reef.** The logit link is non-linear, so averaging over the site effects gives a slightly different number than setting them to zero.
 
 ::: {.callout-tip}
@@ -794,7 +798,7 @@ Predict for an unsampled reef. Add `b_new ~ dnorm(0, sd = sigma_b)` to the model
 
 ## 6. An observation-level random effect
 
-The SD and zeros checks showed that transects within a site still vary more than a binomial allows. The fix uses the idea you have just learned: give every transect its own small random effect.
+The SD and zeros checks showed that transects within a site still vary more than a binomial allows. What we can try is give every transect its own small random effect.
 
 ```{r}
 #| label: olre-code
@@ -828,7 +832,7 @@ olre_code <- nimbleCode({
 1. **`e[i]` gives each transect its own offset.** This turns the binomial into a binomial-logit-normal, which allows extra spread and extra zeros.
 2. **There are now two variance components.** `sigma_b` is how much reefs differ from each other. `sigma_e` is how much transects on the same reef differ. Comparing them is ecologically meaningful: is coral patchy *between* reefs or *along* them?
 3. **The prior on `sigma_e`** uses the same "odds multiple of 7, 5% chance" reasoning. Redo the aside's calculation with your own belief about how much transects on one reef can differ.
-4. **Expect harder sampling.** The model now has 245 extra parameters, one per transect. Check the n.eff for `sigma_e` especially, and be ready to increase `niter`.
+4. **Expect slower sampling requiring longer chains.** The model now has 245 extra parameters, one per transect. Check the n.eff for `sigma_e` especially, and consider increasing `niter`.
 5. **The replicates use new transect effects, `e_new`.** See the warning in the posterior predictive check below for why.
 
 ```{r}
@@ -863,13 +867,13 @@ MCMCsummary(olre_samples,
 mcmc_trace(olre_samples, pars = c("sigma_b", "sigma_e"))
 ```
 
-Compare `sigma_b` and `sigma_e`. Reef-to-reef variation is the larger of the two, but transect-to-transect variation is substantial — coral is patchy at both scales, and a model with only site effects was attributing all of that patchiness to the wrong level.
+Compare `sigma_b` and `sigma_e`. Reef-to-reef variation is the larger of the two, but transect-to-transect variation is substantial too. A model with only site effects was attributing all of that patchiness to the wrong level.
 
 ### Posterior predictive check
 
 ::: {.callout-warning}
 ## A trap
-If the replicates used the *fitted* transect effects, `y_rep[i] ~ dbin(p[i], npts[i])`, every transect would already have its own effect tuned to its own observation. The model would then reproduce the observations almost perfectly and the check would tell you nothing. So in the model block we draw a **new** transect effect, `e_new[i]`, for each replicate. That asks a fairer question: what would *another* transect on this reef look like?
+If the replicates used the *fitted* transect effects, `y_rep[i] ~ dbin(p[i], npts[i])`, every transect would already have its own effect tuned to its own observation. The model would then reproduce the observations almost perfectly and the check would tell you nothing. So in the model block we draw a **new** transect effect, `e_new[i]`, for each replicate. That asks the question: what would *another* transect on this reef look like?
 :::
 
 ```{r}
@@ -882,7 +886,7 @@ ppc_stat(dat$cover_branching, y_rep_ol, stat = "prop_zero")
 ppc_dens_overlay(dat$cover_branching, y_rep_ol[1:100, ])
 ```
 
-Both statistics the previous model missed are now much better. The replicated SD lands on the observed value, and the zeros are close. The model still under-predicts zeros slightly — a few transects hit genuinely bare patches of rubble that even a lognormal tail struggles to reach — but it is no longer badly wrong.
+Both statistics the previous model missed are now much better. The replicated SD lands on the observed value, and the zeros are close. The model still under-predicts zeros slightly.
 
 ### Comparing the two models
 
@@ -894,16 +898,16 @@ bind_rows(
 ) |>
   ggplot(aes(x = or, y = model)) +
   stat_halfeye(.width = c(0.66, 0.95), fill = fangs[["accent"]],
-               colour = fangs[["text"]], slab_alpha = 0.8) +
+               colour = fangs[["border"]], slab_alpha = 0.8) +
   geom_vline(xintercept = 1, linetype = "dashed", colour = fangs[["orange"]]) +
   scale_x_log10() +
   labs(x = "Odds ratio for branching coral (logged vs unlogged)", y = NULL)
 ```
 
-The interval is wider in the second model, and the point estimate shifts a little further from 1. Two lessons:
+The interval is slightly wider in the second model, and the point estimate shifts a little further from 1. Two lessons:
 
 - **Ignoring overdispersion makes you overconfident** about the effects you care about. The first model's interval was too narrow because it pretended transects on a reef were more alike than they are.
-- **The conclusion survives.** The logging effect is strong enough that accounting for the extra variation doesn't overturn it. That is what you hope to find, and the only way to know is to check.
+- **The conclusion is the same either way.** The logging effect is strong enough that accounting for the extra variation doesn't overturn it. That is what you hope to find, and the only way to know is to check.
 
 ## Wrapping up
 
@@ -919,16 +923,14 @@ round(quantile(post_ol[, "odds_ratio"], c(0.025, 0.5, 0.975)), 2)
 
 Yes. A typical unlogged reef has about 25% branching coral cover (95% CI 17–37%) and a typical logged reef about 9% (95% CI 5–15%). The odds ratio is 0.29, so logging is associated with roughly a third of the odds of a point landing on branching coral, and the posterior probability of a negative effect is essentially 1.
 
-One caution worth stating plainly: this is an **observational** comparison, not an experiment. Reefs were not randomly assigned to be logged. Logged areas in this survey also tend to be closer to shore and in more turbid water, so the estimate is the difference between logged and unlogged *places*, not the causal effect of logging alone. The analysis is honest about uncertainty in the estimate; it cannot be honest about confounding you haven't measured.
-
-A beta-binomial likelihood is another common way to handle overdispersion, and it gives similar answers here. We used the observation-level random effect because it extends an idea you already know: adding one more level of variation to the model.
+A beta-binomial likelihood is another common way to handle overdispersion. If you are working with these types of problems commonly you might want to look into it. We used the observation-level random effect because it extends simply on the work we've already done. Either method is valid, you just need to confirm the diagnostics as we have done. 
 
 ### What to take away
 
 - **Match the likelihood to the data-generating process.** Points out of a total is a binomial.
 - **Check the prior on the scale you can picture**, not the scale the model works on. A "flat" logit prior is not flat in cover.
-- **Diagnose before you fix.** The textbook funnel wasn't the problem here; correlated fixed effects were. Different disease, different medicine.
-- **Posterior predictive checks earn their keep** when they fail. Both useful discoveries in this tutorial came from a check that didn't pass.
+- **Diagnose before you interpret.** We checked the chains, Rhats, ESS and other statistics and plots to make sure our algorithm was fitting well and then followed up with comparisons of the predictions to the data.
+- **Bayesian workflows.** We used prior predictive checks to confirm our priors were sensible, diagnoses to confirm our algorithm worked well (and fix problems that arose), posterior predictive checks to confirm the fit of model to the data. 
 
 ## References
 
