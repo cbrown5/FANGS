@@ -13,6 +13,7 @@ modules reference these by filename in `../modules.js`.
 | `presence.csv` | M16 | `site`, `pres` (binary response), `logged` (factor), `habitat` (factor), `dist_to_logging_km` (continuous) |
 | `habitat-presence.csv` | M17 | `site`, `pres` (binary response), `habitat` (3-level factor: Coral/Rubble/Seagrass), `depth_m` (continuous), `is_rubble`, `is_seagrass` (dummy indicators for the reference-coded model) |
 | `random-effects.csv` | M19, M20, M21 | `site` (20 levels), `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
+| `random-effects-full.csv` | Nimble tutorial (not a course module) | as above with `site` (49 levels), plus `cover_branching` (CB + ACB count) and `n_points` (transect denominator) |
 
 `jaw-length.csv` is also present in this folder but is **not used by any module** —
 M8/M9 were reworked onto `fish-lengths.csv`. It is kept for the R-reference
@@ -53,6 +54,21 @@ distance gradient. Hierarchical models fit roughly nine times faster on it than
 on the full 49-site survey, which matters because every site adds a random
 intercept for the sampler to update. The original 245-row survey is kept
 alongside it as `random-effects-full.csv` (not included in the student zip).
+
+`random-effects-full.csv` carries two extra columns used by the Nimble tutorial
+(`tutorial/nimble-hierarchical-glm.qmd`):
+
+- `cover_branching` — point-intercept count of **all** branching coral
+  (`CB` + `ACB` codes), as opposed to `cover`, which is branching *Acropora*
+  (`ACB`) alone.
+- `n_points` — total points sampled on the transect (72–75), the denominator
+  that makes a binomial model possible.
+
+The tutorial uses `cover_branching` rather than `cover` because `cover` is 42%
+zeros with no clear fixed effect, while `cover_branching` is only 12% zeros and
+shows a strong, interpretable logging effect: cover is about twice as high at
+unlogged sites (33.8% vs 16.9%). That dataset is for Nimble only — 49 random
+intercepts is far too slow for the in-browser FANGS sampler.
 
 For reef fish data:
 
