@@ -16,6 +16,27 @@ npx serve .
 
 Then open `http://localhost:3000` in your browser.
 
+## Sampler engines
+
+The **Sampler engine** setting chooses how each MCMC sweep is run:
+
+| Engine | What it does | Best for |
+|--------|--------------|----------|
+| Standard (default) | Component-wise Gibbs: one parameter at a time, conjugate draws or slice sampling | Any model; small teaching datasets |
+| Blocked — GPU (WebGPU, experimental) | Blocked Gibbs for GLMMs: fixed effects updated jointly, all group-level effects updated in parallel on the GPU, hyperparameters from sufficient statistics | Large datasets or many groups |
+| Blocked — CPU | The same blocked algorithm on the CPU | Medium datasets; browsers without WebGPU |
+
+The blocked engines support normal, Poisson (log link) and Bernoulli/binomial
+(logit link) responses whose linear predictor is linear in the coefficients,
+with `dnorm` priors on the coefficients and random intercepts or slopes. That
+covers all of the built-in examples. Other models fall back to the standard
+sampler automatically, and the status bar says why. Design notes:
+[`plans/gpu-blocked-sampler.md`](plans/gpu-blocked-sampler.md).
+
+WebGPU is available in recent Chrome and Edge, and in Safari 26+. In Firefox it
+may need enabling. Without it, the GPU option falls back to the blocked CPU
+engine.
+
 ## Running tests
 
 ### JavaScript app tests
@@ -62,6 +83,20 @@ Rscript tests/r-reference/{linear-model,mixed-effects,poisson-glm,binomial-glm}.
 Reference JSON fixtures are written to `tests/r-reference/results/`.
 
 Matching app tests are run with: `npx vitest run tests/integration.test.js`
+
+### GPU sampler test
+
+`tests/blocked-sampler.test.js` (part of `npx vitest run`) covers the blocked
+sampler on the CPU. The WebGPU kernels are checked in headless Chromium using
+SwiftShader (a software GPU, so no graphics card is needed):
+
+```bash
+node tests/gpu-e2e.mjs            # GPU vs CPU posteriors for every example model
+node tests/gpu-e2e.mjs --bench    # also time both backends on a simulated GLMM
+```
+
+To time the GPU on real hardware, serve the repo and open
+`/tests/gpu-harness.html?bench=1&benchN=200000&benchJ=5000`.
 
 ## Adding or editing educational popups
 
@@ -130,6 +165,7 @@ Do not commit `src/content/popups/_rendered/` (it is git-ignored).
 |------|-------|
 | `mcmc.qmd` | What is MCMC? |
 | `gibbs-sampler.qmd` | How Gibbs sampling works |
+| `sampler-engine.qmd` | Standard vs blocked (GPU/CPU) sampler engines |
 | `chains.qmd` | Multiple chains |
 | `burn-in.qmd` | Burn-in / warm-up |
 | `thinning.qmd` | Thinning |

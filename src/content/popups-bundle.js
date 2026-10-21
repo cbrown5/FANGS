@@ -649,6 +649,27 @@ precision τ  = 1 / (sigma * sigma)</code></pre>
 <h2 id="limitations">Limitations</h2>
 <p>R-hat requires at least 2 chains. With a single chain it cannot be computed. It also cannot detect multimodality if all chains are stuck in the same mode.</p>
 </body></html>`,
+  'sampler-engine': `<h1>Sampler engine</h1>
+<p>FANGS has two ways to run the Gibbs sampler. Both give draws from the same posterior; they differ in how each sweep is organised.</p>
+<h2>Standard (component-wise Gibbs)</h2>
+<p>Updates <strong>one parameter at a time</strong>, in random order, using a conjugate draw where one exists and slice sampling otherwise. It works for every model FANGS can parse, which makes it the default and the best choice for small teaching datasets.</p>
+<h2>Blocked (GPU or CPU)</h2>
+<p>Many models are generalised linear mixed models: a normal, Poisson or binomial response whose linear predictor is a sum of coefficients times data (for example <code>alpha + beta * x[i] + b[group[i]]</code>). For these, the blocked sampler:</p>
+<ul>
+<li>updates all <strong>fixed coefficients together</strong> (<code>alpha</code>, <code>beta</code>, …), so correlated coefficients move as a block</li>
+<li>updates every <strong>group-level effect at once</strong> (<code>b[1]</code>, <code>b[2]</code>, …). Given everything else, the groups are <strong>conditionally independent</strong>, so on a GPU each group gets its own thread</li>
+<li>shifts an intercept and its random intercepts together, which stops chains getting stuck when the data only pin down <code>alpha + b[j]</code></li>
+<li>updates SDs and other hyperparameters from cheap summary statistics</li>
+</ul>
+<p>With a normal response every coefficient update is an exact Gibbs draw. With Poisson or binomial responses the coefficients use Metropolis–Hastings steps based on a local normal approximation, and the first part of burn-in moves the chain towards the posterior mode.</p>
+<h2>Which should I pick?</h2>
+<ul>
+<li><strong>Small data (hundreds of rows):</strong> Standard, or Blocked — CPU for speed. A GPU has a fixed cost per iteration, so it is <em>slower</em> than the CPU when there is little work to share out.</li>
+<li><strong>Large data (tens of thousands of rows or more, or thousands of groups):</strong> this is where Blocked — GPU can pay off. Try it against Blocked — CPU on your machine; the gain depends on your graphics hardware.</li>
+<li>If the blocked sampler does not support your model, or your browser has no WebGPU, FANGS falls back automatically and says so in the status bar.</li>
+</ul>
+<h2>What the GPU does not fix</h2>
+<p>A faster iteration does not make the chain <strong>mix</strong> better. Check trace plots, R-hat and ESS as usual — strongly correlated parameters and weakly identified variance components still need longer runs or a better-parameterised model.</p>`,
   'summary-tab': `<html><head></head><body><h1 id="posterior-summary-table">Posterior Summary Table</h1>
 <p>The <strong>Summary</strong> tab presents key statistics computed from the MCMC samples for each parameter.</p>
 <h2 id="columns">Columns</h2>

@@ -461,6 +461,22 @@
       border-color: var(--accent);
     }
 
+    .setting-item-wide { grid-column: 1 / -1; }
+
+    .setting-item select {
+      width: 100%;
+      background: #1e1f29;
+      color: #f8f8f2;
+      border: 1px solid rgba(189,147,249,0.2);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .setting-item select:focus {
+      border-color: var(--accent);
+    }
+
     /* -- Run controls -- */
     .run-controls {
       display: flex;
@@ -874,6 +890,14 @@
         <div class="setting-item">
           <label for="input-thin" data-popup="thinning">Thinning</label>
           <input type="number" id="input-thin" value="1" min="1" max="100" />
+        </div>
+        <div class="setting-item setting-item-wide">
+          <label for="input-engine" data-popup="sampler-engine">Sampler engine</label>
+          <select id="input-engine">
+            <option value="standard" selected>Standard (component-wise Gibbs)</option>
+            <option value="gpu">Blocked &mdash; GPU (WebGPU, experimental)</option>
+            <option value="cpu-blocked">Blocked &mdash; CPU</option>
+          </select>
         </div>
       </div>
     </div>

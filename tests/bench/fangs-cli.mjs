@@ -29,6 +29,9 @@
  *                   (auto-mapped: poisson→y_count, bernoulli→y_bin if y absent)
  *   --output        Path to write posterior summaries CSV  [required]
  *   --raw-samples   If set, write one row per iteration instead of summaries
+ *   --engine        standard | cpu-blocked                 [standard]
+ *                   (cpu-blocked = the blocked GLMM sampler on the CPU; the
+ *                   WebGPU backend needs a browser — see tests/gpu-harness.html)
  *
  * Output CSV columns (summary mode):
  *   model, N_data, n_samples, n_chains, burnin, thin, elapsed_ms,
@@ -178,6 +181,7 @@ async function main() {
   const outputPath  = args['output'];
   const responseCol = args['response-col'] ?? 'y';
   const rawSamples  = 'raw-samples' in args;
+  const engine      = args['engine']       ?? 'standard';
 
   if (!outputPath) {
     process.stderr.write('Error: --output is required\n');
@@ -223,6 +227,7 @@ async function main() {
   const { Parser }                  = await import(`${PROJECT_ROOT}/src/parser/parser.js`);
   const { ModelGraph }              = await import(`${PROJECT_ROOT}/src/parser/model-graph.js`);
   const { runGibbs }                = await import(`${PROJECT_ROOT}/src/samplers/gibbs.js`);
+  const { runBlocked }              = await import(`${PROJECT_ROOT}/src/samplers/blocked/blocked-sampler.js`);
   const { parseCSV, prepareDataColumns } = await import(`${PROJECT_ROOT}/src/data/csv-loader.js`);
   const { rhat, essMultiChain }     = await import(`${PROJECT_ROOT}/src/utils/diagnostics.js`);
 
@@ -265,11 +270,18 @@ async function main() {
   graph.build();
 
   // --- Run sampler with timing ---
-  process.stderr.write(`Running FANGS: model=${modelArg}  N=${N}  n_samples=${nSamples}  chains=${nChains}  burnin=${burnin}\n`);
+  if (engine !== 'standard' && engine !== 'cpu-blocked') {
+    process.stderr.write(`Error: unknown --engine "${engine}" (use standard or cpu-blocked)\n`);
+    process.exit(1);
+  }
+  process.stderr.write(`Running FANGS: model=${modelArg}  engine=${engine}  N=${N}  n_samples=${nSamples}  chains=${nChains}  burnin=${burnin}\n`);
 
   const t0 = performance.now();
 
-  const samples = await runGibbs(graph, {
+  const sampler = engine === 'cpu-blocked'
+    ? (g, s) => runBlocked(g, { ...s, backend: 'cpu' })
+    : runGibbs;
+  const samples = await sampler(graph, {
     nChains,
     nSamples,
     burnin,

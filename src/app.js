@@ -587,9 +587,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    /** Handle SAMPLES / PROGRESS / CHAIN_DONE / ERROR from a chain worker. */
+    // Report which engine actually ran (once per run, from the first chain).
+    let engineReported = false;
+
+    /** Handle ENGINE / SAMPLES / PROGRESS / CHAIN_DONE / ERROR from a chain worker. */
     function handleChainMessage(msg) {
-      if (msg.type === 'PROGRESS') {
+      if (msg.type === 'ENGINE') {
+        if (engineReported) return;
+        engineReported = true;
+        const label = { gpu: 'blocked GPU sampler', 'cpu-blocked': 'blocked CPU sampler', standard: 'standard Gibbs sampler' }[msg.used];
+        const detail = msg.reason ? ` (${msg.reason})` : msg.description ? ` (${msg.description})` : '';
+        setStatus(`Sampling with the ${label}${detail}…`, 'running');
+        if (msg.used === 'standard' && msg.requested !== 'standard') {
+          console.warn(`FANGS: fell back to the standard sampler: ${msg.reason}`);
+        }
+
+      } else if (msg.type === 'PROGRESS') {
         perChainProgress[msg.chainIdx] = msg.iter / msg.total;
         const avg = perChainProgress.reduce((a, b) => a + b, 0) / nChains;
         setProgress(avg);

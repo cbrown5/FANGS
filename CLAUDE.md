@@ -17,6 +17,13 @@ FANGS (Fast Accessible Numeric Gibbs Sampler) is a browser-based Bayesian infere
 - Fall back to **slice sampling** for non-conjugate full conditionals
 - User does not need to choose samplers — the engine auto-selects based on the model graph
 - Support multiple chains with independent initialization
+- **Optional blocked engine** (Sampler engine setting: Standard / Blocked — GPU / Blocked — CPU):
+  for GLMMs (normal, Poisson-log, binomial-logit; coefficients linear in eta with `dnorm`
+  priors) the fixed effects are updated jointly and each random-effect family in parallel
+  (one WebGPU thread per group) via Newton–Metropolis–Hastings (exact Gibbs for a normal
+  response), with intercept↔random-effect translation moves and CPU slice updates for
+  hyperparameters. Unsupported models fall back to the standard sampler with a reason.
+  `src/samplers/blocked/cpu-backend.js` is the reference implementation the WGSL kernels mirror.
 
 ### Model Syntax (BUGS/JAGS dialect)
 The parser must handle the following BUGS language constructs:
@@ -51,7 +58,8 @@ FANGS/
 │   ├── fangs-blog.md
 │   └── instructions-for-agent.md
 ├── plans/                  # Architecture decision notes
-│   └── dnorm-sd-parameterisation.md
+│   ├── dnorm-sd-parameterisation.md
+│   └── gpu-blocked-sampler.md
 ├── results/                # Reference JSON posteriors (binomial, poisson)
 ├── scripts/                # Build scripts
 │   ├── build-course.js
@@ -67,7 +75,14 @@ FANGS/
 │   │   ├── gibbs.js        # Main Gibbs sampler loop (includes conjugate updates)
 │   │   ├── slice.js        # Slice sampler fallback
 │   │   ├── initialize.js   # Chain initialization strategies
-│   │   └── sampler-worker.js  # Web Worker wrapper for background sampling
+│   │   ├── sampler-worker.js  # Web Worker wrapper for background sampling (engine selection)
+│   │   └── blocked/        # Optional blocked GLMM sampler (see plans/gpu-blocked-sampler.md)
+│   │       ├── compile-model.js   # ModelGraph → dense GLMM plan (or UnsupportedModelError)
+│   │       ├── blocked-sampler.js # runBlocked(): sweep loop, hyperparameter slice updates, translation moves
+│   │       ├── cpu-backend.js     # Reference Newton–MH block updates (typed arrays)
+│   │       ├── gpu-backend.js     # WebGPU backend (buffers, pipelines, per-sweep readback)
+│   │       ├── gpu-shaders.js     # WGSL kernels (Philox RNG, reductions, per-group updates)
+│   │       └── linalg.js          # Small dense Cholesky helpers
 │   ├── data/
 │   │   ├── csv-loader.js       # CSV parsing and validation
 │   │   ├── default-data.js     # Built-in example dataset
@@ -85,7 +100,7 @@ FANGS/
 │   │   └── popups.js           # Educational pop-up system
 │   ├── content/
 │   │   ├── popups-bundle.js    # Compiled popup HTML fallback (committed)
-│   │   └── popups/             # 21 Quarto .qmd popup sources
+│   │   └── popups/             # 23 Quarto .qmd popup sources
 │   └── utils/
 │       ├── math.js             # Statistical math helpers
 │       ├── distributions.js    # Distribution log-densities and samplers
@@ -110,6 +125,9 @@ FANGS/
 │   ├── parser.test.js
 │   ├── distributions.test.js
 │   ├── integration.test.js     # End-to-end model fitting tests
+│   ├── blocked-sampler.test.js # Blocked (GPU/CPU) sampler: compiler, update math, posteriors
+│   ├── gpu-e2e.mjs             # WebGPU backend vs CPU backend in headless Chromium
+│   ├── gpu-harness.html        # Browser page used by gpu-e2e.mjs (also a manual GPU benchmark)
 │   ├── predictor-scaling.test.js
 │   ├── share-url.test.js
 │   ├── course-challenges.test.js
@@ -199,6 +217,9 @@ npm start
 # Run tests
 npx vitest
 
+# WebGPU sampler kernels vs CPU backend in headless Chromium (SwiftShader)
+node tests/gpu-e2e.mjs
+
 # Run R reference tests
 Rscript tests/r-reference/linear-model.R
 ```
@@ -222,8 +243,8 @@ The dashboard has:
 
 ## Pop-up system
 
-`src/ui/popups.js` implemented. 21 Quarto `.qmd` source files in `src/content/popups/`
-cover MCMC, Gibbs sampling, chains, burn-in, thinning, trace plots, R-hat, ESS,
+`src/ui/popups.js` implemented. 23 Quarto `.qmd` source files in `src/content/popups/`
+cover MCMC, Gibbs sampling, sampler engines (standard vs blocked GPU/CPU), chains, burn-in, thinning, trace plots, R-hat, ESS,
 posteriors, priors, credible intervals, PPC, prior check, standard deviation (σ),
 mixed-effects models, log/logit links, overdispersion, precision, predictor scaling,
 and the posteriors/summary tabs. `?` trigger buttons are attached via `data-popup` HTML

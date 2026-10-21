@@ -45,7 +45,9 @@ export function initializeChains(graph, nChains) {
           continue;
         }
         try {
-          const value = drawFromPrior(node, paramValues, graph);
+          // First pass: cheap evaluation only, deferring anything that needs
+          // a not-yet-drawn hyperparameter or a deterministic node.
+          const value = drawFromPrior(node, paramValues, graph, { mergeFallback: pass > 1 });
           paramValues[name] = value;
           remaining.delete(name);
         } catch (_err) {
@@ -77,10 +79,14 @@ export function initializeChains(graph, nChains) {
  * @param {Object} node - A node from graph.nodes (must be stochastic with a distribution)
  * @param {Object} paramValues - Current values for evaluating prior parameters
  * @param {import('../parser/model-graph.js').ModelGraph} graph
+ * @param {Object} [options]
+ * @param {boolean} [options.mergeFallback=true] - if false, throw instead of
+ *   falling back to an O(N) graph merge when a prior argument cannot be
+ *   evaluated from parameters and data alone
  * @returns {number} Initial value drawn from the overdispersed prior
  * @throws {Error} If prior parameters cannot be evaluated (caller should retry)
  */
-export function drawFromPrior(node, paramValues, graph) {
+export function drawFromPrior(node, paramValues, graph, options = {}) {
   if (!node.distribution) {
     // Deterministic node — should not be called, but fall back gracefully.
     return 0;
@@ -89,7 +95,8 @@ export function drawFromPrior(node, paramValues, graph) {
   const { name: distName, paramExprs } = node.distribution;
 
   // Evaluate each parameter expression using the current paramValues.
-  const args = paramExprs.map((expr) => graph.evaluateExpr(expr, paramValues));
+  const mergeFallback = options.mergeFallback ?? true;
+  const args = paramExprs.map((expr) => evaluatePriorArg(expr, paramValues, graph, mergeFallback));
 
   switch (distName) {
     case 'dnorm': {
@@ -176,4 +183,33 @@ export function drawFromPrior(node, paramValues, graph) {
       return rnorm(0, 10);
     }
   }
+}
+
+/**
+ * Evaluate a prior argument from parameter values and data alone, falling
+ * back to a full graph merge only when the expression refers to a
+ * deterministic node.
+ *
+ * graph.evaluateExpr() re-evaluates every deterministic node (O(N) per call),
+ * and while a chain is only partly initialised each per-observation node
+ * (e.g. mu[i]) throws. Most priors (`dnorm(0, sigma.b)`) need neither, and
+ * skipping the merge makes initialisation O(#parameters) instead of
+ * O(#parameters × N) on larger datasets. The values are identical.
+ *
+ * @param {Object} expr - AST expression
+ * @param {Object} paramValues
+ * @param {import('../parser/model-graph.js').ModelGraph} graph
+ * @param {boolean} mergeFallback - allow the O(N) graph merge on failure
+ * @returns {number}
+ */
+function evaluatePriorArg(expr, paramValues, graph, mergeFallback) {
+  if (typeof graph.evaluateExprMerged === 'function') {
+    try {
+      return graph.evaluateExprMerged(expr, paramValues);
+    } catch (err) {
+      // Refers to a deterministic node or a parameter not drawn yet.
+      if (!mergeFallback) throw err;
+    }
+  }
+  return graph.evaluateExpr(expr, paramValues);
 }

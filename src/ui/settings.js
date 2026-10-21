@@ -2,7 +2,7 @@
  * settings.js
  * Thin wrapper around the sampler-settings inputs in index.html.
  *
- * Reads / writes: chains, samples, burnin, thin.
+ * Reads / writes: chains, samples, burnin, thin, and the sampler engine.
  * Provides validation with clamped defaults.
  * Can disable all inputs during sampling (setEnabled(false)).
  */
@@ -14,6 +14,10 @@ const BOUNDS = {
   burnin:   { min: 0,  max: 10000, default: 500  },
   thin:     { min: 1,  max: 100,   default: 1    },
 };
+
+/** Sampler engines offered by the #input-engine select (see sampler-worker.js). */
+export const ENGINES = ['standard', 'gpu', 'cpu-blocked'];
+const DEFAULT_ENGINE = 'standard';
 
 export class SamplerSettings {
   /**
@@ -33,6 +37,7 @@ export class SamplerSettings {
       burnin:   this._find('input-burnin'),
       thin:     this._find('input-thin'),
     };
+    this._engine = this._find('input-engine');
 
     // Attach live-validation listeners
     for (const [key, el] of Object.entries(this._inputs)) {
@@ -48,7 +53,7 @@ export class SamplerSettings {
 
   /**
    * Return the current (validated) sampler settings.
-   * @returns {{ nChains: number, nSamples: number, burnin: number, thin: number }}
+   * @returns {{ nChains: number, nSamples: number, burnin: number, thin: number, engine: string }}
    */
   getSettings() {
     return {
@@ -56,6 +61,7 @@ export class SamplerSettings {
       nSamples: this._readInt('nSamples'),
       burnin:   this._readInt('burnin'),
       thin:     this._readInt('thin'),
+      engine:   this._readEngine(),
     };
   }
 
@@ -67,16 +73,21 @@ export class SamplerSettings {
     for (const el of Object.values(this._inputs)) {
       if (el) el.disabled = !enabled;
     }
+    if (this._engine) this._engine.disabled = !enabled;
   }
 
   /**
    * Programmatically update one or more settings.
    * Accepts a partial object; unknown keys are ignored.
    *
-   * @param {{ nChains?: number, nSamples?: number, burnin?: number, thin?: number }} values
+   * @param {{ nChains?: number, nSamples?: number, burnin?: number, thin?: number, engine?: string }} values
    */
   setValues(values) {
     for (const [key, val] of Object.entries(values)) {
+      if (key === 'engine') {
+        if (this._engine && ENGINES.includes(val)) this._engine.value = val;
+        continue;
+      }
       const el = this._inputs[key];
       if (!el) continue;
       el.value = val;
@@ -118,6 +129,12 @@ export class SamplerSettings {
     const raw = parseInt(el.value, 10);
     if (!isFinite(raw)) return bounds.default;
     return Math.min(bounds.max, Math.max(bounds.min, raw));
+  }
+
+  /** Selected engine, or the default if the select is missing or invalid. */
+  _readEngine() {
+    const value = this._engine?.value;
+    return ENGINES.includes(value) ? value : DEFAULT_ENGINE;
   }
 
   /**

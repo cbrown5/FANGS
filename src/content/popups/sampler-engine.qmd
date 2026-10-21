@@ -1,0 +1,28 @@
+# Sampler engine
+
+FANGS has two ways to run the Gibbs sampler. Both give draws from the same posterior; they differ in how each sweep is organised.
+
+## Standard (component-wise Gibbs)
+
+Updates **one parameter at a time**, in random order, using a conjugate draw where one exists and slice sampling otherwise. It works for every model FANGS can parse, which makes it the default and the best choice for small teaching datasets.
+
+## Blocked (GPU or CPU)
+
+Many models are generalised linear mixed models: a normal, Poisson or binomial response whose linear predictor is a sum of coefficients times data (for example `alpha + beta * x[i] + b[group[i]]`). For these, the blocked sampler:
+
+- updates all **fixed coefficients together** (`alpha`, `beta`, …), so correlated coefficients move as a block
+- updates every **group-level effect at once** (`b[1]`, `b[2]`, …). Given everything else, the groups are **conditionally independent**, so on a GPU each group gets its own thread
+- shifts an intercept and its random intercepts together, which stops chains getting stuck when the data only pin down `alpha + b[j]`
+- updates SDs and other hyperparameters from cheap summary statistics
+
+With a normal response every coefficient update is an exact Gibbs draw. With Poisson or binomial responses the coefficients use Metropolis–Hastings steps based on a local normal approximation, and the first part of burn-in moves the chain towards the posterior mode.
+
+## Which should I pick?
+
+- **Small data (hundreds of rows):** Standard, or Blocked — CPU for speed. A GPU has a fixed cost per iteration, so it is *slower* than the CPU when there is little work to share out.
+- **Large data (tens of thousands of rows or more, or thousands of groups):** this is where Blocked — GPU can pay off. Try it against Blocked — CPU on your machine; the gain depends on your graphics hardware.
+- If the blocked sampler does not support your model, or your browser has no WebGPU, FANGS falls back automatically and says so in the status bar.
+
+## What the GPU does not fix
+
+A faster iteration does not make the chain **mix** better. Check trace plots, R-hat and ESS as usual — strongly correlated parameters and weakly identified variance components still need longer runs or a better-parameterised model.

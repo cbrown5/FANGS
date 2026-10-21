@@ -581,7 +581,7 @@ function resolveObservedValue(node, paramValues) {
  * @param {Object} [paramValues] - current values, used to evaluate dunif bounds
  * @returns {{ lower: number, upper: number }}
  */
-function getParameterBounds(node, graph, paramValues) {
+export function getParameterBounds(node, graph, paramValues) {
   if (!node.distribution) return { lower: -Infinity, upper: Infinity };
 
   switch (node.distribution.name) {
@@ -635,7 +635,7 @@ function getParameterBounds(node, graph, paramValues) {
  * @param {import('../parser/model-graph.js').ModelGraph} graph
  * @returns {number}
  */
-function computeSliceWidth(node, paramValues, graph) {
+export function computeSliceWidth(node, paramValues, graph) {
   if (!node.distribution) return 1.0;
 
   try {
