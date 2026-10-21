@@ -6,9 +6,9 @@ This brings the whole day together. You will build and fit a model that combines
 
 Marine microalgae are the base of the coastal food web, and they face several pressures at once. Runoff from farmland carries the herbicide **diuron** onto inshore reefs, where it blocks photosynthesis. At the same time, sediment in that same runoff makes the water **murkier**, cutting the light reaching the algae.
 
-The obvious question is whether these two stressors simply add up, or whether one changes the effect of the other. That is an **interaction**, and it matters enormously for management: if diuron only does damage under certain light conditions, then where and when you control it changes.
+One important question for environmental managers is whether these two stressors simply add up, or whether one changes the effect of the other. That is an **interaction**. It matters for management because if diuron only does damage under certain light conditions, then where and when you control it changes.
 
-King et al. (2022) ran exactly this experiment on the diatom *Phaeodactylum tricornutum*. Flasks of algae were grown at **three light levels** crossed with **five diuron concentrations** — 15 treatment combinations — and photosynthetic yield was measured after 72 hours. The whole 15-cell experiment was repeated on **four separate occasions**, each with an independent algal culture. Those occasions are the **blocks**.
+King et al. (2022) ran an experiment on the diatom *Phaeodactylum tricornutum*. Flasks of algae were grown at **three light levels** crossed with **five diuron concentrations** — 15 treatment combinations — and photosynthetic yield was measured after 72 hours. The whole 15-cell experiment was repeated on **four separate occasions**, each with an independent algal culture. Those occasions are the **blocks**.
 
 `algal-yield.csv` has one row per flask (n = 60):
 
@@ -21,16 +21,16 @@ King et al. (2022) ran exactly this experiment on the diatom *Phaeodactylum tric
 ::: callout-important
 ## Why both stressors are factors, not numbers
 
-It is tempting to drop `light_umol` and `diuron_ugL` straight into the model as continuous predictors. Don't — at least not as your main model. Neither effect is close to linear in its numeric value. Light runs 5 → 20 → 80, and yield falls sharply between 5 and 20 but then barely changes between 20 and 80. A straight line through those three points would miss the pattern entirely.
+It is tempting to use `light_umol` and `diuron_ugL` in the model as continuous predictors. However, neither effect is close to linear in its numeric value. Light runs 5 → 20 → 80, and yield falls sharply between 5 and 20 but then barely changes between 20 and 80. A straight line through those three points would miss the non-linear pattern.
 
-Treating each as a factor lets every level find its own value, with no assumption about the shape of the dose–response. That is the whole reason the experiment used a small number of carefully chosen levels rather than a continuous gradient.
+Treating each as a factor lets every level find its own value.
 :::
 
 > **Data & attribution.** King, O.C., van de Merwe, J.P., Campbell, M.D., Smith, R.A., Warne, M.St.J. & Brown, C.J. (2022) *Interactions among multiple stressors vary with exposure duration and biological response.* **Proceedings of the Royal Society B** 289: 20220348. <https://doi.org/10.1098/rspb.2022.0348>. The course file is the 72-hour slice of the diuron experiment, with the two treatments recoded as factor levels.
 
 ## Building the model
 
-Start from the reference coding you met in Module 17 and add the interaction. The response is continuous, so this is a Normal model — no link function needed.
+Start from the reference coding you met in Module 17 and add the interaction. The response is continuous, so this is a Normal distribution for the response.
 
 $$
 \begin{aligned}
@@ -51,7 +51,7 @@ Reading the terms left to right:
 ::: callout-note
 ## A note on how the interaction is written
 
-The diuron **main effects** are fully categorical (one free parameter per dose), but the interaction uses the *numeric* dose `diuron_ugL`. This is a deliberate compromise: a fully categorical interaction would need $2 \times 4 = 8$ extra parameters, and with only four blocks and 60 flasks there is not much information per parameter. Writing the interaction as a light-specific *slope* on dose captures "diuron bites harder at low light" with just two parameters.
+The diuron **main effects** are fully categorical (one free parameter per dose), but the interaction uses the *numeric* dose `diuron_ugL`. This is a deliberate compromise: a fully categorical interaction would need $2 \times 4 = 8$ extra parameters, and with only four blocks and 60 flasks there is not much information per parameter. Writing the interaction as a light-specific *slope* on dose captures "diuron does more damage at low light" with just two parameters.
 
 If you want to see the fully categorical version, it is a good extension — it fits, and tells the same story with wider intervals.
 :::
