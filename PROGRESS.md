@@ -70,10 +70,12 @@ App is fully functional and good to use.
 - Add report/ report bug button
 
 ### User course todo
-- m19 - random effects are too slow and overlaps with the summative test. So need a new random effects database for the task in m19 (maybe not poisson?) and one that works easily
-- Then edit the summative task dataset its too slow. Current options are course/data/random-effects.csv which is subset of course/data/random-effects-full.csv, but still does not sample well. 
+- m19 and m20 need to be updated, the dataset isn't working well. Need a new ddataset. 
+- m21 needs revision. Test it, use a fully categorical predictor
+- GPU test is on branch jolly-lovelace, test that
+- Chat in claude has an idea for improving speed of CPU based computation as well. 
+- 
 - Edit text in opening sections
-- Up to m19 with reviews 
 - Add references to course modules.
 - Pin reference posteriors for M14–M19, M21 (currently self-report mode).
 

@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.25">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher J. Brown">
+<meta name="dcterms.date" content="2026-10-22">
+
+<title>From FANGS to Nimble: a hierarchical GLM of coral cover</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="nimble-hierarchical-glm_files/libs/clipboard/clipboard.min.js"></script>
+<script src="nimble-hierarchical-glm_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="nimble-hierarchical-glm_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="nimble-hierarchical-glm_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="nimble-hierarchical-glm_files/libs/quarto-html/popper.min.js"></script>
+<script src="nimble-hierarchical-glm_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="nimble-hierarchical-glm_files/libs/quarto-html/anchor.min.js"></script>
+<link href="nimble-hierarchical-glm_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="nimble-hierarchical-glm_files/libs/quarto-html/quarto-syntax-highlighting-dark-49a824ff064150fa59632921ab93e189.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="nimble-hierarchical-glm_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="nimble-hierarchical-glm_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="nimble-hierarchical-glm_files/libs/bootstrap/bootstrap-129750949fec1214270df5df47ed53a9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="dark">
+<style>
+:root {
+  --fangs-bg: #1e1f29; --fangs-panel: #21222c; --fangs-dark: #282a36;
+  --fangs-border: #44475a; --fangs-muted: #6272a4; --fangs-text: #f8f8f2;
+  --fangs-accent: #bd93f9; --fangs-cyan: #8be9fd; --fangs-green: #50fa7b;
+  --fangs-orange: #ffb86c; --fangs-red: #ff5555;
+  --bs-body-bg: var(--fangs-bg); --bs-body-color: var(--fangs-text);
+}
+body {
+  background: var(--fangs-bg); color: var(--fangs-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+h1, h2, h3, h4, .title { color: var(--fangs-accent); }
+.subtitle { color: var(--fangs-muted); }
+a { color: var(--fangs-cyan); }
+a:hover { color: var(--fangs-green); }
+code { font-family: 'Fira Mono', Consolas, Menlo, monospace; }
+p code, li code, td code {
+  color: var(--fangs-green); background: var(--fangs-panel);
+  border-radius: 3px; padding: 0 3px;
+}
+div.sourceCode, pre.sourceCode {
+  background: var(--fangs-panel) !important;
+  border: 1px solid var(--fangs-border); border-radius: 6px;
+}
+pre:not(.sourceCode) { background: var(--fangs-dark); color: var(--fangs-text); }
+#TOC a, .sidebar nav a { color: var(--fangs-muted); }
+#TOC a.active, .sidebar nav a.active { color: var(--fangs-accent); }
+.callout { background: var(--fangs-panel) !important; border-color: var(--fangs-border) !important; }
+.callout.callout-style-default { border-left: 5px solid var(--fangs-accent) !important; }
+.callout-warning { border-left-color: var(--fangs-orange) !important; }
+.callout-tip { border-left-color: var(--fangs-green) !important; }
+.callout-header { background: var(--fangs-dark) !important; }
+blockquote { border-left: 4px solid var(--fangs-accent); color: var(--fangs-text); }
+table { color: var(--fangs-text); }
+</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul class="collapse">
+  <li><a href="#where-we-are" id="toc-where-we-are" class="nav-link active" data-scroll-target="#where-we-are">Where we are</a></li>
+  <li><a href="#bayesian-software-options-for-r-users" id="toc-bayesian-software-options-for-r-users" class="nav-link" data-scroll-target="#bayesian-software-options-for-r-users">Bayesian software options for R users</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#read-and-explore-the-data" id="toc-read-and-explore-the-data" class="nav-link" data-scroll-target="#read-and-explore-the-data">1. Read and explore the data</a></li>
+  <li><a href="#a-binomial-glm-on-site-totals" id="toc-a-binomial-glm-on-site-totals" class="nav-link" data-scroll-target="#a-binomial-glm-on-site-totals">2. A binomial GLM on site totals</a></li>
+  <li><a href="#adding-site-random-effects" id="toc-adding-site-random-effects" class="nav-link" data-scroll-target="#adding-site-random-effects">3. Adding site random effects</a></li>
+  <li><a href="#fixing-the-sampler-with-a-block-update" id="toc-fixing-the-sampler-with-a-block-update" class="nav-link" data-scroll-target="#fixing-the-sampler-with-a-block-update">4. Fixing the sampler with a block update</a></li>
+  <li><a href="#checking-and-interpreting-the-random-effects-model" id="toc-checking-and-interpreting-the-random-effects-model" class="nav-link" data-scroll-target="#checking-and-interpreting-the-random-effects-model">5. Checking and interpreting the random effects model</a></li>
+  <li><a href="#an-observation-level-random-effect" id="toc-an-observation-level-random-effect" class="nav-link" data-scroll-target="#an-observation-level-random-effect">6. An observation-level random effect</a></li>
+  <li><a href="#wrapping-up" id="toc-wrapping-up" class="nav-link" data-scroll-target="#wrapping-up">Wrapping up</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">From FANGS to Nimble: a hierarchical GLM of coral cover</h1>
+<p class="subtitle lead">Branching coral, logging and random effects, coded by hand in R</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher J. Brown </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 22, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="where-we-are" class="level2">
+<h2 class="anchored" data-anchor-id="where-we-are">Where we are</h2>
+<p>This morning you fit Bayesian models in the FANGS app. This afternoon we fit the same kind of model by writing the code ourselves in R with <a href="https://r-nimble.org">Nimble</a>. We build up to the summative challenge in small steps:</p>
+<ol type="1">
+<li>Read the data and look at coral cover.</li>
+<li>Fit a binomial GLM to site totals.</li>
+<li>Add site random effects and fit the full transect data.</li>
+<li>Fix poor mixing with a block sampler.</li>
+<li>Check the model and make publication-quality plots.</li>
+<li>Add an observation-level random effect to deal with overdispersion.</li>
+</ol>
+<p><strong>The scenario.</strong> In Kia Province, Solomon Islands, divers ran five transects on each of 49 reefs. Along each transect they dropped about 75 points and recorded what was under each one. We count the points that landed on <strong>branching coral</strong>, the structurally complex habitat that shelters juvenile fish. Logging washes sediment onto reefs and smothers it, so we expect less branching coral on logged reefs.</p>
+<p>Our question is simple: <strong>is there less branching coral on reefs in logged areas?</strong></p>
+<blockquote class="blockquote">
+<p><strong>Data.</strong> Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) Logging degrades nursery habitat for an iconic coral reef fish. <em>Biological Conservation</em> 210: 273–280. <a href="https://doi.org/10.1016/j.biocon.2017.04.025" class="uri">https://doi.org/10.1016/j.biocon.2017.04.025</a>. Lightly modified for teaching.</p>
+</blockquote>
+</section>
+<section id="bayesian-software-options-for-r-users" class="level2">
+<h2 class="anchored" data-anchor-id="bayesian-software-options-for-r-users">Bayesian software options for R users</h2>
+<p>FANGS is for learning. For research you will want one of the established engines. The choice is mostly a trade-off between how much code you write and how much control you get.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Package</th>
+<th>Computational speed</th>
+<th>Code complexity</th>
+<th>Flexibility</th>
+<th>Installation requirements</th>
+<th>Use in ecology</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Stan</strong> (<code>rstan</code>, <code>cmdstanr</code>)</td>
+<td>Fast for continuous parameters; gradient-based HMC/NUTS scales well to many parameters</td>
+<td>High — you write the full model in Stan’s own C++-like language, with declared blocks and types</td>
+<td>Very high, but no discrete parameters (they must be marginalised out)</td>
+<td>Needs a working C++ toolchain; models compile before running (slow first run)</td>
+<td>Widespread, and the standard in the quantitative ecology literature</td>
+</tr>
+<tr class="even">
+<td><strong>brms</strong></td>
+<td>Same engine as Stan, so same sampling speed, plus compile time per model</td>
+<td>Low — one-line <code>lmer</code>-style formulas, e.g.&nbsp;<code>cover | trials(n_points) ~ logged + (1 \| site)</code></td>
+<td>Moderate-high: huge range of built-in families and terms, but hard to go outside them</td>
+<td>As Stan (it generates and compiles Stan code for you)</td>
+<td>Very widespread; now the default first choice for most applied ecologists</td>
+</tr>
+<tr class="odd">
+<td><strong>INLA</strong></td>
+<td>Very fast — approximates the posterior instead of sampling, often seconds where MCMC takes minutes</td>
+<td>Low-moderate — formula interface, but priors and spatial terms use their own idiom</td>
+<td>Restricted to latent Gaussian models (covers GLMMs, spatial and temporal models)</td>
+<td>Not on CRAN; installed from the R-INLA repository with bundled binaries</td>
+<td>Common in spatial ecology and species distribution modelling; less so elsewhere</td>
+</tr>
+<tr class="even">
+<td><strong>JAGS</strong> (<code>rjags</code>, <code>R2jags</code>)</td>
+<td>Slowest of these for large or hierarchical models; Gibbs/slice sampling, pure interpreter</td>
+<td>Moderate — BUGS language, close to how you’d write the model on paper (this is FANGS’ syntax)</td>
+<td>High; handles discrete parameters, which Stan cannot</td>
+<td>Needs the JAGS program installed separately from R, then the R package</td>
+<td>Historically the workhorse and still very common in older papers and textbooks</td>
+</tr>
+<tr class="odd">
+<td><strong>Nimble</strong></td>
+<td>Faster than JAGS — compiles models to C++; usually slower than Stan for big continuous models</td>
+<td>Moderate — BUGS language like JAGS, plus some R boilerplate to build and compile the model</td>
+<td>Highest — you can write your own distributions and samplers in R-like code</td>
+<td>CRAN package, but needs a C++ toolchain to compile models</td>
+<td>Growing steadily, especially in population ecology and capture-recapture work</td>
+</tr>
+</tbody>
+</table>
+<p>A rough rule: use <strong>brms</strong> for anything that fits a standard formula, <strong>INLA</strong> when you have spatial data and need speed, and <strong>Nimble</strong> or <strong>Stan</strong> when the model is unusual enough that you need to write it out yourself. We use Nimble this afternoon because its model code is the same BUGS language you already used in FANGS, so the step up from the app is a short one. Its also easy to install from CRAN.</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nimble)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(coda)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MCMCvis)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bayesplot)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggdist)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidybayes)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>We’ll style every plot on a <code>theme_classic()</code> base.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># colour theme for plots -- matches the FANGS app</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>fangs <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">bg     =</span> <span class="st">"#1e1f29"</span>,   <span class="co"># page background</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">panel  =</span> <span class="st">"#21222c"</span>,   <span class="co"># panel background</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">dark   =</span> <span class="st">"#282a36"</span>,   <span class="co"># Dracula background</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">border =</span> <span class="st">"#44475a"</span>,   <span class="co"># gridlines, borders</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">muted  =</span> <span class="st">"#6272a4"</span>,   <span class="co"># de-emphasised text</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">text   =</span> <span class="st">"#f8f8f2"</span>,   <span class="co"># foreground text</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">accent =</span> <span class="st">"#bd93f9"</span>,   <span class="co"># purple -- primary accent</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">cyan   =</span> <span class="st">"#8be9fd"</span>,   <span class="co"># secondary accent</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">green  =</span> <span class="st">"#50fa7b"</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">orange =</span> <span class="st">"#ffb86c"</span>,   <span class="co"># reference lines</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">red    =</span> <span class="st">"#ff5555"</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">16</span>))</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="fu">bayesplot_theme_set</span>(<span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">16</span>))</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="fu">color_scheme_set</span>(<span class="fu">c</span>(fangs[[<span class="st">"border"</span>]], fangs[[<span class="st">"muted"</span>]], fangs[[<span class="st">"accent"</span>]],</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>                   fangs[[<span class="st">"cyan"</span>]],   fangs[[<span class="st">"green"</span>]], fangs[[<span class="st">"bg"</span>]]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="read-and-explore-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="read-and-explore-the-data">1. Read and explore the data</h2>
+<p>We read the data straight from the course website.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">"https://www.seascapemodels.org/FANGS/course/data/random-effects-full.csv"</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(url)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(dat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 245
+Columns: 8
+$ site               &lt;dbl&gt; 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, …
+$ flow               &lt;chr&gt; "Strong", "Strong", "Strong", "Strong", "Strong", "…
+$ logged             &lt;chr&gt; "Not logged", "Not logged", "Not logged", "Not logg…
+$ dist_to_logging_km &lt;dbl&gt; 3.3968083, 3.3968083, 3.3968083, 3.3968083, 3.39680…
+$ trans              &lt;dbl&gt; 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, …
+$ cover              &lt;dbl&gt; 4, 1, 0, 2, 7, 14, 5, 4, 4, 6, 33, 23, 45, 64, 41, …
+$ cover_branching    &lt;dbl&gt; 6, 1, 1, 4, 11, 37, 30, 31, 28, 48, 38, 34, 56, 65,…
+$ n_points           &lt;dbl&gt; 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75,…</code></pre>
+</div>
+</div>
+<p>Each row is one transect. There are 49 sites and 5 transects per site, so 245 rows.</p>
+<p>The columns we need:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>site</code></td>
+<td>reef identifier, 1–49</td>
+</tr>
+<tr class="even">
+<td><code>trans</code></td>
+<td>transect number within the reef, 1–5</td>
+</tr>
+<tr class="odd">
+<td><code>cover_branching</code></td>
+<td>points that landed on branching coral</td>
+</tr>
+<tr class="even">
+<td><code>n_points</code></td>
+<td>total points dropped on that transect (72–75)</td>
+</tr>
+<tr class="odd">
+<td><code>logged</code></td>
+<td>whether the reef is in a logged area</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>There is also a <code>cover</code> column, which counts branching <em>Acropora</em> only. It is 42% zeros and shows no clear logging effect, so we use <code>cover_branching</code> — all branching coral — which is only 12% zeros and tells a much clearer story. Picking a response that actually varies is part of the analysis, not a shortcut.</p>
+</div>
+</div>
+<section id="why-a-binomial" class="level3">
+<h3 class="anchored" data-anchor-id="why-a-binomial">Why a binomial?</h3>
+<p>Each transect is a set of points, and each point either landed on branching coral or it didn’t. That is exactly a binomial: <code>n_points</code> trials, each with some probability of success.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dat <span class="sc">|&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(logged) <span class="sc">|&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n_transects =</span> <span class="fu">n</span>(),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">mean_points =</span> <span class="fu">mean</span>(cover_branching),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">mean_cover  =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(cover_branching <span class="sc">/</span> n_points))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 4
+  logged     n_transects mean_points mean_cover
+  &lt;chr&gt;            &lt;int&gt;       &lt;dbl&gt;      &lt;dbl&gt;
+1 Logged             105        12.7       16.9
+2 Not logged         140        25.4       33.8</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dat, <span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">100</span> <span class="sc">*</span> cover_branching <span class="sc">/</span> n_points, <span class="at">fill =</span> logged)) <span class="sc">+</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">5</span>, <span class="at">position =</span> <span class="st">"identity"</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(fangs[[<span class="st">"orange"</span>]], fangs[[<span class="st">"cyan"</span>]])) <span class="sc">+</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Branching coral cover (%)"</span>, <span class="at">y =</span> <span class="st">"Number of transects"</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/cover-summary-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Unlogged reefs average about 34% cover and logged reefs about 17% — roughly a twofold difference. That is the signal we want the model to recover, with honest uncertainty attached.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Binomial or Poisson?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A Poisson would also run, and for small counts the two are close. But the binomial is the <em>right</em> model here: it knows cover can’t exceed <code>n_points</code>, and it handles the two transects with 72 points instead of 75 without any extra work. Use the likelihood that matches how the data were generated.</p>
+</div>
+</div>
+</section>
+<section id="site-totals" class="level3">
+<h3 class="anchored" data-anchor-id="site-totals">Site totals</h3>
+<p>For our first model we ignore the transects and work with one value per site: total points on branching coral, out of total points sampled.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>site_dat <span class="ot">&lt;-</span> dat <span class="sc">|&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(site, logged) <span class="sc">|&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">cover  =</span> <span class="fu">sum</span>(cover_branching),</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">npts   =</span> <span class="fu">sum</span>(n_points),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">logged01 =</span> <span class="fu">as.integer</span>(logged <span class="sc">==</span> <span class="st">"Logged"</span>))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>site_dat</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 49 × 5
+    site logged     cover  npts logged01
+   &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt;    &lt;int&gt;
+ 1     1 Not logged    23   375        0
+ 2     2 Logged       174   375        1
+ 3     3 Logged       242   375        1
+ 4     4 Logged        48   375        1
+ 5     5 Logged         5   375        1
+ 6     6 Logged       207   375        1
+ 7     7 Logged        49   375        1
+ 8     8 Logged         3   375        1
+ 9     9 Logged        69   375        1
+10    10 Logged       105   375        1
+# ℹ 39 more rows</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="a-binomial-glm-on-site-totals" class="level2">
+<h2 class="anchored" data-anchor-id="a-binomial-glm-on-site-totals">2. A binomial GLM on site totals</h2>
+<section id="the-model" class="level3">
+<h3 class="anchored" data-anchor-id="the-model">The model</h3>
+<p>We keep this first model as simple as possible: an intercept and a single contrast for logging. It is the same structure you would write as a one-predictor model in R, but with a logit link and a binomial likelihood.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>glm_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">2</span>)   <span class="co"># intercept: logit cover on an unlogged reef</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)   <span class="co"># logging contrast</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> logged[i]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    cover[i] <span class="sc">~</span> <span class="fu">dbin</span>(p[i], npts[i])</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    y_rep[i] <span class="sc">~</span> <span class="fu">dbin</span>(p[i], npts[i])   <span class="co"># replicate data for the posterior predictive check</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The equivalent <code>glm</code> would look like:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glm</span>(<span class="fu">cbind</span>(cover, npts <span class="sc">-</span> cover) <span class="sc">~</span> logged01,</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> site_dat, <span class="at">family =</span> binomial)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Step by step:</p>
+<ol type="1">
+<li><strong><code>nimbleCode()</code></strong> holds the model description. It looks like R, but Nimble reads it as a model definition, much like the model text in FANGS.</li>
+<li><strong>The two priors</strong> are the regression coefficients. The <code>~</code> means “is distributed as”.</li>
+<li><strong>The loop runs over the 49 sites.</strong> The <code>&lt;-</code> is a fixed calculation, not a random draw.</li>
+<li><strong><code>logit(p[i])</code> is the logit link.</strong> It maps the linear predictor onto a probability between 0 and 1, so <code>p</code> can never stray outside the range a proportion is allowed to take.</li>
+<li><strong><code>cover[i] ~ dbin(p[i], npts[i])</code></strong> says the points landing on branching coral follow a binomial with probability <code>p[i]</code> out of <code>npts[i]</code> trials. Note the argument order: BUGS and Nimble put the <strong>probability first</strong>, then the size. This catches people out because R’s own <code>rbinom()</code> takes them the other way round.</li>
+<li><strong><code>y_rep[i]</code></strong> has the same distribution as <code>cover[i]</code>, but we don’t give it any data. On each iteration Nimble simulates it, using that iteration’s <code>p[i]</code>. This gives draws from the posterior predictive distribution, which we use for the posterior predictive check. It’s the same as the “generated quantities” idea you may have seen in Stan.</li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Reading the coefficients
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Both coefficients live on the logit scale, so neither is directly a per cent:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Coefficient</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>beta0</code></td>
+<td>logit of cover on an <strong>unlogged</strong> reef</td>
+</tr>
+<tr class="even">
+<td><code>beta1</code></td>
+<td>change in logit cover on a <strong>logged</strong> reef</td>
+</tr>
+</tbody>
+</table>
+<p>Two back-transformations make them readable. <code>plogis(beta0)</code> is the cover on an unlogged reef as a proportion, and <code>plogis(beta0 + beta1)</code> is the cover on a logged reef. <code>exp(beta1)</code> is the <strong>odds ratio</strong>: how the odds of a point landing on branching coral change with logging. A <code>beta1</code> below zero means less coral on logged reefs, which is what we expect if sediment impacts coral reefs.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>A note on <code>dnorm</code> in Nimble
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In FANGS, <code>dnorm(0, 2)</code> means a normal distribution with mean 0 and standard deviation 2. Nimble follows the older BUGS convention, where the second number is the <em>precision</em>, which is 1 / variance. So <code>dnorm(0, 2)</code> in Nimble means an SD of about 0.71, a much tighter prior than you intended.</p>
+<p>Always name the argument: <code>dnorm(0, sd = 2)</code>. Then your priors mean the same thing they meant in FANGS this morning.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">/</span> <span class="fu">sqrt</span>(<span class="dv">2</span>)   <span class="co"># the SD you would get from dnorm(0, 2) in Nimble</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7071068</code></pre>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="data-and-constants" class="level3">
+<h3 class="anchored" data-anchor-id="data-and-constants">Data and constants</h3>
+<p>Nimble separates <strong>data</strong>, which are things the model has a likelihood for, from <strong>constants</strong>, which are fixed inputs such as indices, sample sizes and covariates.</p>
+<p>Our predictor is already a 0/1 indicator, so there is nothing to standardise. That is one quiet advantage of a categorical predictor: <code>beta1</code> is the whole difference between the two groups, and the priors mean what you think they mean without any rescaling.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>consts <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">N      =</span> <span class="fu">nrow</span>(site_dat),</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">logged =</span> site_dat<span class="sc">$</span>logged01,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">npts   =</span> site_dat<span class="sc">$</span>npts</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">cover =</span> site_dat<span class="sc">$</span>cover)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here <code>N</code>, <code>logged</code> and <code>npts</code> are constants, and the observed site totals are the only data node. The binomial size belongs in constants, not data: it is something we know, not something the model has a likelihood for.</p>
+</section>
+<section id="prior-predictive-check" class="level3">
+<h3 class="anchored" data-anchor-id="prior-predictive-check">Prior predictive check</h3>
+<p>The model block is a recipe for generating data. If we run it forwards with no data, Nimble draws the parameters from their priors, then calculates <code>p</code>, then simulates <code>cover</code>. That’s the prior predictive distribution.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A copy of the model with no data, so Nimble can simulate every node</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>prior_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(glm_code, <span class="at">constants =</span> consts)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>c_prior     <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(prior_model)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 1000 simulated data sets: one row per draw, one column per site</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>sim_cover <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">replicate</span>(<span class="dv">1000</span>, {</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  c_prior<span class="sc">$</span><span class="fu">simulate</span>()   <span class="co"># draw the betas from the priors, then p, then cover</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  c_prior<span class="sc">$</span>cover</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Express as per cent cover so it's on a scale we can judge</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>sim_pct <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">sweep</span>(sim_cover, <span class="dv">2</span>, consts<span class="sc">$</span>npts, <span class="st">"/"</span>)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">as.vector</span>(sim_pct))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   0.00   21.33   52.80   51.68   82.93  100.00 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">pct =</span> <span class="fu">as.vector</span>(sim_pct)) <span class="sc">|&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> pct)) <span class="sc">+</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">40</span>, <span class="at">fill =</span> fangs[[<span class="st">"cyan"</span>]]) <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Simulated site cover (%)"</span>, <span class="at">y =</span> <span class="st">"Count"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/glm-prior-pred-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>A few things to note about the code:</p>
+<ul>
+<li><strong>We build a separate model object without data.</strong> <code>simulate()</code> skips data nodes by default, so on a model with data, <code>cover</code> would never change. A copy with no data also leaves the model we fit later untouched.</li>
+<li><strong><code>c_prior$simulate()</code> and <code>c_prior$cover</code></strong> use <code>$</code> to call a method and read a value from the model object. This is how you work with Nimble models from R.</li>
+<li><strong><code>t()</code> transposes the result.</strong> <code>replicate()</code> returns one column per draw, and we want one row per draw, the same layout as <code>y_rep</code> later.</li>
+</ul>
+<p>The logit link ensures simulated cover is always between 0 and 100%. What we are judging is whether the <em>spread</em> is reasonable. A <code>dnorm(0, sd = 2)</code> prior on the logit scale spans roughly 2% to 98% cover, which is wide but not absurd for a reef.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Extension
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Re-run the prior predictive check with <code>beta0 ~ dnorm(0, sd = 10)</code>. You’ll see the draws pile up at 0% and 100% with almost nothing in between. A prior that looks “uninformative” on the logit scale is in fact strongly informative, and it says that reefs are either bare or carpeted.</p>
+</div>
+</div>
+</section>
+<section id="fitting-the-model" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-the-model">Fitting the model</h3>
+<p>Fitting in Nimble takes a few more steps than pressing <em>Run</em> in FANGS, because Nimble compiles the model and the sampler to C++.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Build and compile the model</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>glm_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(glm_code, <span class="at">constants =</span> consts, <span class="at">data =</span> data,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                         <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>))</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>c_model <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(glm_model)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up, build and compile the sampler</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>mcmc_conf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(glm_model,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                           <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"y_rep"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>===== Monitors =====
+thin = 1: beta0, beta1, y_rep
+===== Samplers =====
+RW sampler (2)
+  - beta0
+  - beta1
+posterior_predictive sampler (49)
+  - y_rep[]  (49 elements)</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>glm_mcmc  <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmc_conf)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>c_mcmc    <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(glm_mcmc, <span class="at">project =</span> glm_model)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run: 4 chains, 2000 burn-in, 4000 kept samples per chain</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(c_mcmc,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nchains =</span> <span class="dv">4</span>,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">niter   =</span> <span class="dv">6000</span>,</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nburnin =</span> <span class="dv">2000</span>,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">samplesAsCodaMCMC =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In Nimble, <code>niter</code> <strong>includes</strong> the burn-in. To keep 4000 samples after a 2000-iteration burn-in, set <code>niter = 6000</code>.</p>
+</div>
+</div>
+<p><code>nimbleMCMC()</code> wraps all of these steps into one call. It’s handy once you know what each step does.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Predictions inside the model
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Print <code>mcmc_conf</code> and you’ll see that Nimble has given the <code>y_rep</code> nodes <code>posterior_predictive</code> samplers. These simply simulate new values each iteration and don’t change the parameter estimates. Two trade-offs:</p>
+<ul>
+<li>Every monitored prediction adds a column to the output. Use <code>params</code> or <code>pars</code> in summaries and plots so they only show the parameters you want.</li>
+<li>To change what you predict, for example a new prediction grid, you need to rebuild and recompile the model.</li>
+<li>If you want you can assemble predictions after the model fitting by just taking samples and applying the model formula to those. This gives more flexibility but increases the risk of mistakes if you change the model definition but then forget to change the prediction calculation.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="summary-r-hat-and-ess" class="level3">
+<h3 class="anchored" data-anchor-id="summary-r-hat-and-ess">Summary, R-hat and ESS</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">MCMCsummary</span>(samples, <span class="at">params =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>), <span class="at">round =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       mean   sd  2.5%   50% 97.5% Rhat n.eff
+beta0 -0.67 0.02 -0.71 -0.67 -0.63    1  1735
+beta1 -0.92 0.04 -0.99 -0.92 -0.85    1  2033</code></pre>
+</div>
+</div>
+<p>There is one row per parameter, with the posterior mean, SD and quantiles, then <code>Rhat</code> and <code>n.eff</code> (the effective sample size). We want R-hat at about 1.00 and n.eff in the hundreds or more.</p>
+</section>
+<section id="trace-plots" class="level3">
+<h3 class="anchored" data-anchor-id="trace-plots">Trace plots</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_trace</span>(samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/glm-trace-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_dens_overlay</span>(samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/glm-trace-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Each parameter gets a panel with the four chains in different colours. If the chains have mixed well, the four density curves sit almost on top of each other.</p>
+</section>
+<section id="posterior-predictive-check" class="level3">
+<h3 class="anchored" data-anchor-id="posterior-predictive-check">Posterior predictive check</h3>
+<p>The <code>ppc_</code> functions in bayesplot are the posterior predictive plots the brms community use. They need the observed data and a matrix of simulated data sets, with one row per posterior draw. Nimble has already simulated these as <code>y_rep</code>, so we just pull out those columns.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stack all chains into one matrix of draws</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>post <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(samples)</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># One row per draw, one column per site, in site order</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>y_rep <span class="ot">&lt;-</span> post[, <span class="fu">paste0</span>(<span class="st">"y_rep["</span>, <span class="dv">1</span><span class="sc">:</span>consts<span class="sc">$</span>N, <span class="st">"]"</span>)]</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_dens_overlay</span>(site_dat<span class="sc">$</span>cover, y_rep[<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>, ])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/glm-ppc-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_intervals</span>(site_dat<span class="sc">$</span>cover, y_rep) <span class="sc">+</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Site"</span>, <span class="at">y =</span> <span class="st">"Points on branching coral"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/glm-ppc-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The fit is poor, and in an informative way. The observed site totals range from near zero to over 200 <em>within</em> the same logging category. The observed points fall far outside their predictive intervals.</p>
+<p>This is <strong>overdispersion</strong>. Reefs differ for many reasons that logging alone doesn’t capture: depth, exposure, history, luck. The binomial has no parameter for that. That is what random effects are for.</p>
+</section>
+</section>
+<section id="adding-site-random-effects" class="level2">
+<h2 class="anchored" data-anchor-id="adding-site-random-effects">3. Adding site random effects</h2>
+<p>Now we use the full transect data. Each site gets its own random intercept, and a hyperparameter controls how far apart those intercepts can spread.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>re_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fixed effects</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">2</span>)   <span class="co"># intercept: logit cover on an unlogged reef</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)   <span class="co"># logging contrast</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Hyperparameter: SD of site effects</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  sigma_b <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">1.54</span>)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Site random effects</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (s <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>Nsite) {</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    b[s] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_b)</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Likelihood, one row per transect</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> logged[i] <span class="sc">+</span> b[site[i]]</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>    cover[i] <span class="sc">~</span> <span class="fu">dbin</span>(p[i], npts[i])</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>re_consts <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">N      =</span> <span class="fu">nrow</span>(dat),</span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">Nsite  =</span> <span class="fu">n_distinct</span>(dat<span class="sc">$</span>site),</span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">site   =</span> <span class="fu">as.integer</span>(<span class="fu">factor</span>(dat<span class="sc">$</span>site)),</span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">logged =</span> <span class="fu">as.integer</span>(dat<span class="sc">$</span>logged <span class="sc">==</span> <span class="st">"Logged"</span>),</span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">npts   =</span> dat<span class="sc">$</span>n_points</span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>re_data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">cover =</span> dat<span class="sc">$</span>cover_branching)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>What is new compared with the GLM:</p>
+<ol type="1">
+<li><strong>The site effects <code>b[s]</code>.</strong> There is one per site, all drawn from a normal distribution centred on zero. The mean is zero because <code>beta0</code> already holds the average. If <code>b</code> had its own mean as well, the model couldn’t tell that mean apart from <code>beta0</code>. That’s the over-specification issue covered in Module 20 of the FANGS course.</li>
+<li><strong>The hyperparameter <code>sigma_b</code>.</strong> This is the SD of the site effects: how different the reefs are from each other. It is estimated from the data, which is what makes the model hierarchical. Sites borrow strength from one another, and when <code>sigma_b</code> is small, each site’s mean is shrunk more strongly towards the average.</li>
+<li><strong>The prior on <code>sigma_b</code>.</strong> It must be positive, so we use an exponential prior. This puts the most weight near zero, so unless the data say otherwise, it pulls the model towards “the reefs aren’t very different”. See the aside below for how we chose the rate of 1.54.</li>
+<li><strong>Avoid vague priors on SDs.</strong> A very wide prior such as <code>dunif(0, 100)</code> will allows reefs to differ by absurd factors. You may see such priors in older literature (<code>gamma(0.001, 0.001)</code> on the precision was also a common vague prior that is now widely regarded as problematic). The data can’t rule those values out, and the variance parameter mixes badly.</li>
+<li><strong>The <code>site[i]</code> indexing</strong> is how each transect picks out the effect of its own reef. Writing 49 dummy variables by hand would be tedious, which is why random effects use indexing instead.</li>
+<li><strong><code>logged</code> is a site-level predictor repeated across transects.</strong> All five transects on a reef share the same value. The random effect and the fixed effect are therefore working at the same level, which is why the two can trade off against each other. We’ll need to look carefully at the diagnostics for problems.</li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Aside: choosing the rate of an exponential prior
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Following McElreath (<em>Statistical Rethinking</em>, 2nd edition, 2020), we use an exponential prior for the site SD. To pick its rate, work backwards from something you can picture.</p>
+<ol type="1">
+<li><strong>Choose a multiple.</strong> How different could a typical reef be from the average reef? Say that a reef whose <em>odds</em> of branching coral are about 7 times higher (or lower) than average would be surprising.</li>
+<li><strong>Choose a probability.</strong> Allow only a 5% chance that reef differences are bigger than that.</li>
+<li><strong>Convert the multiple to the logit scale.</strong> The model works on log-odds, so an odds multiple of 7 is an SD of <span class="math inline">\(\log(7) \approx 1.95\)</span>.</li>
+<li><strong>Solve for the rate.</strong> For an exponential distribution, <span class="math inline">\(P(\sigma_b &gt; s) = e^{-\lambda s}\)</span>. Setting that equal to 0.05 gives</li>
+</ol>
+<p><span class="math display">\[\lambda = \frac{-\log(0.05)}{\log(7)}\]</span></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>multiple <span class="ot">&lt;-</span> <span class="dv">7</span>      <span class="co"># reef-to-reef odds multiple we'd find surprising</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>p_exceed <span class="ot">&lt;-</span> <span class="fl">0.05</span>   <span class="co"># probability the SD is larger than that</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>s_max <span class="ot">&lt;-</span> <span class="fu">log</span>(multiple)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>rate  <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">log</span>(p_exceed) <span class="sc">/</span> s_max</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>rate</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1.539502</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check it worked should = p_exceed</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">pexp</span>(s_max, rate)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.05</code></pre>
+</div>
+</div>
+<p>That gives a rate of about 1.54, so the model line is <code>sigma_b ~ dexp(1.54)</code>.</p>
+<p>Try other numbers. If you think a multiple of 20 is plausible, the rate drops to 1. A larger rate pulls harder towards zero.</p>
+</div>
+</div>
+<section id="prior-predictive-check-1" class="level3">
+<h3 class="anchored" data-anchor-id="prior-predictive-check-1">Prior predictive check</h3>
+<p>The same three lines work for the hierarchical model. We just swap in the new code and constants. <code>simulate()</code> now also draws <code>sigma_b</code>, then a site effect for each reef, before simulating cover for every transect.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>re_prior   <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(re_code, <span class="at">constants =</span> re_consts)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>c_re_prior <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(re_prior)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>re_sim_cover <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">replicate</span>(<span class="dv">1000</span>, {</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  c_re_prior<span class="sc">$</span><span class="fu">simulate</span>()</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  c_re_prior<span class="sc">$</span>cover</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>re_sim_pct <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">sweep</span>(re_sim_cover, <span class="dv">2</span>, re_consts<span class="sc">$</span>npts, <span class="st">"/"</span>)</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">as.vector</span>(re_sim_pct))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   0.00   17.33   49.33   49.95   82.67  100.00 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">pct =</span> <span class="fu">as.vector</span>(re_sim_pct)) <span class="sc">|&gt;</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> pct)) <span class="sc">+</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">40</span>, <span class="at">fill =</span> fangs[[<span class="st">"cyan"</span>]]) <span class="sc">+</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Simulated transect cover (%)"</span>, <span class="at">y =</span> <span class="st">"Count"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-prior-pred-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The site effects add an extra layer of variation, so the distribution is more spread out than for the GLM, with more weight near 0% and 100%. That is what we want: the prior should allow reefs that are nearly bare and reefs that are thick with coral, because both exist in the data.</p>
+<p>Watch for the distribution becoming <strong>U-shaped</strong>, with everything piled against 0 and 100 and nothing in the middle. That means <code>sigma_b</code>’s prior is too loose and the model believes reefs are all-or-nothing before seeing any data. If that happens, go back to the aside and choose a smaller reef-to-reef multiple.</p>
+<p>You can see this if you re-run the above prior check with <code>sigma_b = 0.43</code>, which is like saying the typical difference in the odds of cover among reefs is 1000x.</p>
+</section>
+<section id="fitting-the-centred-model" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-the-centred-model">Fitting the centred model</h3>
+<p>The steps are the same as for the GLM. We add <code>sigma_b</code> and <code>b</code> to the inits and monitors.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>re_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(re_code, <span class="at">constants =</span> re_consts, <span class="at">data =</span> re_data,</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>,</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">sigma_b =</span> <span class="dv">1</span>, <span class="at">b =</span> <span class="fu">rep</span>(<span class="dv">0</span>, re_consts<span class="sc">$</span>Nsite)))</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>c_re_model <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(re_model)</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>re_conf   <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(re_model,</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>                           <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>, <span class="st">"b"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>===== Monitors =====
+thin = 1: b, beta0, beta1, sigma_b
+===== Samplers =====
+RW sampler (52)
+  - beta0
+  - beta1
+  - sigma_b
+  - b[]  (49 elements)</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>re_mcmc   <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(re_conf)</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>c_re_mcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(re_mcmc, <span class="at">project =</span> re_model)</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>re_samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(c_re_mcmc, <span class="at">nchains =</span> <span class="dv">4</span>, <span class="at">niter =</span> <span class="dv">10000</span>, <span class="at">nburnin =</span> <span class="dv">4000</span>,</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">thin =</span> <span class="dv">5</span>, <span class="at">samplesAsCodaMCMC =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+</div>
+</section>
+<section id="checks" class="level3">
+<h3 class="anchored" data-anchor-id="checks">Checks</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">MCMCsummary</span>(re_samples, <span class="at">params =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>), <span class="at">round =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         mean   sd  2.5%   50% 97.5% Rhat n.eff
+beta0   -0.88 0.20 -1.25 -0.89 -0.46 1.11    30
+beta1   -1.27 0.39 -1.97 -1.31 -0.41 1.28    37
+sigma_b  1.40 0.15  1.14  1.39  1.73 1.00  2812</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_trace</span>(re_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"sigma_b"</span>, <span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-checks-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Where the trouble is: the intercept against the logging contrast</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_scatter</span>(re_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-checks-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>What to look for:</p>
+<ul>
+<li><strong><code>sigma_b</code> is fine.</strong> Its R-hat sits at 1.00 with an n.eff in the thousands. The hierarchical variance is not the problem in this model.</li>
+<li><strong><code>beta0</code> is not.</strong> Expect R-hat &gt; 1.1 and n.eff of about 25 — out of 4800 saved draws. The traces wander rather than looking like white noise.</li>
+<li><strong>The scatter plot shows why.</strong> <code>beta0</code> and <code>beta1</code> are strongly negatively correlated. <code>beta0</code> sets the level for unlogged reefs and <code>beta1</code> is the step down to logged reefs, so the sampler can raise one and lower the other and barely change the likelihood. It ends up crawling along a diagonal ridge.</li>
+</ul>
+<p>Nimble’s default is a separate random-walk sampler for each parameter, and a one-at-a-time sampler cannot move along a diagonal. At every step it tries to go off the ridge and gets rejected.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Funnels and random effects
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Sometimes in hierarchical models we see a funnel in the samples between <code>sigma_b</code> and the site effects. Try this:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_scatter</span>(re_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"b[1]"</span>, <span class="st">"sigma_b"</span>),</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">transformations =</span> <span class="fu">list</span>(<span class="at">sigma_b =</span> <span class="st">"log"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/funnel-check-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>There isn’t much of one here. Each site has five transects and about 375 points, so every site effect is well identified by its own data and never gets squeezed into the neck. Funnels happen when groups are small or numerous relative to the information in them.</p>
+<p>If your are building your own model and you notice a funnel in your diagnostics, then the non-centereed parameterization is the trick to try (see module 20 of the FANGS course.)</p>
+</div>
+</div>
+</section>
+</section>
+<section id="fixing-the-sampler-with-a-block-update" class="level2">
+<h2 class="anchored" data-anchor-id="fixing-the-sampler-with-a-block-update">4. Fixing the sampler with a block update</h2>
+<p>The problem is correlation between two fixed effects, so the fix is to sample them <strong>together</strong>. We replace their individual samplers with a single automated-factor slice sampler, which finds the correlated directions and moves along them.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>re_nc_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  sigma_b <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">1.54</span>)</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (s <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>Nsite) {</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>    b[s] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_b)</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> logged[i] <span class="sc">+</span> b[site[i]]</span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>    cover[i] <span class="sc">~</span> <span class="fu">dbin</span>(p[i], npts[i])</span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>    y_rep[i] <span class="sc">~</span> <span class="fu">dbin</span>(p[i], npts[i])    <span class="co"># replicate data for the PPC</span></span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- Generated quantities -------------------------------------------</span></span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>  p_unlogged <span class="ot">&lt;-</span> <span class="fu">ilogit</span>(beta0)            <span class="co"># cover on a typical unlogged reef</span></span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>  p_logged   <span class="ot">&lt;-</span> <span class="fu">ilogit</span>(beta0 <span class="sc">+</span> beta1)    <span class="co"># cover on a typical logged reef</span></span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a>  odds_ratio <span class="ot">&lt;-</span> <span class="fu">exp</span>(beta1)               <span class="co"># effect of logging on the odds</span></span>
+<span id="cb51-20"><a href="#cb51-20" aria-hidden="true" tabindex="-1"></a>  pct_change <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="sc">*</span> (p_logged <span class="sc">/</span> p_unlogged <span class="sc">-</span> <span class="dv">1</span>)   <span class="co"># % change in cover</span></span>
+<span id="cb51-21"><a href="#cb51-21" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The model block is unchanged apart from the generated quantities, which we will use to plot predictions. But we will change how we sample from the model:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>re_nc_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(re_nc_code, <span class="at">constants =</span> re_consts, <span class="at">data =</span> re_data,</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>                           <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>,</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">sigma_b =</span> <span class="dv">1</span>, <span class="at">b =</span> <span class="fu">rep</span>(<span class="dv">0</span>, re_consts<span class="sc">$</span>Nsite)))</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>c_re_nc_model <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(re_nc_model)</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>re_nc_conf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(re_nc_model,</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>                            <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>, <span class="st">"b"</span>,</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"y_rep"</span>, <span class="st">"p_unlogged"</span>, <span class="st">"p_logged"</span>,</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">"odds_ratio"</span>, <span class="st">"pct_change"</span>),</span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>                            <span class="at">print =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-12"><a href="#cb52-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace the two separate random-walk samplers with one block sampler</span></span>
+<span id="cb52-13"><a href="#cb52-13" aria-hidden="true" tabindex="-1"></a>re_nc_conf<span class="sc">$</span><span class="fu">removeSamplers</span>(<span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span>
+<span id="cb52-14"><a href="#cb52-14" aria-hidden="true" tabindex="-1"></a>re_nc_conf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>), <span class="at">type =</span> <span class="st">"AF_slice"</span>)</span>
+<span id="cb52-15"><a href="#cb52-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-16"><a href="#cb52-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Confirm the swap: the AF_slice sampler is now the last one in the list</span></span>
+<span id="cb52-17"><a href="#cb52-17" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(re_nc_conf<span class="sc">$</span><span class="fu">getSamplers</span>(), <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
+AF_slice sampler: beta0, beta1</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>re_nc_mcmc   <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(re_nc_conf)</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>c_re_nc_mcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(re_nc_mcmc, <span class="at">project =</span> re_nc_model)</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>re_nc_samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(c_re_nc_mcmc, <span class="at">nchains =</span> <span class="dv">4</span>, <span class="at">niter =</span> <span class="dv">30000</span>,</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>                         <span class="at">nburnin =</span> <span class="dv">10000</span>, <span class="at">thin =</span> <span class="dv">10</span>,</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>                         <span class="at">samplesAsCodaMCMC =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+</div>
+<p>Three things to note:</p>
+<ul>
+<li><strong><code>removeSamplers()</code> then <code>addSampler()</code></strong> is the Nimble syntax for changing how a parameter is updated. Being able to do this easily is one of Nimble’s main advantages over JAGS.</li>
+<li><strong><code>AF_slice</code></strong> is an automated-factor slice sampler. It learns the correlation structure and slices along the rotated axes, so the diagonal ridge becomes an axis it can travel.</li>
+<li><strong>We also run longer and thin.</strong> Block sampling fixes the geometry; running longer increases the effective sample size. Thinning just keeps the output a manageable size.</li>
+</ul>
+<p>The generated quantities are all deterministic, so they don’t affect the fit. We added thoes because each is a <strong>non-linear</strong> function of the coefficients. Computing them per draw propagates uncertainty correctly. Back-transforming a posterior mean is not the same as the mean of the back-transforms.</p>
+<section id="checks-again" class="level3">
+<h3 class="anchored" data-anchor-id="checks-again">Checks, again</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">MCMCsummary</span>(re_nc_samples, <span class="at">params =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>), <span class="at">round =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         mean   sd  2.5%   50% 97.5% Rhat n.eff
+beta0   -0.96 0.25 -1.48 -0.95 -0.48 1.03   110
+beta1   -1.18 0.38 -1.88 -1.18 -0.39 1.02   172
+sigma_b  1.41 0.16  1.14  1.40  1.74 1.00  6523</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_trace</span>(re_nc_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"sigma_b"</span>, <span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-nc-checks-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_scatter</span>(re_nc_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-nc-checks-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Compare these with the centred model. R-hat should now be at or below about 1.05 for all three, and n.eff for the fixed effects should jump from the tens into the hundreds. The traces should look like fuzzy caterpillars. The posterior still has the same correlated shape — we haven’t changed the model — but the sampler now explores it properly.</p>
+<p>It’s worth checking the random effects too, not just the parameters you plan to report:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>rhat_all <span class="ot">&lt;-</span> <span class="fu">MCMCsummary</span>(re_nc_samples)<span class="sc">$</span>Rhat</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="fu">max</span>(rhat_all, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)   <span class="co"># worst R-hat over every monitored node</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1.03</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="checking-and-interpreting-the-random-effects-model" class="level2">
+<h2 class="anchored" data-anchor-id="checking-and-interpreting-the-random-effects-model">5. Checking and interpreting the random effects model</h2>
+<section id="posterior-predictive-check-1" class="level3">
+<h3 class="anchored" data-anchor-id="posterior-predictive-check-1">Posterior predictive check</h3>
+<p>Let’s compare the model predictions and parameters to the raw data. In below ‘y’ is the data ‘y_rep’ are predictions calculated from the model.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>post_re  <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(re_nc_samples)</span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>y_rep_re <span class="ot">&lt;-</span> post_re[, <span class="fu">paste0</span>(<span class="st">"y_rep["</span>, <span class="dv">1</span><span class="sc">:</span>re_consts<span class="sc">$</span>N, <span class="st">"]"</span>)]</span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_dens_overlay</span>(dat<span class="sc">$</span>cover_branching, y_rep_re[<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>, ])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-ppc-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Does the model reproduce the spread, and the zeros?</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_stat</span>(dat<span class="sc">$</span>cover_branching, y_rep_re, <span class="at">stat =</span> <span class="st">"sd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-ppc-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>prop_zero <span class="ot">&lt;-</span> <span class="cf">function</span>(y) <span class="fu">mean</span>(y <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_stat</span>(dat<span class="sc">$</span>cover_branching, y_rep_re, <span class="at">stat =</span> <span class="st">"prop_zero"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-ppc-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This is a big improvement on the GLM: the site effects soak up most of the reef-to-reef variation, and the density overlay looks broadly right.</p>
+<p>Two statistics area still off:</p>
+<ul>
+<li><strong>The SD</strong> of the observed transects is about 18, and the replicates average nearer 16. The model is slightly too tight.</li>
+<li><strong>The zeros.</strong> 29 of the 245 transects have no branching coral at all. The model predicts about half that many.</li>
+</ul>
+<p>Both say the same thing: transects <em>within</em> a site still vary more than a binomial allows. The site effect handles differences between reefs, but not patchiness along a single reef. We come back to this in section 6.</p>
+<p>A plot that’s easier for readers to interpret shows each observed transect against its predictive interval, grouped by logging:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_intervals_grouped</span>(dat<span class="sc">$</span>cover_branching, y_rep_re,</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>                      <span class="at">group =</span> dat<span class="sc">$</span>logged) <span class="sc">+</span></span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Transect"</span>, <span class="at">y =</span> <span class="st">"Points on branching coral"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-ppc-intervals-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="parameter-estimates" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-estimates">Parameter estimates</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fixed effects and site SD</span></span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_areas</span>(re_nc_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>), <span class="at">prob =</span> <span class="fl">0.9</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-estimates-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Logging effect as an odds ratio</span></span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_intervals</span>(re_nc_samples, <span class="at">pars =</span> <span class="st">"odds_ratio"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-estimates-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The two group means, on the scale readers actually care about</span></span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_intervals</span>(re_nc_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"p_unlogged"</span>, <span class="st">"p_logged"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-estimates-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Site effects: which reefs are above or below average?</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_intervals</span>(re_nc_samples, <span class="at">regex_pars =</span> <span class="st">"^b</span><span class="sc">\\</span><span class="st">["</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-estimates-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>How to read these:</p>
+<ul>
+<li><strong><code>p_unlogged</code> and <code>p_logged</code></strong> are the headline numbers: cover on a typical reef of each kind, as a proportion. Report these. Everyone can picture “25% cover versus 9%”.</li>
+<li><strong>The odds ratio</strong> is the effect size. A value of about 0.3 means logging cuts the odds of a point landing on branching coral to roughly a third. If the interval crosses 1, the direction is uncertain.</li>
+<li><strong><code>beta1</code> on the logit scale</strong> is the same information in units nobody thinks in. Keep it for the diagnostics, report the other two.</li>
+<li><strong>Site effects</strong> show shrinkage. Reefs with very little coral are pulled towards the mean instead of running off to minus infinity.</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The direct answer to the question we asked</span></span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(post_re[, <span class="st">"beta1"</span>] <span class="sc">&lt;</span> <span class="dv">0</span>)   <span class="co"># posterior probability of less coral when logged</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.998125</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(post_re[, <span class="st">"p_unlogged"</span>], <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     2.5%       50%     97.5% 
+0.1860820 0.2798399 0.3821269 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(post_re[, <span class="st">"p_logged"</span>],   <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      2.5%        50%      97.5% 
+0.06267197 0.10595971 0.17258201 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(post_re[, <span class="st">"pct_change"</span>], <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     2.5%       50%     97.5% 
+-78.91339 -61.54974 -27.79102 </code></pre>
+</div>
+</div>
+<p>Note what the Bayesian framing buys you: <code>mean(beta1 &lt; 0)</code> is a direct statement of the probability that logged reefs have less branching coral, given the model and data. There is no null hypothesis and no p-value to misread.</p>
+</section>
+<section id="joint-posteriors" class="level3">
+<h3 class="anchored" data-anchor-id="joint-posteriors">Joint posteriors</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_pairs</span>(re_nc_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/re-pairs-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Things to discuss:</p>
+<ul>
+<li><strong>Intercept against contrast.</strong> <code>beta0</code> and <code>beta1</code> are strongly negatively correlated, and no amount of sampler tuning removes that — it is a property of the posterior, not the algorithm. With a treatment contrast, the intercept <em>is</em> the reference group, so the two parameters are tied together by construction.</li>
+<li><strong>A way to decouple them.</strong> Fit <code>beta[1]</code> and <code>beta[2]</code> as separate group means instead of an intercept and a contrast (sometimes called means parameterisation). The two means are nearly independent, and you recover the contrast afterwards as <code>beta[2] - beta[1]</code>. Try it and compare the pairs plot.</li>
+<li><strong><code>sigma_b</code> against the intercept.</strong> A mild slope shows that the overall level and the spread between reefs are slightly confounded, which is expected and not a problem at this strength.</li>
+<li><strong>Before and after.</strong> Run the same pairs plot on <code>re_samples</code> to see what the default samplers made of the same geometry.</li>
+</ul>
+</section>
+<section id="publication-quality-plots" class="level3">
+<h3 class="anchored" data-anchor-id="publication-quality-plots">Publication-quality plots</h3>
+<p>The odds ratio and the two group means were calculated inside the model, so we just need to get them out of the chains. <code>tidybayes</code> does this tidily: <code>gather_draws()</code> stacks named quantities into long format.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a>effects <span class="ot">&lt;-</span> re_nc_samples <span class="sc">|&gt;</span></span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gather_draws</span>(odds_ratio)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>The effect as an odds ratio:</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(effects, <span class="fu">aes</span>(<span class="at">x =</span> .value, <span class="at">y =</span> <span class="st">"Logging"</span>)) <span class="sc">+</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_halfeye</span>(<span class="at">.width =</span> <span class="fu">c</span>(<span class="fl">0.66</span>, <span class="fl">0.95</span>), <span class="at">fill =</span> fangs[[<span class="st">"accent"</span>]],</span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">colour =</span> fangs[[<span class="st">"border"</span>]], <span class="at">slab_alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">1</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">colour =</span> fangs[[<span class="st">"orange"</span>]]) <span class="sc">+</span></span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_log10</span>() <span class="sc">+</span></span>
+<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Odds ratio for branching coral (logged vs unlogged)"</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/effects-eye-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>The x-axis is on a log scale, so doubling (2) and halving (0.5) sit the same distance from 1.</li>
+<li>The thick bar is the 66% interval and the thin bar is the 95% interval.</li>
+<li>If the distribution sits clearly below 1, there is less branching coral on logged reefs, which is the direction the sediment story predicts.</li>
+</ul>
+<p><strong>Cover on each kind of reef:</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a>group_means <span class="ot">&lt;-</span> re_nc_samples <span class="sc">|&gt;</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gather_draws</span>(p_unlogged, p_logged) <span class="sc">|&gt;</span></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">reef =</span> <span class="fu">factor</span>(.variable,</span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"p_unlogged"</span>, <span class="st">"p_logged"</span>),</span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Not logged"</span>, <span class="st">"Logged"</span>)))</span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Observed transect cover, for context</span></span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a>obs <span class="ot">&lt;-</span> dat <span class="sc">|&gt;</span></span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct =</span> <span class="dv">100</span> <span class="sc">*</span> cover_branching <span class="sc">/</span> n_points,</span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">reef =</span> <span class="fu">factor</span>(logged, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Not logged"</span>, <span class="st">"Logged"</span>)))</span>
+<span id="cb84-11"><a href="#cb84-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-12"><a href="#cb84-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(group_means, <span class="fu">aes</span>(<span class="at">x =</span> reef, <span class="at">y =</span> <span class="dv">100</span> <span class="sc">*</span> .value)) <span class="sc">+</span></span>
+<span id="cb84-13"><a href="#cb84-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_halfeye</span>(<span class="at">.width =</span> <span class="fu">c</span>(<span class="fl">0.66</span>, <span class="fl">0.95</span>), <span class="at">fill =</span> fangs[[<span class="st">"accent"</span>]],</span>
+<span id="cb84-14"><a href="#cb84-14" aria-hidden="true" tabindex="-1"></a>               <span class="at">colour =</span> fangs[[<span class="st">"border"</span>]], <span class="at">slab_alpha =</span> <span class="fl">0.8</span>,</span>
+<span id="cb84-15"><a href="#cb84-15" aria-hidden="true" tabindex="-1"></a>               <span class="at">position =</span> <span class="fu">position_nudge</span>(<span class="at">x =</span> <span class="fl">0.1</span>)) <span class="sc">+</span></span>
+<span id="cb84-16"><a href="#cb84-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_jitter</span>(<span class="at">data =</span> obs, <span class="fu">aes</span>(<span class="at">x =</span> reef, <span class="at">y =</span> pct),</span>
+<span id="cb84-17"><a href="#cb84-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">width =</span> <span class="fl">0.06</span>, <span class="at">colour =</span> fangs[[<span class="st">"cyan"</span>]], <span class="at">alpha =</span> <span class="fl">0.4</span>,</span>
+<span id="cb84-18"><a href="#cb84-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb84-19"><a href="#cb84-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Branching coral cover (%)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/pred-plot-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li><strong>The halfeye is the posterior for a typical reef</strong>, with the site effect set to zero. The blue points are the raw transects.</li>
+<li><strong>The posterior is much narrower than the data</strong>. The transects scatter because reefs differ and transects within a reef differ; the posterior is our uncertainty about the <em>average</em>, which many transects pin down well.</li>
+<li><strong>This is the median reef, not the mean reef.</strong> The logit link is non-linear, so averaging over the site effects gives a slightly different number than setting them to zero.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Extension
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Predict for an unsampled reef. Add <code>b_new ~ dnorm(0, sd = sigma_b)</code> to the model block, along with <code>p_new_logged &lt;- ilogit(beta0 + beta1 + b_new)</code>. Monitor it and plot it next to <code>p_logged</code>. The distribution will be far wider, because it includes the variation between reefs rather than just our uncertainty about the average. That is the right interval to quote if someone asks what they’d find on a reef you haven’t visited.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="an-observation-level-random-effect" class="level2">
+<h2 class="anchored" data-anchor-id="an-observation-level-random-effect">6. An observation-level random effect</h2>
+<p>The SD and zeros checks showed that transects within a site still vary more than a binomial allows. What we can try is give every transect its own small random effect.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>olre_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>  sigma_b <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">1.54</span>)   <span class="co"># reef-to-reef SD</span></span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>  sigma_e <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">1.54</span>)   <span class="co"># transect-to-transect SD</span></span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (s <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>Nsite) {</span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a>    b[s] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_b)</span>
+<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a>    e[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_e)</span>
+<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> logged[i] <span class="sc">+</span> b[site[i]] <span class="sc">+</span> e[i]</span>
+<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a>    cover[i] <span class="sc">~</span> <span class="fu">dbin</span>(p[i], npts[i])</span>
+<span id="cb85-15"><a href="#cb85-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-16"><a href="#cb85-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Replicate data: a NEW transect on the same reef</span></span>
+<span id="cb85-17"><a href="#cb85-17" aria-hidden="true" tabindex="-1"></a>    e_new[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_e)</span>
+<span id="cb85-18"><a href="#cb85-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(p_rep[i]) <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> logged[i] <span class="sc">+</span> b[site[i]] <span class="sc">+</span> e_new[i]</span>
+<span id="cb85-19"><a href="#cb85-19" aria-hidden="true" tabindex="-1"></a>    y_rep[i] <span class="sc">~</span> <span class="fu">dbin</span>(p_rep[i], npts[i])</span>
+<span id="cb85-20"><a href="#cb85-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb85-21"><a href="#cb85-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-22"><a href="#cb85-22" aria-hidden="true" tabindex="-1"></a>  p_unlogged <span class="ot">&lt;-</span> <span class="fu">ilogit</span>(beta0)</span>
+<span id="cb85-23"><a href="#cb85-23" aria-hidden="true" tabindex="-1"></a>  p_logged   <span class="ot">&lt;-</span> <span class="fu">ilogit</span>(beta0 <span class="sc">+</span> beta1)</span>
+<span id="cb85-24"><a href="#cb85-24" aria-hidden="true" tabindex="-1"></a>  odds_ratio <span class="ot">&lt;-</span> <span class="fu">exp</span>(beta1)</span>
+<span id="cb85-25"><a href="#cb85-25" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol type="1">
+<li><strong><code>e[i]</code> gives each transect its own offset.</strong> This turns the binomial into a binomial-logit-normal, which allows extra spread and extra zeros.</li>
+<li><strong>There are now two variance components.</strong> <code>sigma_b</code> is how much reefs differ from each other. <code>sigma_e</code> is how much transects on the same reef differ. Comparing them is ecologically meaningful: is coral patchy <em>between</em> reefs or <em>along</em> them?</li>
+<li><strong>The prior on <code>sigma_e</code></strong> uses the same “odds multiple of 7, 5% chance” reasoning. Redo the aside’s calculation with your own belief about how much transects on one reef can differ.</li>
+<li><strong>Expect slower sampling requiring longer chains.</strong> The model now has 245 extra parameters, one per transect. Check the n.eff for <code>sigma_e</code> especially, and consider increasing <code>niter</code>.</li>
+<li><strong>The replicates use new transect effects, <code>e_new</code>.</strong> See the warning in the posterior predictive check below for why.</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>olre_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(olre_code, <span class="at">constants =</span> re_consts, <span class="at">data =</span> re_data,</span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>,</span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">sigma_b =</span> <span class="dv">1</span>, <span class="at">b =</span> <span class="fu">rep</span>(<span class="dv">0</span>, re_consts<span class="sc">$</span>Nsite),</span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">sigma_e =</span> <span class="fl">0.5</span>, <span class="at">e =</span> <span class="fu">rep</span>(<span class="dv">0</span>, re_consts<span class="sc">$</span>N)))</span>
+<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a>c_olre_model <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(olre_model)</span>
+<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Don't monitor e or e_new: we never look at them directly</span></span>
+<span id="cb86-8"><a href="#cb86-8" aria-hidden="true" tabindex="-1"></a>olre_conf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(olre_model,</span>
+<span id="cb86-9"><a href="#cb86-9" aria-hidden="true" tabindex="-1"></a>                           <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>, <span class="st">"sigma_e"</span>,</span>
+<span id="cb86-10"><a href="#cb86-10" aria-hidden="true" tabindex="-1"></a>                                        <span class="st">"b"</span>, <span class="st">"y_rep"</span>, <span class="st">"p_unlogged"</span>, <span class="st">"p_logged"</span>,</span>
+<span id="cb86-11"><a href="#cb86-11" aria-hidden="true" tabindex="-1"></a>                                        <span class="st">"odds_ratio"</span>),</span>
+<span id="cb86-12"><a href="#cb86-12" aria-hidden="true" tabindex="-1"></a>                           <span class="at">print =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb86-13"><a href="#cb86-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-14"><a href="#cb86-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Same block sampler as before: the two fixed effects are still correlated</span></span>
+<span id="cb86-15"><a href="#cb86-15" aria-hidden="true" tabindex="-1"></a>olre_conf<span class="sc">$</span><span class="fu">removeSamplers</span>(<span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>))</span>
+<span id="cb86-16"><a href="#cb86-16" aria-hidden="true" tabindex="-1"></a>olre_conf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>), <span class="at">type =</span> <span class="st">"AF_slice"</span>)</span>
+<span id="cb86-17"><a href="#cb86-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-18"><a href="#cb86-18" aria-hidden="true" tabindex="-1"></a>olre_mcmc   <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(olre_conf)</span>
+<span id="cb86-19"><a href="#cb86-19" aria-hidden="true" tabindex="-1"></a>c_olre_mcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(olre_mcmc, <span class="at">project =</span> olre_model)</span>
+<span id="cb86-20"><a href="#cb86-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-21"><a href="#cb86-21" aria-hidden="true" tabindex="-1"></a>olre_samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(c_olre_mcmc, <span class="at">nchains =</span> <span class="dv">4</span>, <span class="at">niter =</span> <span class="dv">40000</span>,</span>
+<span id="cb86-22"><a href="#cb86-22" aria-hidden="true" tabindex="-1"></a>                        <span class="at">nburnin =</span> <span class="dv">20000</span>, <span class="at">thin =</span> <span class="dv">10</span>,</span>
+<span id="cb86-23"><a href="#cb86-23" aria-hidden="true" tabindex="-1"></a>                        <span class="at">samplesAsCodaMCMC =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="fu">MCMCsummary</span>(olre_samples,</span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">params =</span> <span class="fu">c</span>(<span class="st">"beta0"</span>, <span class="st">"beta1"</span>, <span class="st">"sigma_b"</span>, <span class="st">"sigma_e"</span>),</span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">round =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         mean   sd  2.5%   50% 97.5% Rhat n.eff
+beta0   -1.11 0.27 -1.67 -1.10 -0.63 1.07   152
+beta1   -1.24 0.40 -1.97 -1.24 -0.44 1.04   200
+sigma_b  1.46 0.18  1.16  1.45  1.85 1.00  2944
+sigma_e  0.93 0.06  0.82  0.93  1.06 1.00  2345</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_trace</span>(olre_samples, <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">"sigma_b"</span>, <span class="st">"sigma_e"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/olre-fit-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Compare <code>sigma_b</code> and <code>sigma_e</code>. Reef-to-reef variation is the larger of the two, but transect-to-transect variation is substantial too. A model with only site effects was attributing all of that patchiness to the wrong level.</p>
+<section id="posterior-predictive-check-2" class="level3">
+<h3 class="anchored" data-anchor-id="posterior-predictive-check-2">Posterior predictive check</h3>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>A trap
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If the replicates used the <em>fitted</em> transect effects, <code>y_rep[i] ~ dbin(p[i], npts[i])</code>, every transect would already have its own effect tuned to its own observation. The model would then reproduce the observations almost perfectly and the check would tell you nothing. So in the model block we draw a <strong>new</strong> transect effect, <code>e_new[i]</code>, for each replicate. That asks the question: what would <em>another</em> transect on this reef look like?</p>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>post_ol  <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(olre_samples)</span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>y_rep_ol <span class="ot">&lt;-</span> post_ol[, <span class="fu">paste0</span>(<span class="st">"y_rep["</span>, <span class="dv">1</span><span class="sc">:</span>re_consts<span class="sc">$</span>N, <span class="st">"]"</span>)]</span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_stat</span>(dat<span class="sc">$</span>cover_branching, y_rep_ol, <span class="at">stat =</span> <span class="st">"sd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/olre-ppc-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_stat</span>(dat<span class="sc">$</span>cover_branching, y_rep_ol, <span class="at">stat =</span> <span class="st">"prop_zero"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/olre-ppc-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ppc_dens_overlay</span>(dat<span class="sc">$</span>cover_branching, y_rep_ol[<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>, ])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/olre-ppc-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Both statistics the previous model missed are now much better. The replicated SD lands on the observed value, and the zeros are close. The model still under-predicts zeros slightly.</p>
+</section>
+<section id="comparing-the-two-models" class="level3">
+<h3 class="anchored" data-anchor-id="comparing-the-two-models">Comparing the two models</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">model =</span> <span class="st">"Site RE only"</span>,       <span class="at">or =</span> post_re[, <span class="st">"odds_ratio"</span>]),</span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">model =</span> <span class="st">"Site + transect RE"</span>, <span class="at">or =</span> post_ol[, <span class="st">"odds_ratio"</span>])</span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> or, <span class="at">y =</span> model)) <span class="sc">+</span></span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_halfeye</span>(<span class="at">.width =</span> <span class="fu">c</span>(<span class="fl">0.66</span>, <span class="fl">0.95</span>), <span class="at">fill =</span> fangs[[<span class="st">"accent"</span>]],</span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">colour =</span> fangs[[<span class="st">"border"</span>]], <span class="at">slab_alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">1</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">colour =</span> fangs[[<span class="st">"orange"</span>]]) <span class="sc">+</span></span>
+<span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_log10</span>() <span class="sc">+</span></span>
+<span id="cb97-10"><a href="#cb97-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Odds ratio for branching coral (logged vs unlogged)"</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="nimble-hierarchical-glm_files/figure-html/model-compare-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The interval is slightly wider in the second model, and the point estimate shifts a little further from 1. Two lessons:</p>
+<ul>
+<li><strong>Ignoring overdispersion makes you overconfident</strong> about the effects you care about. The first model’s interval was too narrow because it pretended transects on a reef were more alike than they are.</li>
+<li><strong>The conclusion is the same either way.</strong> The logging effect is strong enough that accounting for the extra variation doesn’t overturn it. That is what you hope to find, and the only way to know is to check.</li>
+</ul>
+</section>
+</section>
+<section id="wrapping-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrapping-up">Wrapping up</h2>
+<p>Back to the question: <strong>is there less branching coral on reefs in logged areas?</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(post_ol[, <span class="st">"beta1"</span>] <span class="sc">&lt;</span> <span class="dv">0</span>)                      <span class="co"># probability of a negative effect</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.997375</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> <span class="fu">quantile</span>(post_ol[, <span class="st">"p_unlogged"</span>], <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span>)), <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> 2.5%   50% 97.5% 
+ 15.9  24.9  34.8 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> <span class="fu">quantile</span>(post_ol[, <span class="st">"p_logged"</span>],   <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span>)), <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> 2.5%   50% 97.5% 
+  5.1   8.5  15.8 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">quantile</span>(post_ol[, <span class="st">"odds_ratio"</span>], <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.5</span>, <span class="fl">0.975</span>)), <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> 2.5%   50% 97.5% 
+ 0.14  0.29  0.64 </code></pre>
+</div>
+</div>
+<p>Yes. A typical unlogged reef has about 25% branching coral cover (95% CI 17–37%) and a typical logged reef about 9% (95% CI 5–15%). The odds ratio is 0.29, so logging is associated with roughly a third of the odds of a point landing on branching coral, and the posterior probability of a negative effect is essentially 1.</p>
+<p>A beta-binomial likelihood is another common way to handle overdispersion. If you are working with these types of problems commonly you might want to look into it. We used the observation-level random effect because it extends simply on the work we’ve already done. Either method is valid, you just need to confirm the diagnostics as we have done.</p>
+<section id="what-to-take-away" class="level3">
+<h3 class="anchored" data-anchor-id="what-to-take-away">What to take away</h3>
+<ul>
+<li><strong>Match the likelihood to the data-generating process.</strong> Points out of a total is a binomial.</li>
+<li><strong>Check the prior on the scale you can picture</strong>, not the scale the model works on. A “flat” logit prior is not flat in cover.</li>
+<li><strong>Diagnose before you interpret.</strong> We checked the chains, Rhats, ESS and other statistics and plots to make sure our algorithm was fitting well and then followed up with comparisons of the predictions to the data.</li>
+<li><strong>Bayesian workflows.</strong> We used prior predictive checks to confirm our priors were sensible, diagnoses to confirm our algorithm worked well (and fix problems that arose), posterior predictive checks to confirm the fit of model to the data.</li>
+</ul>
+</section>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) Logging degrades nursery habitat for an iconic coral reef fish. <em>Biological Conservation</em> 210: 273–280.</p>
+<p>McElreath, R. (2020) <em>Statistical Rethinking: A Bayesian Course with Examples in R and Stan</em>. 2nd edition. CRC Press.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

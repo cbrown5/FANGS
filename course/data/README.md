@@ -12,7 +12,9 @@ modules reference these by filename in `../modules.js`.
 | `fish-counts.csv` | M14, M15 | `site`, `fish` (count), `flow` (factor: Strong/Mild), `logged` (factor), `dist_to_logging_km` (continuous), `fish_pres` (binary) |
 | `presence.csv` | M16 | `site`, `pres` (binary response), `logged` (factor), `habitat` (factor), `dist_to_logging_km` (continuous) |
 | `habitat-presence.csv` | M17 | `site`, `pres` (binary response), `habitat` (3-level factor: Coral/Rubble/Seagrass), `depth_m` (continuous), `is_rubble`, `is_seagrass` (dummy indicators for the reference-coded model) |
-| `random-effects.csv` | M19, M20, M21 | `site` (20 levels), `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
+| `random-effects.csv` | M19, M20 | `site` (20 levels), `flow` (factor), `logged` (factor), `dist_to_logging_km` (continuous), `trans` (transect ID), `cover` (benthic cover count) |
+| `algal-yield.csv` | M21 | `yield_ps` (continuous response), `light` (3-level factor), `diuron` (5-level factor), `block` (4 levels, random-effect grouping), `light_umol`, `diuron_ugL` (original numeric treatment values) |
+| `random-effects-full.csv` | Nimble tutorial (not a course module) | as above with `site` (49 levels), plus `cover_branching` (CB + ACB count) and `n_points` (transect denominator) |
 
 `jaw-length.csv` is also present in this folder but is **not used by any module** —
 M8/M9 were reworked onto `fish-lengths.csv`. It is kept for the R-reference
@@ -54,6 +56,21 @@ on the full 49-site survey, which matters because every site adds a random
 intercept for the sampler to update. The original 245-row survey is kept
 alongside it as `random-effects-full.csv` (not included in the student zip).
 
+`random-effects-full.csv` carries two extra columns used by the Nimble tutorial
+(`tutorial/nimble-hierarchical-glm.qmd`):
+
+- `cover_branching` — point-intercept count of **all** branching coral
+  (`CB` + `ACB` codes), as opposed to `cover`, which is branching *Acropora*
+  (`ACB`) alone.
+- `n_points` — total points sampled on the transect (72–75), the denominator
+  that makes a binomial model possible.
+
+The tutorial uses `cover_branching` rather than `cover` because `cover` is 42%
+zeros with no clear fixed effect, while `cover_branching` is only 12% zeros and
+shows a strong, interpretable logging effect: cover is about twice as high at
+unlogged sites (33.8% vs 16.9%). That dataset is for Nimble only — 49 random
+intercepts is far too slow for the in-browser FANGS sampler.
+
 For reef fish data:
 
 Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A., Choat, J.H. 2017. Logging degrades nursery habitat for an iconic coral reef fish. *Biological Conservation* 210: 273–280. https://doi.org/10.1016/j.biocon.2017.04.025
@@ -87,3 +104,73 @@ the M17 model, available for extension exercises.
 Reference posteriors in `../modules.js` were produced with the FANGS engine
 itself (4 chains, 2000 burn-in, 4000 samples, `dnorm(0, 2)` priors) via
 `tests/bench/fangs-cli.mjs`; all R-hat = 1.00.
+
+### Algal multi-stressor experiment (`algal-yield.csv`)
+
+A factorial laboratory experiment on the marine diatom *Phaeodactylum
+tricornutum*, used for the M21 summative challenge. Flasks were grown at three
+light levels (5, 20, 80 µmol photons m⁻² s⁻¹) crossed with five diuron
+concentrations (0, 0.11, 0.33, 1, 3 µg L⁻¹) — 15 treatment cells — and the whole
+experiment was repeated on four separate occasions, each using an independent
+algal culture. Those occasions are the `block` variable, and they are the
+random-effects grouping factor.
+
+The course file is the **72-hour time slice of the diuron experiment**, with the
+photosynthetic yield response (`yield_ps`, i.e. $Y(II)$ by chlorophyll-a
+fluorescence). Both treatments are recoded as 1-based factor levels because
+neither effect is linear in its numeric value — yield falls sharply from 5 to 20
+µmol and then changes little from 20 to 80. The original numeric values are kept
+as `light_umol` and `diuron_ugL`; the model uses `diuron_ugL` for the
+interaction term only.
+
+Regenerate it from the raw data with:
+
+```bash
+node scripts/prep-algal-stressors.js
+```
+
+which reads `tutorial/data/algal-stressors/diuron_data72hrs.csv` (the raw King
+et al. file, kept in the repo for the Nimble tutorial).
+
+**Why yield and not growth.** The same experiment measured cell density, from
+which a growth ratio (`celld_ratio`, final over initial density) can be formed,
+and that response shows a more striking *crossover* interaction — diuron only
+harms growth at the lowest light level. It was not chosen for the summative
+module because cell density was **not measured in block 1**, so it drops to 45
+rows and 3 blocks, and with n = 3 per cell only 1 of its 6 main effects has a
+credible interval excluding zero. Yield gives a far clearer result: 8 of 9 fixed
+effects are credibly non-zero with a clean monotone dose–response. The growth
+response is a good extension exercise, and the contrast between the two
+responses on the same design is the actual point of the King et al. paper.
+
+**Sampling note.** With only four blocks, $\alpha$ and the block offsets $b_j$
+are weakly identified (the Module 20 ridge), and two things are needed to fit it
+well. First, the prior on `sigma.b` must be on the scale of the response:
+`dunif(0, 10)` gives R-hat in the tens for the intercept, `dunif(0, 0.2)` is the
+right scale for a response spanning 0.24–0.59. Second, even with that prior the
+free-intercept version still fails at the app's default sampler settings
+(3 chains x 1000, burn-in 500): R-hat for `alpha` above 5, ESS around 4, with one
+chain stuck at the top of the `sigma.b` range. Constraining the block effects to
+sum to zero —
+
+```
+  b[1] ~ dnorm(0, sigma.b)
+  b[2] ~ dnorm(0, sigma.b)
+  b[3] ~ dnorm(0, sigma.b)
+  b[4] <- -(b[1] + b[2] + b[3])
+```
+
+— removes the redundancy and fixes it outright: worst R-hat 1.01 at the default
+settings, `sigma.b` ESS over 800, and identical posterior means. At the reference
+settings (4 chains, 4000 samples, burn-in 2000) every R-hat is 1.000. The module
+text makes both points teaching moments, since Module 20 covers exactly this
+failure mode.
+
+Reference posteriors in `../modules.js` were produced with the FANGS engine
+itself (4 chains, 2000 burn-in, 4000 samples) via `tests/bench/fangs-cli.mjs`,
+using the priors the module recommends.
+
+King, O.C., van de Merwe, J.P., Campbell, M.D., Smith, R.A., Warne, M.St.J.,
+Brown, C.J. 2022. Interactions among multiple stressors vary with exposure
+duration and biological response. *Proceedings of the Royal Society B* 289:
+20220348. https://doi.org/10.1098/rspb.2022.0348

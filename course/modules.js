@@ -405,19 +405,29 @@ export const MODULES = [
   },
   {
     id: 'm21-summative', session: 's6', num: 21,
-    title: 'Summative challenge: coral cover, logging & random effects', mode: 'fangs',
+    title: 'Summative challenge: herbicide, light & interacting stressors', mode: 'fangs',
     challenge: 'answer-check',
     config: {
-      // random-effects.csv: cover (per-cent branching Acropora) ~ dist_to_logging_km
-      // + flow (Strong=1 reference, Mild=2) + random intercept per site.
-      // Poisson with log link; multiple transects per site. Reference values still
-      // to be filled in — runs in self-report mode until then.
-      dataset: 'random-effects.csv',
+      // algal-yield.csv: yield_ps ~ light (3-level factor, 1 = 5 umol = reference)
+      // * diuron (5-level factor, 1 = 0 ug/L = reference) + random intercept per
+      // block (4 algal cultures). Normal response, reference coding, interaction
+      // written as a light-specific slope on the numeric dose diuron_ugL.
+      // Block effects are constrained to sum to zero (b[4] <- -(b[1]+b[2]+b[3])),
+      // which is what makes this fit at the default sampler settings — see the
+      // module text and course/data/README.md.
+      // Reference fit from FANGS (4 chains x 4000 samples, burn-in 2000) with the
+      // priors the module recommends: alpha ~ dnorm(0.5, 0.5), betas ~ dnorm(0, 1),
+      // sigma ~ dunif(0, 1), sigma.b ~ dunif(0, 0.2).
+      dataset: 'algal-yield.csv',
       params: [
-        { name: 'alpha',     label: 'Intercept α (log scale)',           mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'beta',      label: 'Distance slope β (log scale)',       mean: 0, ci: [0, 0], tol: 0.3 },
-        { name: 'beta_flow', label: 'Mild-flow effect β_flow (log scale)', mean: 0, ci: [0, 0], tol: 0.4 },
-        { name: 'sigma.b',   label: 'Site SD σ_b',                        mean: 0, ci: [0, 0], tol: 0.5 },
+        { name: 'alpha',   label: 'α — mean yield at low light, no diuron', mean: 0.590,  ci: [0.573, 0.607],   tol: 0.04 },
+        { name: 'bL[2]',   label: 'βᴸ₂ — medium light (20) vs low (5)',     mean: -0.194, ci: [-0.213, -0.176], tol: 0.03 },
+        { name: 'bL[3]',   label: 'βᴸ₃ — high light (80) vs low (5)',       mean: -0.218, ci: [-0.236, -0.199], tol: 0.03 },
+        { name: 'bD[5]',   label: 'βᴰ₅ — diuron 3 µg/L vs control',         mean: -0.206, ci: [-0.235, -0.177], tol: 0.04 },
+        { name: 'bLD[2]',  label: 'βᴸᴰ₂ — interaction, medium light',       mean: 0.027,  ci: [0.014, 0.040],   tol: 0.02 },
+        { name: 'bLD[3]',  label: 'βᴸᴰ₃ — interaction, high light',         mean: 0.030,  ci: [0.017, 0.043],   tol: 0.02 },
+        { name: 'sigma',   label: 'σ — residual SD',                        mean: 0.023,  ci: [0.018, 0.030],   tol: 0.01 },
+        { name: 'sigma.b', label: 'σ_b — block SD',                         mean: 0.027,  ci: [0.007, 0.099],   tol: 0.03 },
       ],
     },
   },

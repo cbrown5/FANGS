@@ -1092,7 +1092,7 @@ $$</span></p>
 <li><strong>Identifiability</strong> — the <code>b[j]</code> are centred on 0 with a shared, estimated SD, so they can no longer trade off freely against <code>alpha</code>.</li>
 <li><strong>Sensible priors</strong> — <code>dnorm(0, 10)</code> on the log-scale intercept and a bounded <code>dunif(0, 10)</code> on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> are weakly informative rather than absurdly wide.</li>
 </ol>
-<p>Refit and watch R-hat fall toward 1.0 and ESS climb into the hundreds.</p>
+<p>Refit and watch R-hat collapse from the tens to close to 1.0, and ESS climb from single digits into the hundreds. (It will not land exactly on 1.0 for every parameter on this dataset — see the note at the end of the module for why.)</p>
 <h2 id="fix-2-reparameterisation">Fix 2: Reparameterisation</h2>
 <p>In hierarchical models the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and the group effects <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the “centred” parameterisation). A <strong>non-centred</strong> form decouples them:</p>
 <pre><code>for (j in 1:J) {
@@ -1113,12 +1113,38 @@ $$</span></p>
 <li>It <strong>does not rescue an over-specified model.</strong> A genuinely non-identifiable model still has bad R-hat and ESS on either engine, because the problem is in the model, not the algorithm. Fix the model first (Fixes 1 and 2); then pick the engine.</li>
 </ul>
 <p>If your model isn’t one the blocked engine supports, FANGS quietly falls back to Standard and tells you so in the status bar.</p>
+<h2 id="fix-3-a-sum-to-zero-constraint">Fix 3: A sum-to-zero constraint</h2>
+<p>Fix 1 identified <span class="math inline"><em>α</em></span> by giving the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> a shared prior centred on zero. That works because the prior pulls the group effects toward zero, which stops them drifting off together. But it is a <em>soft</em> constraint — the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are only centred on zero <strong>on average, in the prior</strong>, and nothing stops a particular draw from having them all positive, with <span class="math inline"><em>α</em></span> shifted down to compensate.</p>
+<p>With a good number of groups that is usually enough — twenty site effects average out and the ridge is effectively closed. With <strong>few</strong> groups it is often not. There is little information about <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>, so the chains can follow the prior out to large values, and the <span class="math inline"><em>α</em></span>-versus-<span class="math inline"><em>b</em><sub><em>j</em></sub></span> ridge reopens — exactly the problem from the start of this module, just narrower.</p>
+<p>You can close it completely by making the constraint <strong>hard</strong>: let all but one group effect be free, and define the last as minus the sum of the others.</p>
+<p>Here it is for a model with four groups:</p>
+<pre><code>b[1] ~ dnorm(0, sigma.b)
+b[2] ~ dnorm(0, sigma.b)
+b[3] ~ dnorm(0, sigma.b)
+b[4] &lt;- -(b[1] + b[2] + b[3])</code></pre>
+<p>Now the four offsets sum to exactly zero in <strong>every</strong> draw, not just on average. There is no longer any direction the chains can slide along, so <span class="math inline"><em>α</em></span> is pinned down as the unambiguous grand mean across groups. A <span class="math inline"><em>J</em></span>-group model needs <span class="math inline"><em>J</em> − 1</span> free effects and one deterministic line — which is why this is a tool for a handful of groups rather than twenty.</p>
+<div>
+<blockquote>
+<p><strong>Why not always do this?</strong></p>
+<p>The sum-to-zero constraint costs you something: the last group effect is no longer a stochastic node, so it has no prior of its own and is not shrunk in the same way as the others. With a decent number of groups the soft constraint of Fix 1 is simpler, scales without writing a line per group, and pools information more even-handedly.</p>
+<p>Reach for Fix 3 when you have <strong>few groups</strong> — a handful of experimental blocks, say — and the intercept will not converge despite a sensible prior on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. That is precisely the situation in the summative challenge (Module 21), where four blocks give R-hat above 5 for <span class="math inline"><em>α</em></span> with free effects, and 1.01 with the constraint. Same data, same priors, same posterior means — only the parameterisation differs.</p>
+</blockquote>
+</div>
 <h2 id="your-task">Your task</h2>
 <ol type="1">
 <li>Fit the <strong>broken</strong> model and read the worst R-hat and minimum ESS from the <strong>Summary</strong> tab.</li>
 <li>Fix it with the partial-pooling version above (adjust priors if you like).</li>
 <li>Refit and record the <strong>before/after</strong> worst R-hat and minimum ESS in the table below.</li>
+<li><strong>Optional:</strong> try Fix 2 (non-centred) as an extra row in the table and compare.</li>
 </ol>
+<div>
+<blockquote>
+<p><strong>Do not expect perfect diagnostics here</strong></p>
+<p>Fix 1 is a huge improvement on this dataset — the worst R-hat drops from the <strong>thirties</strong> to roughly <strong>1.4</strong> with long enough chains (4 chains x 4000, burn-in 2000) — but it does not reach 1.0, and that is worth understanding rather than papering over. At the default sampler settings it is worse still and varies a lot between runs, which is itself a sign the chains have not settled.</p>
+<p>Five of the twenty sites have <strong>zero</strong> coral cover on every transect. Their <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are held finite by the shared prior and individually converge well (R-hat ≈ 1.03), but they sit far below the others, around <span class="math inline">−3.3</span>. To accommodate that spread the model inflates <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> to about 3, which <strong>widens the <span class="math inline"><em>α</em></span>-versus-<span class="math inline"><em>b</em><sub><em>j</em></sub></span> ridge</strong> — so <span class="math inline"><em>α</em></span> ends up the worst-mixing parameter in the model (R-hat ≈ 1.5), not the zero sites themselves.</p>
+<p>The lesson is the Folk Theorem again: the stubborn diagnostics are pointing at a modelling problem, which here is the likelihood. A response that is 43% zeros wants a zero-inflated or negative-binomial model, not a plain Poisson. Fixing the parameterisation can only take you so far when the distribution is wrong.</p>
+</blockquote>
+</div>
 </body></html>`,
   'm20-summative': `<html><head></head><body><h1 id="summative-challenge-multi-factor-poisson-with-random-effects">Summative challenge: multi-factor Poisson with random effects</h1>
 <p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: count data, a log link, multiple factors, and random effects for grouping.</p>
@@ -1148,29 +1174,119 @@ $$</span></p>
 <h2 id="your-task">Your task</h2>
 <p>Fit the full model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em><sub><em>A</em></sub></span>, <span class="math inline"><em>β</em><sub><em>B</em></sub></span>, and the reef SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>
 </body></html>`,
-  'm21-summative': `<html><head></head><body><h1 id="summative-challenge-coral-cover-logging-random-effects">Summative challenge: coral cover, logging &amp; random effects</h1>
-<p>This brings the whole day together. You will build and fit a model that combine <strong>everything</strong>: count-like data, a log link, a continuous predictor, a factor, and random effects for grouping.</p>
+  'm21-summative': `<html><head></head><body><h1 id="summative-challenge-herbicide-light-interacting-stressors">Summative challenge: herbicide, light &amp; interacting stressors</h1>
+<p>This brings the whole day together. You will build and fit a model that combines <strong>everything</strong>: two categorical factors, an <strong>interaction</strong> between them, random effects for an experimental grouping variable, and the full diagnostic and model-checking workflow.</p>
 <h2 id="the-scenario">The scenario</h2>
-<p>We’ll use the same Kia Province case study as the fish counts (Module 14), but now we look at the habitat itself. On each reef, divers ran several transects and recorded the per-cent cover of branching <em>Acropora</em> coral — the nursery habitat the juvenile bumphead parrotfish depend on. The worry is the same: terrestrial logging washes sediment onto the reef and smothers the branching coral, so cover should be lower closer to logging.</p>
-<p><code>random-effects.csv</code> has one row per transect:</p>
+<p>Marine microalgae are the base of the coastal food web, and they face several pressures at once. Runoff from farmland carries the herbicide <strong>diuron</strong> onto inshore reefs, where it blocks photosynthesis. At the same time, sediment in that same runoff makes the water <strong>murkier</strong>, cutting the light reaching the algae.</p>
+<p>One important question for environmental managers is whether these two stressors simply add up, or whether one changes the effect of the other. That is an <strong>interaction</strong>. It matters for management because if diuron only does damage under certain light conditions, then where and when you control it changes.</p>
+<p>King et al.&nbsp;(2022) ran an experiment on the diatom <em>Phaeodactylum tricornutum</em>. Flasks of algae were grown at <strong>three light levels</strong> crossed with <strong>five diuron concentrations</strong> — 15 treatment combinations — and photosynthetic yield was measured after 72 hours. The whole 15-cell experiment was repeated on <strong>four separate occasions</strong>, each with an independent algal culture. Those occasions are the <strong>blocks</strong>.</p>
+<p><code>algal-yield.csv</code> has one row per flask (n = 60):</p>
 <ul>
-<li><code>cover</code> — per-cent cover of branching <em>Acropora</em> (our response).</li>
-<li><code>dist_to_logging_km</code> — the site’s distance from the nearest logging operation.</li>
-<li><code>flow</code> — water flow, a two-level factor (<code>Strong</code>, <code>Mild</code>); FANGS encodes it in order of first appearance, so <code>Strong</code> = 1 and <code>Mild</code> = 2.</li>
-<li><code>site</code> — which reef the transect belongs to. Because there are multiple transects per site, transects from the same reef are correlated, so <code>site</code> is our random-effects grouping variable.</li>
+<li><code>yield_ps</code> — photosynthetic yield, <span class="math inline"><em>Y</em>(<em>I</em><em>I</em>)</span>, measured by chlorophyll-a fluorescence (our response). Higher is healthier; it runs from about 0.24 to 0.59 here.</li>
+<li><code>light</code> — light level as a <strong>factor</strong>: <code>1</code> = 5, <code>2</code> = 20, <code>3</code> = 80 µmol photons m⁻² s⁻¹. Level 1 (lowest light) is the reference.</li>
+<li><code>diuron</code> — diuron concentration as a <strong>factor</strong>: <code>1</code> = 0 (control), <code>2</code> = 0.11, <code>3</code> = 0.33, <code>4</code> = 1, <code>5</code> = 3 µg L⁻¹. Level 1 (no diuron) is the reference.</li>
+<li><code>block</code> — which of the four algal cultures the flask belonged to. This is the <strong>random-effects grouping variable</strong>.</li>
+<li><code>light_umol</code>, <code>diuron_ugL</code> — the original numeric values of the two treatments, in case you want them.</li>
 </ul>
+<div>
 <blockquote>
-<p><strong>Data &amp; attribution.</strong> From the same study as Module 14: Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. &amp; Choat, J.H. (2017) <em>Logging degrades nursery habitat for an iconic coral reef fish.</em> <strong>Biological Conservation</strong> 210: 273–280. <a href="https://doi.org/10.1016/j.biocon.2017.04.025" class="uri">https://doi.org/10.1016/j.biocon.2017.04.025</a>. Lightly modified for teaching with FANGS.</p>
+<p><strong>Why both stressors are factors, not numbers</strong></p>
+<p>It is tempting to use <code>light_umol</code> and <code>diuron_ugL</code> in the model as continuous predictors. However, neither effect is close to linear in its numeric value. Light runs 5 → 20 → 80, and yield falls sharply between 5 and 20 but then barely changes between 20 and 80. A straight line through those three points would miss the non-linear pattern.</p>
+<p>Treating each as a factor lets every level find its own value.</p>
 </blockquote>
+</div>
+<blockquote>
+<p><strong>Data &amp; attribution.</strong> King, O.C., van de Merwe, J.P., Campbell, M.D., Smith, R.A., Warne, M.St.J. &amp; Brown, C.J. (2022) <em>Interactions among multiple stressors vary with exposure duration and biological response.</em> <strong>Proceedings of the Royal Society B</strong> 289: 20220348. <a href="https://doi.org/10.1098/rspb.2022.0348" class="uri">https://doi.org/10.1098/rspb.2022.0348</a>. The course file is the 72-hour slice of the diuron experiment, with the two treatments recoded as factor levels.</p>
+</blockquote>
+<h2 id="building-the-model">Building the model</h2>
+<p>Start from the reference coding you met in Module 17 and add the interaction. The response is continuous, so this is a Normal distribution for the response.</p>
+<p><span class="math display">$$
+\\begin{aligned}
+\\texttt{yield\\_ps}_i &amp;\\sim \\text{Normal}(\\mu_i,\\ \\sigma) \\\\
+\\mu_i &amp;= \\alpha + \\beta^L_{\\,\\text{light}_i} + \\beta^D_{\\,\\text{diuron}_i} + \\beta^{LD}_{\\,\\text{light}_i}\\!\\times\\!\\texttt{diuron\\_ugL}_i + b_{\\,\\text{block}_i} \\\\
+b_j &amp;\\sim \\text{Normal}(0,\\ \\sigma_b), \\quad \\textstyle\\sum_j b_j = 0
+\\end{aligned}
+$$</span></p>
+<p>Reading the terms left to right:</p>
+<ul>
+<li><span class="math inline"><em>α</em></span> — mean yield in the <strong>reference cell</strong>: lowest light, no diuron.</li>
+<li><span class="math inline"><em>β</em><sub>2</sub><sup><em>L</em></sup>, <em>β</em><sub>3</sub><sup><em>L</em></sup></span> — the effect of medium and high light, relative to low light. <span class="math inline"><em>β</em><sub>1</sub><sup><em>L</em></sup></span> is fixed at 0.</li>
+<li><span class="math inline"><em>β</em><sub>2</sub><sup><em>D</em></sup>…<em>β</em><sub>5</sub><sup><em>D</em></sup></span> — the effect of each diuron dose relative to the control, <strong>at the reference light level</strong>. <span class="math inline"><em>β</em><sub>1</sub><sup><em>D</em></sup></span> is fixed at 0.</li>
+<li><span class="math inline"><em>β</em><sub>2</sub><sup><em>L</em><em>D</em></sup>, <em>β</em><sub>3</sub><sup><em>L</em><em>D</em></sup></span> — the <strong>interaction</strong>: how much the diuron effect changes at medium and high light. <span class="math inline"><em>β</em><sub>1</sub><sup><em>L</em><em>D</em></sup></span> is fixed at 0.</li>
+<li><span class="math inline"><em>b</em><sub><em>j</em></sub></span> — the block offset, one per algal culture, partially pooled as in Module 19 and constrained to sum to zero (see the tips below — this matters a lot here).</li>
+</ul>
+<div>
+<blockquote>
+<p><strong>A note on how the interaction is written</strong></p>
+<p>The diuron <strong>main effects</strong> are fully categorical (one free parameter per dose), but the interaction uses the <em>numeric</em> dose <code>diuron_ugL</code>. This is a deliberate compromise: a fully categorical interaction would need <span class="math inline">2 × 4 = 8</span> extra parameters, and with only four blocks and 60 flasks there is not much information per parameter. Writing the interaction as a light-specific <em>slope</em> on dose captures “diuron does more damage at low light” with just two parameters.</p>
+<p>If you want to see the fully categorical version, it is a good extension — it fits, and tells the same story with wider intervals.</p>
+</blockquote>
+</div>
+<p>Fixing a coefficient at zero is done with a deterministic assignment, exactly as you would write any other <code>&lt;-</code> line:</p>
+<pre><code>  bL[1] &lt;- 0
+  bL[2] ~ dnorm(0, 1)
+  bL[3] ~ dnorm(0, 1)</code></pre>
+<h2 id="tips-before-you-fit">Tips before you fit</h2>
+<div>
+<blockquote>
+<p><strong>Centre the prior on <span class="math inline"><em>α</em></span> where the data actually are</strong></p>
+<p>Everywhere else in this course, <code>dnorm(0, ...)</code> has been a perfectly good prior for an intercept, because the response was either on a log/logit scale or roughly centred on zero. <strong>Here it is not.</strong> Yield is a proportion-like quantity that lives between about 0.24 and 0.59 — it is never remotely near zero, and it is never negative.</p>
+<p>A prior of <code>dnorm(0, 1)</code> on <span class="math inline"><em>α</em></span> says “before seeing data, I think mean yield is about 0, and I would not be shocked by −1”. That is a statement no one believes. With 60 observations the likelihood will drag <span class="math inline"><em>α</em></span> to the right place anyway, but you have made the sampler start in and travel through a region the data strongly reject, which wastes burn-in and can slow mixing.</p>
+<p>Centre it on something plausible instead:</p>
+<pre><code>  alpha ~ dnorm(0.5, 0.5)</code></pre>
+<p>Mean 0.5, SD 0.5 — comfortably covering every yield value in the dataset and still vague enough to let the data speak. <strong>The general lesson:</strong> a prior’s <em>location</em> matters as much as its width, and “centred on zero” is a habit, not a rule. Ask what scale your response is on before you write it down.</p>
+</blockquote>
+</div>
+<div>
+<blockquote>
+<p><strong>Keep <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> on the scale of the response</strong></p>
+<p>Module 20 showed how an over-wide prior wrecks sampling. This model is a live example, and it is the single most likely thing to go wrong here.</p>
+<p>Yield varies over a range of about 0.35, and the residual SD is around 0.02. A block SD of 10 is therefore physically impossible — it would mean cultures differing by more than the entire measurement scale. But <code>sigma.b ~ dunif(0, 10)</code> declares exactly that to be plausible, and the consequences are severe: with only <strong>four</strong> blocks there is very little information about <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>, so the chains follow the prior out to absurd values, the <span class="math inline"><em>α</em></span>-versus-<span class="math inline"><em>b</em><sub><em>j</em></sub></span> ridge from Module 20 opens up, and R-hat for the intercept climbs into the <strong>tens</strong>.</p>
+<p>Scale the prior to the response:</p>
+<pre><code>  sigma.b ~ dunif(0, 0.2)
+  sigma   ~ dunif(0, 1)</code></pre>
+<p>Try it both ways if you have time — the broken version is instructive, and diagnosing it from the trace plots alone is exactly the skill Module 20 was building.</p>
+</blockquote>
+</div>
+<div>
+<blockquote>
+<p><strong>Pin the block effects down with a sum-to-zero constraint</strong></p>
+<p>Even with a well-scaled prior on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>, four blocks is few enough that <span class="math inline"><em>α</em></span> and the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> still trade off against each other — that same Module 20 ridge, narrowed but not closed. Fit the model with the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> all free and you will likely see R-hat for <span class="math inline"><em>α</em></span> <strong>above 5</strong> with an ESS in the single digits, while every fixed effect looks perfect. One chain wanders off with <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> stuck near its upper bound and never comes back.</p>
+<p>The cure is to <strong>remove the redundancy</strong> rather than sample through it. Let three block effects be free and define the fourth as minus their sum, so the four offsets are forced to average exactly zero:</p>
+<pre><code>  b[1] ~ dnorm(0, sigma.b)
+  b[2] ~ dnorm(0, sigma.b)
+  b[3] ~ dnorm(0, sigma.b)
+  b[4] &lt;- -(b[1] + b[2] + b[3])</code></pre>
+<p>Now <span class="math inline"><em>α</em></span> means something unambiguous — the grand mean across blocks — and there is no direction left for the chains to slide along. The effect on the diagnostics is dramatic: R-hat drops from above 5 to <strong>1.01</strong>, and <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>’s ESS goes from about 5 to over 800, with no change to any posterior mean. The model fits comfortably at the default sampler settings.</p>
+<p>This is the general lesson of Module 20 applied to a real model: when the chains will not mix, respecify the model so the thing you cannot estimate is no longer in it.</p>
+</blockquote>
+</div>
+<div>
+<blockquote>
+<p><strong>Other things worth knowing</strong></p>
+<ul>
+<li><strong>Set the constants.</strong> The model needs <code>N</code> = 60, which FANGS fills in from the data. The sum-to-zero block effects are written out one per line, so you do not need a <code>J</code> constant at all — but if you experiment with a free <code>for (j in 1:J)</code> version, set <code>J</code> = 4 in the Model constants panel.</li>
+<li><strong>Priors on the fixed effects.</strong> <code>dnorm(0, 1)</code> is fine for all the <span class="math inline"><em>β</em></span> terms — these are <em>differences</em> in yield, genuinely centred on zero, and an SD of 1 is very generous for effects that turn out to be around 0.2.</li>
+<li><strong>Expect <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> to be small.</strong> The blocks turn out to differ very little. A posterior for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> that piles up near zero is a real result, not a failure — it says the experiment was well controlled.</li>
+<li><strong><span class="math inline"><em>α</em></span> still has the lowest ESS.</strong> Even with the sum-to-zero constraint, the intercept mixes more slowly than the <span class="math inline"><em>β</em></span> terms. R-hat near 1.0 with an ESS in the low hundreds is fine; run more samples if you want it tighter.</li>
+</ul>
+</blockquote>
+</div>
 <h2 id="bring-your-whole-toolkit">Bring your whole toolkit</h2>
 <ul>
-<li>Set sensible, weakly informative priors, and avoid the over-specification trap from Module 20.</li>
-<li><strong>Run a prior predictive check</strong> before fitting (Module 7).</li>
+<li><strong>Run a prior predictive check</strong> before fitting (Module 7). With the priors above, are the simulated yields in a believable range?</li>
 <li>After fitting, check <strong>R-hat and ESS</strong> (Module 10) — repair the model if the variance parameters mix badly.</li>
-<li>Run a <strong>posterior predictive check</strong> (Module 9) to confirm the model reproduces the cover values.</li>
-<li>Interpret the distance and flow effects multiplicatively (<span class="math inline"><em>e</em><sup><em>β</em></sup></span>), exactly as in Modules 14–15.</li>
+<li>Run a <strong>posterior predictive check</strong> (Module 9) to confirm the model reproduces the spread of yield values.</li>
+<li>Use the <strong>Joint distribution</strong> tab to look at <span class="math inline"><em>α</em></span> against <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. You should see the funnel shape that hierarchical models are famous for.</li>
 </ul>
 <h2 id="your-task">Your task</h2>
-<p>Fit the full model to <code>random-effects.csv</code> and read the <strong>Summary</strong> tab for <span class="math inline"><em>α</em></span>, the distance slope <span class="math inline"><em>β</em></span>, the flow effect <span class="math inline"><em>β</em><sub>flow</sub></span>, and the site SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. Does cover rise with distance from logging, as the sediment-damage story predicts? Pass this and you have fit a real hierarchical GLM end to end. 🎉</p>
+<p>Fit the full model to <code>algal-yield.csv</code> and read the <strong>Summary</strong> tab. The answer box below asks for <span class="math inline"><em>α</em></span>, the two light effects, the highest diuron dose, the two interaction terms, and both SDs — but read the whole table, because the questions below need the lower doses too. Then answer the science questions:</p>
+<ol type="1">
+<li><strong>Does diuron reduce photosynthetic yield?</strong> Look at <span class="math inline"><em>β</em><sub>5</sub><sup><em>D</em></sup></span> — the highest dose, 3 µg L⁻¹ — against the control.</li>
+<li><strong>Is there a dose–response?</strong> Read <span class="math inline"><em>β</em><sub>2</sub><sup><em>D</em></sup></span> through <span class="math inline"><em>β</em><sub>5</sub><sup><em>D</em></sup></span> in order. Which doses have credible intervals that exclude zero, and which do not?</li>
+<li><strong>Does light change the diuron effect?</strong> This is the interaction. If <span class="math inline"><em>β</em><sub>2</sub><sup><em>L</em><em>D</em></sup></span> and <span class="math inline"><em>β</em><sub>3</sub><sup><em>L</em><em>D</em></sup></span> are credibly <strong>positive</strong>, then diuron does <em>less</em> damage as light increases — the stressors are <strong>antagonistic</strong>, not simply additive.</li>
+<li><strong>How much did blocking matter?</strong> Compare <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> with <span class="math inline"><em>σ</em></span>.</li>
+</ol>
+<p>Pass this and you have fit a real hierarchical model with interacting factors, end to end, and drawn a management-relevant conclusion from it. 🎉</p>
 </body></html>`
 };

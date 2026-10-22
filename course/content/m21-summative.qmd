@@ -1,28 +1,146 @@
-# Summative challenge: coral cover, logging & random effects
+# Summative challenge: herbicide, light & interacting stressors
 
-This brings the whole day together. You will build and fit a model that combine **everything**: count-like data, a log link, a continuous predictor, a factor, and random effects for grouping.
+This brings the whole day together. You will build and fit a model that combines **everything**: two categorical factors, an **interaction** between them, random effects for an experimental grouping variable, and the full diagnostic and model-checking workflow.
 
 ## The scenario
 
-We'll use the same Kia Province case study as the fish counts (Module 14), but now we look at the habitat itself. On each reef, divers ran several transects and recorded the per-cent cover of branching *Acropora* coral — the nursery habitat the juvenile bumphead parrotfish depend on. The worry is the same: terrestrial logging washes sediment onto the reef and smothers the branching coral, so cover should be lower closer to logging.
+Marine microalgae are the base of the coastal food web, and they face several pressures at once. Runoff from farmland carries the herbicide **diuron** onto inshore reefs, where it blocks photosynthesis. At the same time, sediment in that same runoff makes the water **murkier**, cutting the light reaching the algae.
 
-`random-effects.csv` has one row per transect:
+One important question for environmental managers is whether these two stressors simply add up, or whether one changes the effect of the other. That is an **interaction**. It matters for management because if diuron only does damage under certain light conditions, then where and when you control it changes.
 
-- `cover` — per-cent cover of branching *Acropora* (our response).
-- `dist_to_logging_km` — the site's distance from the nearest logging operation.
-- `flow` — water flow, a two-level factor (`Strong`, `Mild`); FANGS encodes it in order of first appearance, so `Strong` = 1 and `Mild` = 2.
-- `site` — which reef the transect belongs to. Because there are multiple transects per site, transects from the same reef are correlated, so `site` is our random-effects grouping variable.
+King et al. (2022) ran an experiment on the diatom *Phaeodactylum tricornutum*. Flasks of algae were grown at **three light levels** crossed with **five diuron concentrations** — 15 treatment combinations — and photosynthetic yield was measured after 72 hours. The whole 15-cell experiment was repeated on **four separate occasions**, each with an independent algal culture. Those occasions are the **blocks**.
 
-> **Data & attribution.** From the same study as Module 14: Hamilton, R.J., Almany, G.R., Brown, C.J., Pita, J., Peterson, N.A. & Choat, J.H. (2017) *Logging degrades nursery habitat for an iconic coral reef fish.* **Biological Conservation** 210: 273–280. <https://doi.org/10.1016/j.biocon.2017.04.025>. Lightly modified for teaching with FANGS.
+`algal-yield.csv` has one row per flask (n = 60):
+
+- `yield_ps` — photosynthetic yield, $Y(II)$, measured by chlorophyll-a fluorescence (our response). Higher is healthier; it runs from about 0.24 to 0.59 here.
+- `light` — light level as a **factor**: `1` = 5, `2` = 20, `3` = 80 µmol photons m⁻² s⁻¹. Level 1 (lowest light) is the reference.
+- `diuron` — diuron concentration as a **factor**: `1` = 0 (control), `2` = 0.11, `3` = 0.33, `4` = 1, `5` = 3 µg L⁻¹. Level 1 (no diuron) is the reference.
+- `block` — which of the four algal cultures the flask belonged to. This is the **random-effects grouping variable**.
+- `light_umol`, `diuron_ugL` — the original numeric values of the two treatments, in case you want them.
+
+::: callout-important
+## Why both stressors are factors, not numbers
+
+It is tempting to use `light_umol` and `diuron_ugL` in the model as continuous predictors. However, neither effect is close to linear in its numeric value. Light runs 5 → 20 → 80, and yield falls sharply between 5 and 20 but then barely changes between 20 and 80. A straight line through those three points would miss the non-linear pattern.
+
+Treating each as a factor lets every level find its own value.
+:::
+
+> **Data & attribution.** King, O.C., van de Merwe, J.P., Campbell, M.D., Smith, R.A., Warne, M.St.J. & Brown, C.J. (2022) *Interactions among multiple stressors vary with exposure duration and biological response.* **Proceedings of the Royal Society B** 289: 20220348. <https://doi.org/10.1098/rspb.2022.0348>. The course file is the 72-hour slice of the diuron experiment, with the two treatments recoded as factor levels.
+
+## Building the model
+
+Start from the reference coding you met in Module 17 and add the interaction. The response is continuous, so this is a Normal distribution for the response.
+
+$$
+\begin{aligned}
+\texttt{yield\_ps}_i &\sim \text{Normal}(\mu_i,\ \sigma) \\
+\mu_i &= \alpha + \beta^L_{\,\text{light}_i} + \beta^D_{\,\text{diuron}_i} + \beta^{LD}_{\,\text{light}_i}\!\times\!\texttt{diuron\_ugL}_i + b_{\,\text{block}_i} \\
+b_j &\sim \text{Normal}(0,\ \sigma_b), \quad \textstyle\sum_j b_j = 0
+\end{aligned}
+$$
+
+Reading the terms left to right:
+
+- $\alpha$ — mean yield in the **reference cell**: lowest light, no diuron.
+- $\beta^L_2,\beta^L_3$ — the effect of medium and high light, relative to low light. $\beta^L_1$ is fixed at 0.
+- $\beta^D_2 \ldots \beta^D_5$ — the effect of each diuron dose relative to the control, **at the reference light level**. $\beta^D_1$ is fixed at 0.
+- $\beta^{LD}_2,\beta^{LD}_3$ — the **interaction**: how much the diuron effect changes at medium and high light. $\beta^{LD}_1$ is fixed at 0.
+- $b_j$ — the block offset, one per algal culture, partially pooled as in Module 19 and constrained to sum to zero (see the tips below — this matters a lot here).
+
+::: callout-note
+## A note on how the interaction is written
+
+The diuron **main effects** are fully categorical (one free parameter per dose), but the interaction uses the *numeric* dose `diuron_ugL`. This is a deliberate compromise: a fully categorical interaction would need $2 \times 4 = 8$ extra parameters, and with only four blocks and 60 flasks there is not much information per parameter. Writing the interaction as a light-specific *slope* on dose captures "diuron does more damage at low light" with just two parameters.
+
+If you want to see the fully categorical version, it is a good extension — it fits, and tells the same story with wider intervals.
+:::
+
+Fixing a coefficient at zero is done with a deterministic assignment, exactly as you would write any other `<-` line:
+
+```
+  bL[1] <- 0
+  bL[2] ~ dnorm(0, 1)
+  bL[3] ~ dnorm(0, 1)
+```
+
+## Tips before you fit
+
+::: callout-important
+## Centre the prior on $\alpha$ where the data actually are
+
+Everywhere else in this course, `dnorm(0, ...)` has been a perfectly good prior for an intercept, because the response was either on a log/logit scale or roughly centred on zero. **Here it is not.** Yield is a proportion-like quantity that lives between about 0.24 and 0.59 — it is never remotely near zero, and it is never negative.
+
+A prior of `dnorm(0, 1)` on $\alpha$ says "before seeing data, I think mean yield is about 0, and I would not be shocked by −1". That is a statement no one believes. With 60 observations the likelihood will drag $\alpha$ to the right place anyway, but you have made the sampler start in and travel through a region the data strongly reject, which wastes burn-in and can slow mixing.
+
+Centre it on something plausible instead:
+
+```
+  alpha ~ dnorm(0.5, 0.5)
+```
+
+Mean 0.5, SD 0.5 — comfortably covering every yield value in the dataset and still vague enough to let the data speak. **The general lesson:** a prior's *location* matters as much as its width, and "centred on zero" is a habit, not a rule. Ask what scale your response is on before you write it down.
+:::
+
+::: callout-important
+## Keep $\sigma_b$ on the scale of the response
+
+Module 20 showed how an over-wide prior wrecks sampling. This model is a live example, and it is the single most likely thing to go wrong here.
+
+Yield varies over a range of about 0.35, and the residual SD is around 0.02. A block SD of 10 is therefore physically impossible — it would mean cultures differing by more than the entire measurement scale. But `sigma.b ~ dunif(0, 10)` declares exactly that to be plausible, and the consequences are severe: with only **four** blocks there is very little information about $\sigma_b$, so the chains follow the prior out to absurd values, the $\alpha$-versus-$b_j$ ridge from Module 20 opens up, and R-hat for the intercept climbs into the **tens**.
+
+Scale the prior to the response:
+
+```
+  sigma.b ~ dunif(0, 0.2)
+  sigma   ~ dunif(0, 1)
+```
+
+Try it both ways if you have time — the broken version is instructive, and diagnosing it from the trace plots alone is exactly the skill Module 20 was building.
+:::
+
+::: callout-important
+## Pin the block effects down with a sum-to-zero constraint
+
+Even with a well-scaled prior on $\sigma_b$, four blocks is few enough that $\alpha$ and the $b_j$ still trade off against each other — that same Module 20 ridge, narrowed but not closed. Fit the model with the $b_j$ all free and you will likely see R-hat for $\alpha$ **above 5** with an ESS in the single digits, while every fixed effect looks perfect. One chain wanders off with $\sigma_b$ stuck near its upper bound and never comes back.
+
+The cure is to **remove the redundancy** rather than sample through it. Let three block effects be free and define the fourth as minus their sum, so the four offsets are forced to average exactly zero:
+
+```
+  b[1] ~ dnorm(0, sigma.b)
+  b[2] ~ dnorm(0, sigma.b)
+  b[3] ~ dnorm(0, sigma.b)
+  b[4] <- -(b[1] + b[2] + b[3])
+```
+
+Now $\alpha$ means something unambiguous — the grand mean across blocks — and there is no direction left for the chains to slide along. The effect on the diagnostics is dramatic: R-hat drops from above 5 to **1.01**, and $\sigma_b$'s ESS goes from about 5 to over 800, with no change to any posterior mean. The model fits comfortably at the default sampler settings.
+
+This is the general lesson of Module 20 applied to a real model: when the chains will not mix, respecify the model so the thing you cannot estimate is no longer in it.
+:::
+
+::: callout-tip
+## Other things worth knowing
+
+- **Set the constants.** The model needs `N` = 60, which FANGS fills in from the data. The sum-to-zero block effects are written out one per line, so you do not need a `J` constant at all — but if you experiment with a free `for (j in 1:J)` version, set `J` = 4 in the Model constants panel.
+- **Priors on the fixed effects.** `dnorm(0, 1)` is fine for all the $\beta$ terms — these are *differences* in yield, genuinely centred on zero, and an SD of 1 is very generous for effects that turn out to be around 0.2.
+- **Expect $\sigma_b$ to be small.** The blocks turn out to differ very little. A posterior for $\sigma_b$ that piles up near zero is a real result, not a failure — it says the experiment was well controlled.
+- **$\alpha$ still has the lowest ESS.** Even with the sum-to-zero constraint, the intercept mixes more slowly than the $\beta$ terms. R-hat near 1.0 with an ESS in the low hundreds is fine; run more samples if you want it tighter.
+:::
 
 ## Bring your whole toolkit
 
-- Set sensible, weakly informative priors, and avoid the over-specification trap from Module 20.
-- **Run a prior predictive check** before fitting (Module 7).
+- **Run a prior predictive check** before fitting (Module 7). With the priors above, are the simulated yields in a believable range?
 - After fitting, check **R-hat and ESS** (Module 10) — repair the model if the variance parameters mix badly.
-- Run a **posterior predictive check** (Module 9) to confirm the model reproduces the cover values.
-- Interpret the distance and flow effects multiplicatively ($e^\beta$), exactly as in Modules 14–15.
+- Run a **posterior predictive check** (Module 9) to confirm the model reproduces the spread of yield values.
+- Use the **Joint distribution** tab to look at $\alpha$ against $\sigma_b$. You should see the funnel shape that hierarchical models are famous for.
 
 ## Your task
 
-Fit the full model to `random-effects.csv` and read the **Summary** tab for $\alpha$, the distance slope $\beta$, the flow effect $\beta_{\text{flow}}$, and the site SD $\sigma_b$. Does cover rise with distance from logging, as the sediment-damage story predicts? Pass this and you have fit a real hierarchical GLM end to end. 🎉
+Fit the full model to `algal-yield.csv` and read the **Summary** tab. The answer box below asks for $\alpha$, the two light effects, the highest diuron dose, the two interaction terms, and both SDs — but read the whole table, because the questions below need the lower doses too. Then answer the science questions:
+
+1. **Does diuron reduce photosynthetic yield?** Look at $\beta^D_5$ — the highest dose, 3 µg L⁻¹ — against the control.
+2. **Is there a dose–response?** Read $\beta^D_2$ through $\beta^D_5$ in order. Which doses have credible intervals that exclude zero, and which do not?
+3. **Does light change the diuron effect?** This is the interaction. If $\beta^{LD}_2$ and $\beta^{LD}_3$ are credibly **positive**, then diuron does *less* damage as light increases — the stressors are **antagonistic**, not simply additive.
+4. **How much did blocking matter?** Compare $\sigma_b$ with $\sigma$.
+
+Pass this and you have fit a real hierarchical model with interacting factors, end to end, and drawn a management-relevant conclusion from it. 🎉
