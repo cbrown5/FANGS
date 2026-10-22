@@ -70,7 +70,7 @@ App is fully functional and good to use.
 - Add report/ report bug button
 
 ### User course todo
-- m19 and m20 need to be updated, the dataset isn't working well. Need a new ddataset. 
+- m19 and m20 need to be updated, the dataset isn't working well. Need a new dataset, try with blocked sampler. Edit new section about blocked sampler
 - m21 needs revision. Test it, use a fully categorical predictor
 - GPU test is on branch jolly-lovelace, test that
 - Chat in claude has an idea for improving speed of CPU based computation as well. 

@@ -665,12 +665,10 @@ precision τ  = 1 / (sigma * sigma)</code></pre>
 <h2 id="which-should-i-pick">Which should I pick?</h2>
 <ul>
 <li><strong>Mixed-effects models:</strong> Blocked. On the 50-row example dataset it is about 100× faster per sweep, and because the joint and translation moves cut straight across the <code>alpha</code> ↔︎ <code>b[j]</code> ridge, the chains mix far better too (ESS in the thousands rather than around 100).</li>
-<li><strong>Larger data or many groups:</strong> Blocked, by a wide margin — the gap grows with the number of rows and groups.</li>
+<li><strong>Larger data or many groups:</strong> Blocked will be faster, and its speed relative to the plain Gibbs will improve with the number of rows and groups.</li>
 <li><strong>Anything else:</strong> Standard. It handles every model FANGS can parse, and for a small single-level model either engine finishes quickly.</li>
 <li>If the blocked sampler does not support your model, FANGS falls back to Standard automatically and says so in the status bar.</li>
 </ul>
-<h2 id="what-a-faster-engine-does-not-fix">What a faster engine does not fix</h2>
-<p>A faster iteration does not, on its own, make a badly specified model behave. If a model is non-identifiable, R-hat and ESS will look bad on <strong>either</strong> engine. Check trace plots, R-hat and ESS as usual — the fix for a model that cannot be identified is to respecify it, not to change engine.</p>
 </body></html>`,
   'summary-tab': `<html><head></head><body><h1 id="posterior-summary-table">Posterior Summary Table</h1>
 <p>The <strong>Summary</strong> tab presents key statistics computed from the MCMC samples for each parameter.</p>

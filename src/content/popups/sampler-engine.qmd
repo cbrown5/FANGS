@@ -20,10 +20,6 @@ With a normal response every coefficient update is an exact Gibbs draw. With Poi
 ## Which should I pick?
 
 - **Mixed-effects models:** Blocked. On the 50-row example dataset it is about 100× faster per sweep, and because the joint and translation moves cut straight across the `alpha` ↔ `b[j]` ridge, the chains mix far better too (ESS in the thousands rather than around 100).
-- **Larger data or many groups:** Blocked, by a wide margin — the gap grows with the number of rows and groups.
+- **Larger data or many groups:** Blocked will be faster, and its speed relative to the plain Gibbs will improve with the number of rows and groups.
 - **Anything else:** Standard. It handles every model FANGS can parse, and for a small single-level model either engine finishes quickly.
 - If the blocked sampler does not support your model, FANGS falls back to Standard automatically and says so in the status bar.
-
-## What a faster engine does not fix
-
-A faster iteration does not, on its own, make a badly specified model behave. If a model is non-identifiable, R-hat and ESS will look bad on **either** engine. Check trace plots, R-hat and ESS as usual — the fix for a model that cannot be identified is to respecify it, not to change engine.
