@@ -16,7 +16,7 @@ const BOUNDS = {
 };
 
 /** Sampler engines offered by the #input-engine select (see sampler-worker.js). */
-export const ENGINES = ['standard', 'gpu', 'cpu-blocked'];
+export const ENGINES = ['standard', 'cpu-blocked'];
 const DEFAULT_ENGINE = 'standard';
 
 export class SamplerSettings {

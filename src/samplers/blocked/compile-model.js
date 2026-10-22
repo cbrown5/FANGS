@@ -1,7 +1,7 @@
 /**
  * compile-model.js - Compile a ModelGraph into a "blocked" GLMM sampling plan
  *
- * The blocked sampler (CPU or WebGPU backend) does not walk the model graph on
+ * The blocked sampler does not walk the model graph on
  * every update. Instead, it compiles the model once into dense numeric arrays
  * that describe a generalised linear mixed model:
  *
@@ -15,7 +15,7 @@
  *     random slopes c[j]) whose design columns are disjoint: every observation
  *     touches at most one member of the family. Given everything else, the
  *     members are conditionally independent, so they can be updated in
- *     parallel (one GPU thread per group).
+ *     parallel (independently, given everything else).
  *   - every other parameter is a "hyperparameter" (SDs, hyper-means, the
  *     residual SD, ...). Hyperparameters do not enter eta; they are slice
  *     sampled on the CPU using cheap sufficient statistics.
@@ -35,7 +35,7 @@
 
 import { initializeChains } from '../initialize.js';
 
-/** Largest dense fixed-effects block (Cholesky is done in a single GPU thread). */
+/** Largest dense fixed-effects block (the dense Cholesky is O(P³)). */
 export const MAX_FIXED = 32;
 
 /** Map of response distribution → likelihood family. */

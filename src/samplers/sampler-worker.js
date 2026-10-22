@@ -3,7 +3,7 @@ import { Parser } from '../parser/parser.js';
 import { ModelGraph } from '../parser/model-graph.js';
 import { runGibbs } from './gibbs.js';
 import { analyzeBlockedModel } from './blocked/compile-model.js';
-import { runBlocked, createBlockedBackend, describePlan } from './blocked/blocked-sampler.js';
+import { runBlocked, describePlan } from './blocked/blocked-sampler.js';
 import { summarizeAll } from '../utils/diagnostics.js';
 
 /**
@@ -66,17 +66,17 @@ function buildGraph(modelSource, dataColumns, dataN, dataJ, dataConstants) {
 }
 
 /**
- * Pick the sampler for the requested engine, falling back when the model or
- * browser does not support it. Posts an ENGINE message describing the choice
- * so the UI can tell the user which sampler actually ran (and why).
+ * Pick the sampler for the requested engine, falling back when the model is
+ * not supported. Posts an ENGINE message describing the choice so the UI can
+ * tell the user which sampler actually ran (and why).
  *
  * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {'standard'|'gpu'|'cpu-blocked'} engine - requested engine
+ * @param {'standard'|'cpu-blocked'} engine - requested engine
  * @param {number} chainIdx - for the ENGINE message
  * @returns {Promise<Function>} (graph, settings) => Promise<samples>, like runGibbs
  */
 async function chooseSampler(graph, engine, chainIdx) {
-    if (engine !== 'gpu' && engine !== 'cpu-blocked') return runGibbs;
+    if (engine !== 'cpu-blocked') return runGibbs;
 
     const analysis = analyzeBlockedModel(graph);
     if (!analysis.supported) {
@@ -88,24 +88,11 @@ async function chooseSampler(graph, engine, chainIdx) {
     }
 
     const plan = analysis.plan;
-    let backend = engine === 'gpu' ? 'gpu' : 'cpu';
-    let reason = null;
-    if (backend === 'gpu') {
-        try {
-            // Probe once so a missing adapter falls back cleanly instead of
-            // failing mid-run.
-            (await createBlockedBackend('gpu', plan)).dispose();
-        } catch (err) {
-            backend = 'cpu';
-            reason = `WebGPU is unavailable (${err.message}); using the blocked CPU sampler`;
-        }
-    }
     self.postMessage({
-        type: 'ENGINE', chainIdx, requested: engine,
-        used: backend === 'gpu' ? 'gpu' : 'cpu-blocked',
-        reason, description: describePlan(plan),
+        type: 'ENGINE', chainIdx, requested: engine, used: 'cpu-blocked',
+        reason: null, description: describePlan(plan),
     });
-    return (g, s) => runBlocked(g, { ...s, backend, plan });
+    return (g, s) => runBlocked(g, { ...s, plan });
 }
 
 /**
@@ -229,8 +216,8 @@ async function startSampling(modelSource, dataColumns, dataN, dataJ, settings, p
  * @param {number} dataN
  * @param {number} dataJ
  * @param {Object} settings      { nSamples, burnin, thin, engine } (nChains is ignored; always 1).
- *   `engine` is 'standard' (component-wise Gibbs, the default), 'gpu' (blocked
- *   sampler on WebGPU) or 'cpu-blocked' (blocked sampler on the CPU).
+ *   `engine` is 'standard' (component-wise Gibbs, the default) or
+ *   'cpu-blocked' (the blocked GLMM sampler).
  * @param {number} realChainIdx  The chain's global index (0-based).
  * @param {Object} dataConstants
  */

@@ -51,6 +51,9 @@ Other differences to note in the model definition from earlier models:
 
 Go to FANGS and click the preset options for 'Load example data' and 'mixed-effects model'. It will load up this data. Run the model and inspect the results. 
 
+Tip: set **Sampler engine** to **Blocked** in the sampler settings. Mixed-effects
+models fit much faster that way, and the chains mix better — M20 explains why.
+
 Note that it will only show trace plots for the scalar parameters (single values), click the tick-box at the top of the trace plot panel if you want to see traces for the `b` parameter (which is an array). 
 
 ## What to check

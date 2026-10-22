@@ -1038,6 +1038,7 @@ $$</span></p>
 </ul>
 <h2 id="run-the-model">Run the model</h2>
 <p>Go to FANGS and click the preset options for ‘Load example data’ and ‘mixed-effects model’. It will load up this data. Run the model and inspect the results.</p>
+<p>Tip: set <strong>Sampler engine</strong> to <strong>Blocked</strong> in the sampler settings. Mixed-effects models fit much faster that way, and the chains mix better — M20 explains why.</p>
 <p>Note that it will only show trace plots for the scalar parameters (single values), click the tick-box at the top of the trace plot panel if you want to see traces for the <code>b</code> parameter (which is an array).</p>
 <h2 id="what-to-check">What to check</h2>
 <p>The <strong>Summary</strong> tab now includes <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and each <code>b[j]</code>. Watch R-hat for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> especially — variance parameters are the slowest to mix.</p>
@@ -1099,6 +1100,19 @@ $$</span></p>
   b[j] &lt;- sigma.b * z[j]
 }</code></pre>
 <p>This is the same model, it just has a much friendlier geometry for the sampling algorithm.</p>
+<h2 id="a-sampler-that-helps-but-is-not-a-fix">A sampler that helps (but is not a fix)</h2>
+<p>The two fixes above are about the <strong>model</strong>. There’s also a setting that changes how FANGS <em>samples</em> whatever model you give it: <strong>Sampler engine</strong>, in the sampler settings.</p>
+<ul>
+<li><strong>Standard</strong> updates one parameter at a time. It works for any model FANGS can parse, which is why it’s the default.</li>
+<li><strong>Blocked</strong> updates all the fixed coefficients together, and all the group effects at once, and it makes moves that shift <span class="math inline"><em>α</em></span> up while shifting every <span class="math inline"><em>β</em><sub><em>j</em></sub></span> down by the same amount — travelling <em>along</em> the ridge from the section above instead of crawling across it. It applies to GLMMs: a normal, Poisson or binomial response with <code>dnorm</code> priors on the coefficients.</li>
+</ul>
+<p>Use <strong>Blocked</strong> whenever you’re fitting a mixed-effects model, and especially with many groups or more than a few hundred rows. On the 50-row example dataset it runs about 100× faster, and the gain in <em>accuracy per second</em> is larger still — because of the <span class="math inline"><em>α</em></span> ↔︎ <span class="math inline"><em>β</em><sub><em>j</em></sub></span> ridge the standard engine needs roughly 900× more time to pin the intercept down as precisely.</p>
+<p>Two things to be clear about:</p>
+<ul>
+<li>It targets the <strong>same posterior</strong>. This is a speed and mixing improvement, not a different model, and not a different answer.</li>
+<li>It <strong>does not rescue an over-specified model.</strong> A genuinely non-identifiable model still has bad R-hat and ESS on either engine, because the problem is in the model, not the algorithm. Fix the model first (Fixes 1 and 2); then pick the engine.</li>
+</ul>
+<p>If your model isn’t one the blocked engine supports, FANGS quietly falls back to Standard and tells you so in the status bar.</p>
 <h2 id="your-task">Your task</h2>
 <ol type="1">
 <li>Fit the <strong>broken</strong> model and read the worst R-hat and minimum ESS from the <strong>Summary</strong> tab.</li>

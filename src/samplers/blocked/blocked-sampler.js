@@ -1,5 +1,5 @@
 /**
- * blocked-sampler.js - Blocked Gibbs sampler for GLMMs (CPU or WebGPU backend)
+ * blocked-sampler.js - Blocked Gibbs sampler for GLMMs
  *
  * One sweep of the blocked sampler is:
  *
@@ -30,16 +30,10 @@ export const WARMUP_MAX = 50;
 /**
  * Create a backend for a compiled plan.
  *
- * @param {'cpu'|'gpu'} kind
  * @param {object} plan
- * @returns {Promise<CpuBlockedBackend|import('./gpu-backend.js').GpuBlockedBackend>}
- * @throws {Error} if kind is 'gpu' and WebGPU is unavailable
+ * @returns {Promise<CpuBlockedBackend>}
  */
-export async function createBlockedBackend(kind, plan) {
-  if (kind === 'gpu') {
-    const { GpuBlockedBackend } = await import('./gpu-backend.js');
-    return GpuBlockedBackend.create(plan);
-  }
+export async function createBlockedBackend(plan) {
   return new CpuBlockedBackend(plan);
 }
 
@@ -61,7 +55,6 @@ export function describePlan(plan) {
  *
  * @param {import('../../parser/model-graph.js').ModelGraph} graph - built graph
  * @param {Object} settings - as runGibbs(), plus:
- * @param {'cpu'|'gpu'} [settings.backend='cpu']
  * @param {object} [settings.plan] - a precompiled plan (else compiled here)
  * @returns {Promise<Object.<string, number[][]>>} samples[param][chain][draw]
  */
@@ -71,7 +64,6 @@ export async function runBlocked(graph, settings) {
     nSamples = 1000,
     burnin   = 500,
     thin     = 1,
-    backend: backendKind = 'cpu',
     onSample   = null,
     onProgress = null,
     shouldStop = null,
@@ -89,7 +81,7 @@ export async function runBlocked(graph, settings) {
   const warmup = plan.likelihood === 'normal' ? 0 : Math.min(WARMUP_MAX, Math.floor(burnin / 4));
 
   for (let c = 0; c < nChains; c++) {
-    const backend = await createBlockedBackend(backendKind, plan);
+    const backend = await createBlockedBackend(plan);
     try {
       const chain = new BlockedChainState(graph, plan, initializeChains(graph, 1)[0]);
       await backend.setState(chain.linearState());
@@ -97,9 +89,9 @@ export async function runBlocked(graph, settings) {
 
       for (let iter = 0; iter < totalIters; iter++) {
         if (iter % UI_YIELD_INTERVAL === 0) {
-          // The GPU backend awaits a readback every sweep; the CPU backend
-          // never yields on its own, so give the event loop a turn.
-          if (backend.kind === 'cpu') await yieldToUI();
+          // The sweep loop never yields on its own, so give the event loop a
+          // turn to keep the worker responsive to STOP messages.
+          await yieldToUI();
           if (onProgress) onProgress(c, iter, totalIters, chain.paramValues());
         }
         if (shouldStop && shouldStop()) return samples;

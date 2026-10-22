@@ -6,7 +6,7 @@
  *
  *   1. Fixed block θ (dense, size P) — one joint update.
  *   2. Each family b_f — every member updated independently (these are the
- *      updates the WebGPU backend runs one-thread-per-group).
+ *      updates run one group at a time).
  *
  * Both use the same Newton-type Metropolis–Hastings update. At the current
  * value θ the log-likelihood gradient G and negative Hessian A (plus the
@@ -34,12 +34,11 @@
  * halved after a failure. That only moves the chain's starting point; it is
  * not part of the saved MCMC output.
  *
- * The work per update is fixed (two passes over the data), which keeps GPU
+ * The work per update is fixed (two passes over the data), which keeps
  * threads in lock-step, unlike slice or rejection samplers whose loop
  * lengths vary from thread to thread.
  *
- * This backend is the reference implementation that the WGSL kernels in
- * gpu-backend.js mirror, and is the fallback when WebGPU is unavailable.
+ * This backend is the implementation behind the "Blocked" sampler engine.
  */
 
 import {

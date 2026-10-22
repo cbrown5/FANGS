@@ -595,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (msg.type === 'ENGINE') {
         if (engineReported) return;
         engineReported = true;
-        const label = { gpu: 'blocked GPU sampler', 'cpu-blocked': 'blocked CPU sampler', standard: 'standard Gibbs sampler' }[msg.used];
+        const label = { 'cpu-blocked': 'blocked sampler', standard: 'standard Gibbs sampler' }[msg.used];
         const detail = msg.reason ? ` (${msg.reason})` : msg.description ? ` (${msg.description})` : '';
         setStatus(`Sampling with the ${label}${detail}…`, 'running');
         if (msg.used === 'standard' && msg.requested !== 'standard') {

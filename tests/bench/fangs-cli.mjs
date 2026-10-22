@@ -30,8 +30,7 @@
  *   --output        Path to write posterior summaries CSV  [required]
  *   --raw-samples   If set, write one row per iteration instead of summaries
  *   --engine        standard | cpu-blocked                 [standard]
- *                   (cpu-blocked = the blocked GLMM sampler on the CPU; the
- *                   WebGPU backend needs a browser — see tests/gpu-harness.html)
+ *                   (cpu-blocked = the blocked GLMM sampler)
  *
  * Output CSV columns (summary mode):
  *   model, N_data, n_samples, n_chains, burnin, thin, elapsed_ms,
@@ -279,7 +278,7 @@ async function main() {
   const t0 = performance.now();
 
   const sampler = engine === 'cpu-blocked'
-    ? (g, s) => runBlocked(g, { ...s, backend: 'cpu' })
+    ? (g, s) => runBlocked(g, s)
     : runGibbs;
   const samples = await sampler(graph, {
     nChains,

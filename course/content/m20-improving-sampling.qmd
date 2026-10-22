@@ -79,6 +79,38 @@ for (j in 1:J) {
 
 This is the same model, it just has a much friendlier geometry for the sampling algorithm.
 
+## A sampler that helps (but is not a fix)
+
+The two fixes above are about the **model**. There's also a setting that changes
+how FANGS *samples* whatever model you give it: **Sampler engine**, in the
+sampler settings.
+
+- **Standard** updates one parameter at a time. It works for any model FANGS can
+  parse, which is why it's the default.
+- **Blocked** updates all the fixed coefficients together, and all the group
+  effects at once, and it makes moves that shift $\alpha$ up while shifting
+  every $\beta_j$ down by the same amount — travelling *along* the ridge from
+  the section above instead of crawling across it. It applies to GLMMs: a
+  normal, Poisson or binomial response with `dnorm` priors on the coefficients.
+
+Use **Blocked** whenever you're fitting a mixed-effects model, and especially
+with many groups or more than a few hundred rows. On the 50-row example dataset
+it runs about 100× faster, and the gain in *accuracy per second* is larger still
+— because of the $\alpha$ ↔ $\beta_j$ ridge the standard engine needs roughly
+900× more time to pin the intercept down as precisely.
+
+Two things to be clear about:
+
+- It targets the **same posterior**. This is a speed and mixing improvement, not
+  a different model, and not a different answer.
+- It **does not rescue an over-specified model.** A genuinely non-identifiable
+  model still has bad R-hat and ESS on either engine, because the problem is in
+  the model, not the algorithm. Fix the model first (Fixes 1 and 2); then pick
+  the engine.
+
+If your model isn't one the blocked engine supports, FANGS quietly falls back to
+Standard and tells you so in the status bar.
+
 ## Your task
 
 1. Fit the **broken** model and read the worst R-hat and minimum ESS from the **Summary** tab.

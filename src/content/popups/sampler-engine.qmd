@@ -4,14 +4,14 @@ FANGS has two ways to run the Gibbs sampler. Both give draws from the same poste
 
 ## Standard (component-wise Gibbs)
 
-Updates **one parameter at a time**, in random order, using a conjugate draw where one exists and slice sampling otherwise. It works for every model FANGS can parse, which makes it the default and the best choice for small teaching datasets.
+Updates **one parameter at a time**, in random order, using a conjugate draw where one exists and slice sampling otherwise. It works for every model FANGS can parse, which makes it the default.
 
-## Blocked (GPU or CPU)
+## Blocked
 
 Many models are generalised linear mixed models: a normal, Poisson or binomial response whose linear predictor is a sum of coefficients times data (for example `alpha + beta * x[i] + b[group[i]]`). For these, the blocked sampler:
 
 - updates all **fixed coefficients together** (`alpha`, `beta`, …), so correlated coefficients move as a block
-- updates every **group-level effect at once** (`b[1]`, `b[2]`, …). Given everything else, the groups are **conditionally independent**, so on a GPU each group gets its own thread
+- updates every **group-level effect at once** (`b[1]`, `b[2]`, …). Given everything else, the groups are **conditionally independent**, so each can be updated without waiting for the others
 - shifts an intercept and its random intercepts together, which stops chains getting stuck when the data only pin down `alpha + b[j]`
 - updates SDs and other hyperparameters from cheap summary statistics
 
@@ -19,10 +19,11 @@ With a normal response every coefficient update is an exact Gibbs draw. With Poi
 
 ## Which should I pick?
 
-- **Small data (hundreds of rows):** Standard, or Blocked — CPU for speed. A GPU has a fixed cost per iteration, so it is *slower* than the CPU when there is little work to share out.
-- **Large data (tens of thousands of rows or more, or thousands of groups):** this is where Blocked — GPU can pay off. Try it against Blocked — CPU on your machine; the gain depends on your graphics hardware.
-- If the blocked sampler does not support your model, or your browser has no WebGPU, FANGS falls back automatically and says so in the status bar.
+- **Mixed-effects models:** Blocked. On the 50-row example dataset it is about 100× faster per sweep, and because the joint and translation moves cut straight across the `alpha` ↔ `b[j]` ridge, the chains mix far better too (ESS in the thousands rather than around 100).
+- **Larger data or many groups:** Blocked, by a wide margin — the gap grows with the number of rows and groups.
+- **Anything else:** Standard. It handles every model FANGS can parse, and for a small single-level model either engine finishes quickly.
+- If the blocked sampler does not support your model, FANGS falls back to Standard automatically and says so in the status bar.
 
-## What the GPU does not fix
+## What a faster engine does not fix
 
-A faster iteration does not make the chain **mix** better. Check trace plots, R-hat and ESS as usual — strongly correlated parameters and weakly identified variance components still need longer runs or a better-parameterised model.
+A faster iteration does not, on its own, make a badly specified model behave. If a model is non-identifiable, R-hat and ESS will look bad on **either** engine. Check trace plots, R-hat and ESS as usual — the fix for a model that cannot be identified is to respecify it, not to change engine.

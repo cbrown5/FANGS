@@ -15,7 +15,7 @@ All core modules are implemented and 275 tests pass.
 | `samplers/gibbs.js` | Component-wise Gibbs; conjugate updates + slice fallback; `dnorm` uses the SD parameterisation (σ), converted to precision internally for normal-normal conjugate updates |
 | `samplers/slice.js` | Slice sampler fallback (also samples `sigma`/`sigma.b`) |
 | `samplers/initialize.js` | Overdispersed init from priors; diffuse normal (`sigma > 10`) capped at SD=3; `normal-normal-offset` nodes start at SD=1 |
-| `samplers/blocked/*` | Optional blocked GLMM sampler ("Sampler engine" setting): `compile-model.js` turns the graph into a dense GLMM plan (or rejects with a reason), `blocked-sampler.js` runs sweeps + CPU hyperparameter slice updates + intercept↔random-effect translation moves, `cpu-backend.js` (reference) and `gpu-backend.js`/`gpu-shaders.js` (WebGPU) do the Newton–MH block updates. See `plans/gpu-blocked-sampler.md` |
+| `samplers/blocked/*` | Optional blocked GLMM sampler ("Sampler engine" setting): `compile-model.js` turns the graph into a dense GLMM plan (or rejects with a reason), `blocked-sampler.js` runs sweeps + hyperparameter slice updates + intercept↔random-effect translation moves, `cpu-backend.js` does the Newton–MH block updates. See `plans/gpu-blocked-sampler.md` |
 | `samplers/sampler-worker.js` | Web Worker: parallel-chain mode (one worker per chain via START+chainIdx → CHAIN_DONE) + coordinator mode (SUMMARIZE → DONE); legacy single-worker START path retained for prior check; supports `priorOnly` and `dataConstants` |
 | `data/csv-loader.js` | CSV parsing and column preparation |
 | `data/default-data.js` | Built-in dataset matching `data/example.csv` (R seed=42, N=50, 5 groups) |
@@ -43,7 +43,6 @@ All core modules are implemented and 275 tests pass.
 | `predictions-grid.test.js` | 4 tests — predictions tab grid logic |
 | `course-challenges.test.js` | 9 tests — course challenge widget logic |
 | `blocked-sampler.test.js` | 30 tests — blocked sampler: model compilation/rejection, exact Gaussian block draws, Newton–MH vs quadrature, posteriors vs NIMBLE fixtures and numerical integration |
-| `gpu-e2e.mjs` | WebGPU backend vs CPU backend for all example models in headless Chromium (SwiftShader); run with `node tests/gpu-e2e.mjs` |
 | `r-reference/*.R` | R/NIMBLE reference scripts; output to `tests/r-reference/results/` |
 
 **275 tests passing (6 test files).**

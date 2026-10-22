@@ -9,8 +9,6 @@
  *   3. End-to-end posteriors (CPU backend) against the NIMBLE reference
  *      fixtures and against posteriors computed by numerical integration.
  *
- * The WebGPU backend runs the same algorithm; it is checked against this CPU
- * backend in a real browser by tests/gpu-e2e.mjs.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';

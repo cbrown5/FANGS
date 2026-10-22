@@ -1,5 +1,17 @@
 # Plan: Blocked GLMM sampler with a WebGPU backend
 
+> **Status: partly historical.** The blocked GLMM sampler described here ships as
+> the **Blocked** sampler engine, on the CPU. The **WebGPU backend was removed**
+> (`gpu-backend.js`, `gpu-shaders.js`, `tests/gpu-e2e.mjs`,
+> `tests/gpu-harness.html`): for teaching-sized data its one-readback-per-sweep
+> design made it slower than the CPU backend, so it did not earn its complexity.
+> See `plans/sampler-engine-benchmarks.md` for the measurements and
+> `plans/remove-gpu-engine.md` for the removal. Everything below about the
+> *algorithm* — the GLMM class, compilation, joint fixed-effect updates,
+> per-group conditional independence, Newton–MH, translation moves — still
+> describes what the code does; read the GPU-specific sections as a record of a
+> prototype that is no longer in the tree.
+
 ## Goal
 
 Offer a faster sampler for larger datasets and models with many groups, as an
