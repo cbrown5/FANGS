@@ -70,7 +70,7 @@ export function computePredictionGrid({
     for (const name of colNames) {
       if (name === focalName) {
         sc[name] = xs;
-      } else if (name === 'group') {
+      } else if (name === 'group' && !(name in heldVals)) {
         const a = new Float64Array(N); a.fill(1); sc[name] = a;
       } else if (name === responseVar) {
         const a = new Float64Array(N); a.fill(0); sc[name] = a;
@@ -357,13 +357,17 @@ export class PredictionsPlot {
     this._plotWrap.style.display  = hasData ? ''     : 'none';
   }
 
-  /** Covariates referenced with indexing in the model, excluding response + group. */
+  /**
+   * Covariates referenced with indexing in the model, excluding the response and
+   * `group` when it is used as a random-effect index (e.g. `b[group[i]]`).
+   */
   _getModelCovariates() {
     if (!this._columns || !this._modelSource) return { continuous: [], categorical: [] };
     const factorSet  = new Set(Object.keys(this._factorMaps ?? {}));
+    const groupIsIndex = /\[\s*group\s*\[/.test(this._modelSource);
     const continuous = [], categorical = [];
     for (const name of Object.keys(this._columns)) {
-      if (name === this._responseVar || name === 'group') continue;
+      if (name === this._responseVar || (name === 'group' && groupIsIndex)) continue;
       if (!new RegExp(`\\b${name}\\s*\\[`).test(this._modelSource)) continue;
       if (factorSet.has(name)) categorical.push(name);
       else continuous.push(name);
@@ -560,7 +564,7 @@ export class PredictionsPlot {
           sc[name] = new Float64Array([0]);
         } else if (name === focalName) {
           sc[name] = new Float64Array([Number(code)]);
-        } else if (name === 'group') {
+        } else if (name === 'group' && !(name in heldVals)) {
           sc[name] = new Float64Array([1]);
         } else {
           const val = (name in heldVals) ? heldVals[name] : _colMean(this._columns[name] ?? []);
