@@ -1,0 +1,388 @@
+---
+title: "Bayesian ecological modelling"
+author: "A/Prof Chris Brown"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+  message: false
+knitr:
+  opts_chunk:
+    dev: "png"
+---
+
+
+![You're looking the wrong way](images/predator.JPG)
+
+## Discussion and background
+
+[_The dirty secret about stats you were never taught_](https://www.seascapemodels.org/posts/2026-03-27-stats-dirty-secret/index.html)
+
+Conditional probability theory. 
+
+Chris surfing and teaching example of conditional probabilities
+
+## Why Bayesian thinking is hard
+
+Our intuitions about probability are systematically wrong. Decades of psychology research show that even doctors, judges, and scientists routinely misread probabilistic evidence. The problems below are designed to show you *why*. Bayes theory gives us a framework for thinking more clearly.
+
+The framework is Bayes' theorem:
+
+$$P(H | D) = \frac{P(D | H) \times P(H)}{P(D)}$$
+
+In plain language: the probability your hypothesis is true *given the data* depends on three things — how likely the data would be if the hypothesis were true, how likely the hypothesis was before you collected data, and how likely the data were overall.
+
+The part people forget is the prior — $P(H)$. When the hypothesis is rare to begin with, even strong evidence often leaves it unlikely. This is also called 'base rate neglect'. 
+This is counterintuitive. Work through the example below before you look at the answer.
+
+---
+
+## Question 1: Whale beachings and Navy sonar
+
+Pilot whales have stranded on the West Coast of Tasmania. A journalist claims that secret Navy sonar testing is to blame. Here are the facts:
+
+- Pilot whales beach themselves somewhere in Tasmania roughly **1 year in 20** (prior probability of a beaching: 5%)
+- When the Navy *has* conducted sonar testing in the area, beachings occur in **9 out of 10** such years
+- When there is **no** sonar testing, beachings still occur **1 year in 20** (same background rate)
+
+**The question:** Given that we just observed a beaching, what is the probability the Navy was running a secret sonar test?
+
+**Multiple choice — pick one before reading on:**
+
+a) About 90% — the sonar almost always causes beachings when it's active
+b) About 50% — it's basically a coin flip
+c) About 15% — the base rate of sonar testing is very low
+d) About 5% — about the same as the background beaching rate
+
+---
+
+## Question 2: Ocean acidification and clownfish behaviour
+
+We'll use the FANGS app to address this second question. 
+
+This question is based roughly on a real study: [Munday et al. 2009, PNAS](https://www.pnas.org/doi/abs/10.1073/pnas.1004519107).
+
+Clownfish larvae were placed in a choice flume — a Y-shaped channel where one arm carried normal seawater, the other carried water with chemical cues from predators. The question was: does ocean acidification impair predator avoidance?
+
+In the experiment:
+- Fish in **normal seawater** spent about **18%** of their time in the predator-odour arm (they avoided predators)
+- Fish in **acidified seawater** spent about **85%** of their time in the predator-odour arm (they seemed attracted to predators)
+- Standard deviation was about 3% in both groups, n = 20 fish per group
+
+The difference is enormous and statistically overwhelming. The paper was published in *PNAS* and received huge media attention.
+
+**The question:** Given these results, what is the posterior probability that ocean acidification impairs predator avoidance in clownfish?
+
+**Multiple choice — pick one before reading on:**
+
+a) More than 99% — the effect size is huge and the p-value is tiny
+b) ~95% — matches the conventional significance threshold
+c) ~70% — depends on your prior
+d) Could be anywhere — we can't say without knowing how plausible the mechanism is
+
+![I don't care what you think, my anenome smells just the way its meant to, thank you very much](images/clownfish.JPG)
+
+## Fitting a Bayesian model with FANGS 
+
+I couldn't get the original dataset for the clownfish. So I simulated data with the same means, standard deviations and sample sizes as the original paper. 
+
+Here's what the simulated data look like:
+
+```{r}
+library(ggplot2)
+dat <- read.csv("data/clownfish-oa.csv")
+ggplot(dat, aes(x = group, y = time, colour = group)) +
+  geom_jitter(width = 0.1, size = 2) +
+  stat_summary(fun = mean, geom = "crossbar", width = 0.3, colour = "black") +
+  labs(
+    x = NULL,
+    y = "% time in predator-odour stream",
+    title = "Clownfish predator avoidance under ocean acidification"
+  ) +
+  theme_classic() +
+  theme(legend.position = "none")
+
+```
+
+Now we can use FANGS to fit a Bayesian linear model to these data.
+
+I developed a package called FANGS to solve simple Bayesian problems like the ones above. It emulates more sophisticated R software like JAGS and NIMBLE. FANGS has a much simpler interface and runs direclty in your web browser. It's designed for teaching for ease of use. Its a stepping stone to professional Bayesian software like NIMBLE. 
+
+Open [FANGS in your browser](https://www.seascapemodels.org/FANGS). 
+
+Full disclosure on its development, FANGS was made with generative AI. I pointed an AI to the hard-core Bayesian stats software NIMBLE and asked it to me a version that works in a web browser. About 30 prompts later and a lot of testing I had a working version that produces the same results as NIMBLE.
+
+Bayesian modelling gets complex quickly. Simple problems can be solved by hand, but more complex models, like the linear models we've been using, often require numerical integration to solve (they are impossible to solve by hand, even by the world's best mathematicians). So we use computer's to find solutions. 
+
+We will walk through this in class. 
+
+### FANGS step-by-step
+
+FANGS has help boxes, so click those if you have questions on any step. I'll also explain in class. Here's the general workflow:
+
+#### 1. Drag and drop your data into the data box. 
+
+Start with the clownfish data in `data/clownfish-oa.csv`. The data should be in a tidy format, with one row per observation and columns for each variable. In this case, we have a column for the treatment group (normal vs acidified) and a column for the response variable (time spent in predator arm).
+
+#### 2. Write your model in the model box.
+
+FANGS uses a simple syntax that is similar to JAGS and NIMBLE. The model specifies the likelihood of the data given the parameters, and the priors on the parameters.
+
+Delete the model that's in the MODEL box and start from scratch. We'll build it up piece by piece.
+
+**Step 1: Add a model block**
+
+Everything goes inside a `model { }` block. Start with just the empty shell:
+
+```
+model {
+}
+```
+
+**Step 2: Add a loop over observations**
+
+We have $N$ observations. FANGS (like NIMBLE and JAGS) uses an explicit loop to say "do this for every row of data":
+
+```
+model {
+  for (i in 1:N) {
+  }
+}
+```
+
+**Step 3: Add the likelihood**
+
+Our response variable (`time`) is continuous, so we use a normal distribution. In FANGS/NIMBLE notation, `~` means "is distributed as" and `dnorm` takes a mean and a **standard deviation** $\sigma^2$:
+
+```
+model {
+  for (i in 1:N) {
+    time[i] ~ dnorm(mu[i], sigma)
+  }
+}
+```
+
+`mu[i]` is the expected value for observation $i$, and `sigma` is the standard deviation (shared across all observations — this is the homoscedasticity assumption from our GLM).
+
+Note that many Bayesian software packages use the precision instead of the standard deviation or variance. The precision is $= 1/variance$. FANGS uses the SD because it is more intuitive. 
+
+**Step 4: Add the linear predictor**
+
+Now we say what `mu[i]` actually is. This is our linear model — exactly the same equation as we've been using all semester:
+
+```
+model {
+  for (i in 1:N) {
+    time[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + beta * (group[i]-1)
+  }
+}
+```
+
+`group[i]` gets coded by FANGS to 1 for normal seawater and 2 for acidified seawater. Hence we do `-1` so it becomes zero for normal seawater and 1 for acidified. Hence, `alpha` becomes the mean time in the predator arm for normal-seawater fish, and `beta` is the difference between normal and OA water. This is identical to a GLM with a binary predictor.
+
+**Step 5: Add priors**
+
+This is where Bayesian modelling differs from GLM. We need to specify our prior beliefs about each parameter *before* seeing the data.
+
+For `alpha` — the mean time for control fish. The response is "percent of time in predator arm", so it's on a 0–100 scale. Fish in normal seawater should avoid predators, so values somewhere around 10–50% seem plausible. We'll use a normal prior centred on 50% (no idea which way they'll go) with low precision (wide, uninformative):
+
+`alpha ~ dnorm(50, 25)`
+
+The standard deviation of 20 means the prior 95% density covers roughly 50 ± 50% — almost the whole plausible range. 
+
+For `beta` — the treatment effect. We have no strong prior belief about the direction or size. Centre it on zero (no effect), with a high SD:
+
+`beta ~ dnorm(0, 20)`
+
+So the prior says the effect is probably within ±40%, but allows larger effects.
+
+For `sigma` — the SD of the residuals. We use a exponential prior, which is a common choice for sigma parameters:
+
+`sigma ~ dexp(0.1)`
+
+You can visualise what these priors actually look like in R before you run your model — this is good practice:
+
+```{r prior-visualisation}
+par(mfrow = c(1, 3))
+
+# Prior on alpha
+curve(dnorm(x, 50, 25), from = -50, to = 150,
+      main = "Prior: alpha", xlab = "alpha", ylab = "density")
+
+# Prior on beta
+curve(dnorm(x, 0, 20), from = -60, to = 60,
+      main = "Prior: beta", xlab = "beta", ylab = "density")
+
+# Prior on tau
+curve(dexp(x, 0.1), from = 0, to = 50,
+      main = "Prior: sigma", xlab = "sigma", ylab = "density")
+```
+
+The priors are wide and they don't rule much out. That's intentional, because we want the data to drive the posterior.
+
+**Step 6: The full model**
+
+Here's everything together:
+
+```
+model {
+  for (i in 1:N) {
+    time[i] ~ dnorm(mu[i], sigma)
+    mu[i] <- alpha + beta * (group[i]-1)
+  }
+  alpha ~ dnorm(50, 25)
+  beta ~ dnorm(0, 20)
+  sigma ~ dexp(0.1)
+}
+```
+
+Type this into the MODEL box in FANGS.
+
+> **Alternative prior for alpha:** You could use `alpha ~ dunif(0, 100)` instead — a uniform prior that simply says "the mean must be between 0 and 100%". That's arguably more consistent with the measurement scale. It does sometimes make the MCMC algorithm a little slower to converge, because the hard boundaries give it less flexibility to explore. If you try it and the chains look ragged, try setting the **Thin** parameter to 3 in the MCMC settings.
+
+#### 4. Set your MCMC parameters
+
+The defaults here are sensible, so you can just use those. 
+The MCMC parameters control how the algorithm explores the parameter space. Click the help box for more info. 
+Hint, the Block sampler (under sampling engine) is often faster for simple models like this. 
+
+#### 5. Run the model
+
+You can watch the MCMC chains as they go. Or click the 'Posteriors' tab to see the posterior distributions evolving as you go. 
+
+#### 6. Explore results
+
+Check the Posteriors, Summary and PPC tabs to explore the results. 
+
+Note down the mean and 95% credible interval for the beta parameter — this is the estimated effect of ocean acidification on predator avoidance. 
+
+We interpret them as follows: the mean is our best estimate of the true effect size, and the 95% credible interval is the range of values that contains the true effect with 95% probability, given our model and data. 
+
+#### 7. Run the model with a different prior 
+
+Start an excel spreadsheet to keep track of your results. Copy and paste the Summary for Beta for each prior below (you'll have to re-run the mdoel each time). 
+
+Let's say we are even less sure that OA impairs predator avoidance. We could set a more skeptical prior on beta, like: 
+
+`beta ~ dnorm(0, 1)`
+
+What about if we were slightly less skeptical: 
+
+`beta ~ dnorm(0, 10)`
+
+Finally, what if we thought the effect was likely to be negative, but we weren't confident in that? Try this prior: 
+
+`beta ~ dnorm(-20, 5)`
+
+#### 8. Run the model with a larger dataset
+
+I simulated data with a larger sample size. 
+
+Set your prior back to the original prior (`beta ~ dnorm(0, 20)`) and then run the model for the large dataset. What result do you get? How does it compare to the original dataset?
+
+Try
+
+
+#### 9. Compare to GLM
+
+Finally, open up R and compare the results from FANGS to a standard GLM. 
+
+```{r nimble-vs-glm}
+dat <- read.csv("data/clownfish-oa.csv")
+m_glm <- glm(time ~ group, data = dat)
+coef(m_glm)
+confint(m_glm)
+```
+
+---
+
+*Example based on: [Munday et al. 2009, PNAS](https://www.pnas.org/doi/abs/10.1073/pnas.1004519107). Replication failure: [Clark et al. 2020, Nature](https://www.nature.com/articles/s41586-019-1903-y). Follow-up with morphology study: [Munday et al. 2010, PNAS](https://www.pnas.org/doi/full/10.1073/pnas.0809996106).*
+
+## Resources and further reading
+
+History of frequentist and Bayesian statistics: 
+
+[_Clayton, A. (2022). Bernoulli's Fallacy: Statistical Illogic and the Crisis of Modern Science, Columbia University Press._](https://aubreyclayton.com/bernoulli)
+
+My favourite introductory book on Bayesian stats. McElreath has a way with analogies that makes reading a stats textbook actual fun: 
+
+[_McElreath, R. (2020) *Statistical Rethinking: A Bayesian Course with Examples in R and Stan*. 2nd edition. CRC Press._](https://www.routledge.com/Statistical-Rethinking-A-Bayesian-Course-with-Examples-in-R-and-STAN/McElreath/p/book/9780367139919)
+
+He also puts his seminar series on the same book on YouTube: 
+
+[_Statistical Rethinking 2026 - Lecture A02 - Garden of Forking Data_](https://www.youtube.com/watch?v=pGVkCWlXnlg)
+
+If you're ready to commit to a specific Bayesian package then here are the main ones, all these sites have their own documentation and help manuals as well: 
+
+Flexible and relatively fast, with a large user base: [_R stan_](https://mc-stan.org/rstan/)
+
+Syntax built on Rstan that allows model specification in a way that is more familiar to most R users: [_brms_](https://paulbuerkner.com/brms/)
+
+Flexible and fast, easy to install and good examples on many types of ecological models. Most similar to FANGS syntax (FANGS was based on this): [_NIMBLE_](https://r-nimble.org/)
+
+Fastest, but a bit less flexibility than above frameworks, has a formula interface that R users will be familiar with: [_INLA_](https://www.r-inla.org/)
+
+### Working — Whale beachings {#whale-working}
+
+Define:
+- $H$ = Navy sonar testing occurred
+- $D$ = beaching observed
+
+We need $P(H | D)$.
+
+**What we know:**
+
+What's your prior on 'navy does secret sonar testing?' Let's say that's quite unlikely, 1/100 chance. So $P(H) = 0.01$ and $P(\neg H) = 0.99$.
+
+| Quantity | Symbol | Value |
+|---|---|---|
+| Prior: Navy sonar occurs | $P(H)$ | 0.01 |
+| Prior: no sonar | $P(\neg H)$ | 0.99 |
+| Beaching given sonar | $P(D \mid H)$ | 0.90 |
+| Beaching given no sonar | $P(D \mid \neg H)$ | 0.05 |
+
+**Total probability of a beaching:**
+
+$$P(D) = P(D \mid H) \times P(H) + P(D \mid \neg H) \times P(\neg H)$$
+$$P(D) = 0.90 \times 0.01 + 0.05 \times 0.99 = 0.009 + 0.0495 = 0.0585$$
+
+**Bayes' theorem:**
+
+$$P(H \mid D) = \frac{0.90 \times 0.01}{0.0585} = \frac{0.009}{0.0585} \approx 0.154$$
+
+**The answer is roughly 15% — option (c).**
+
+Though it depends on your prior for 'secret navy sonar testing'
+
+**The R calculation:**
+
+```{r whale-bayes}
+P_H      <- 0.01   # prior: Navy sonar (1 year in 100)
+P_notH   <- 0.99   # prior: no sonar
+P_D_H    <- 0.90   # P(beaching | sonar)
+P_D_notH <- 0.05   # P(beaching | no sonar)
+
+P_D <- P_D_H * P_H + P_D_notH * P_notH
+
+P_H_D <- (P_D_H * P_H) / P_D
+
+cat("P(sonar | beaching) =", round(P_H_D, 3), "\n")
+```
+
+Now try changing the prior on sonar. What if sonar testing happened **1 year in 2** instead of 1 in 100? What does that do to your answer?
+
+```{r whale-sensitivity}
+# Try a higher prior on sonar
+P_H_high <- 0.50
+P_D_high <- P_D_H * P_H_high + P_D_notH * (1 - P_H_high)
+P_H_D_high <- (P_D_H * P_H_high) / P_D_high
+cat("With P(sonar) = 0.5, P(sonar | beaching) =", round(P_H_D_high, 3), "\n")
+```
+
+This is the point. Your conclusion depends heavily on your prior. In a courtroom or a media story, the prior is often implicit and unexamined.
