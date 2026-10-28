@@ -39,7 +39,7 @@ model {
 
 Compare to the fixed effect parameter `beta` which is drawn directly from a prior. 
 
-The SD for the `sigma.b` prior (50) is what we call a hyper-parameter, a parameter that controls other parameters. Lower values of the SD will shrink our random effects closer to the global mean. 
+The SD for the `sigma.b` prior is what we call a hyper-parameter, a parameter that controls other parameters. Lower values of the SD will shrink our random effects closer to the global mean. 
 
 Other differences to note in the model definition from earlier models: 
 
@@ -63,7 +63,6 @@ $\sigma_b$ especially — variance parameters are the slowest to mix.
 
 ## Your task
 
-Fit the random-intercepts model to `random-effects.csv` and check $\alpha$,
-$\beta$, and the group SD $\sigma_b$. 
+Vary the prior for `sigma.b`. For instance, try `dexp(5)` and compare that to `dexp(0.1)`. How do the different priors affect the mean effects of each random effect? Are the MCMC chains converging well with all priors? 
 
-A few tips: don't forget to change the variable names for the new dataset; you will need to update the distribution for the response variable (its count data...); don't forget to enter a value for J, the number of sites. 
+We'll come back to ways to improve sampling in the next module. 
