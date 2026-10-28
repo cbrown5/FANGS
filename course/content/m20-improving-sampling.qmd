@@ -1,6 +1,6 @@
 # Improving sampling: fixing an over-specified model
 
-Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that wander across enormous ranges or drift apart and never settle. The first instinct is "the sampler is broken", but far more often the model is asking the data to estimate something it **cannot**. This is an *over-specified* model, and the cure is to respecify it, not to try and fix the algorithm.
+Sometimes the chains misbehave. We might see high R-hat values, tiny ESS and trace plots that wander and drift apart. Our first intution is often that "the sampler is broken", but far more often the model is asking the data to estimate something it **cannot**. This is an *over-specified* model, and the cure is to look at how you are building the model and the priors, not to try and fix the algorithm.
 
 ::: callout-tip
 The Folk Theorem of Statistical Computing (Gelman 2008): "When you have computational problems, often there’s a problem with your model. "
@@ -8,7 +8,7 @@ The Folk Theorem of Statistical Computing (Gelman 2008): "When you have computat
 
 ## The data
 
-We use `random-effects.csv` — the benthic-cover survey from the same Kia Province reefs you met with the fish counts. Each row is one transect, and `cover` is the per-cent cover of branching *Acropora* coral. There are several transects per site, so `site` is a natural grouping variable for random effects.
+We use `random-effects.csv`. This is benthic-cover survey from the same Kia Province reefs you met with the fish counts. Each row is one transect, and `cover` is the per-cent cover of branching *Acropora* coral. There are several transects per site, so `site` is a natural grouping variable for random effects.
 
 ## A broken model
 
@@ -27,7 +27,8 @@ model {
 }
 ```
 
-Set `J` to the number of sites (20) alongside `N` in the constants, then fit it. The diagnostics will be dreadful: R-hat for `alpha` and the `beta[j]` will be huge, and ESS be in the single digits.
+Set `J` to the number of sites (20) alongside `N` in the constants, then fit it. The diagnostics will be dreadful. You will notice the trace plots drift and wander and different chains don't converge on the same distribution (tick the 'show array parameters' button if you want to see traces for each `beta`).  R-hat for `alpha` and the `beta[j]` will be huge, and ESS be in the single digits.
+
 
 ## Non-identifiability
 
@@ -58,6 +59,8 @@ model {
   sigma.b ~ dunif(0, 10)
 }
 ```
+
+Don't forget to re-enter J=20 before running the model. 
 
 Two changes fixed our issue:
 
