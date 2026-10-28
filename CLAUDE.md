@@ -25,7 +25,7 @@ FANGS (Fast Accessible Numeric Gibbs Sampler) is a browser-based Bayesian infere
   for GLMMs (normal, Poisson-log, binomial-logit; coefficients linear in eta with `dnorm`
   priors) the fixed effects are updated jointly and each random-effect family in parallel
   via Newton–Metropolis–Hastings (exact Gibbs for a normal
-  response), with intercept↔random-effect translation moves and CPU slice updates for
+  response), with intercept↔random-effect (and group-level covariate↔random-effect) translation moves and CPU slice updates for
   hyperparameters. Unsupported models fall back to the standard sampler with a reason.
   `src/samplers/blocked/cpu-backend.js` does the block updates. Measured 24–103× faster
   than standard on teaching-sized data, with far better mixing on hierarchical models

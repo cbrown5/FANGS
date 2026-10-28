@@ -23,7 +23,7 @@ The **Sampler engine** setting chooses how each MCMC sweep is run:
 | Engine | What it does | Best for |
 |--------|--------------|----------|
 | Standard (default) | Component-wise Gibbs: one parameter at a time, conjugate draws or slice sampling | Any model FANGS can parse |
-| Blocked | Blocked Gibbs for GLMMs: fixed effects updated jointly, all group-level effects updated at once, hyperparameters from sufficient statistics, plus intercept↔random-effect translation moves | Mixed-effects models; larger data or many groups |
+| Blocked | Blocked Gibbs for GLMMs: fixed effects updated jointly, all group-level effects updated at once, hyperparameters from sufficient statistics, plus translation moves across the intercept↔random-effect and group-level-covariate↔random-effect ridges | Mixed-effects models; larger data or many groups |
 
 The blocked engine supports normal, Poisson (log link) and Bernoulli/binomial
 (logit link) responses whose linear predictor is linear in the coefficients,

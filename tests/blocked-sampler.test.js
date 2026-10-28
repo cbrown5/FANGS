@@ -141,7 +141,9 @@ describe('compileBlockedModel: model structure', () => {
     expect(sigmaB.familyTerms).toEqual([0]);
     expect(sigmaB.obsSd).toBe(false);
     // alpha ↔ b translation move is available.
-    expect(plan.translations).toEqual([{ fixedIndex: 0, family: 0 }]);
+    expect(plan.translations.map(({ fixedIndex, family }) => ({ fixedIndex, family })))
+      .toEqual([{ fixedIndex: 0, family: 0 }]);
+    for (const w of plan.translations[0].weights) expect(w).toBeCloseTo(1, 12);
   });
 
   it('random slopes → c[j] is a family with coefficient x[i]; beta ↔ c translation', () => {
@@ -149,8 +151,40 @@ describe('compileBlockedModel: model structure', () => {
     expect(plan.families.map(f => f.base)).toEqual(['b', 'c']);
     const c = plan.families[1];
     for (let i = 0; i < N; i++) expect(c.coef[i]).toBeCloseTo(columns.x[i], 12);
-    expect(plan.translations).toContainEqual({ fixedIndex: 0, family: 0 });
-    expect(plan.translations).toContainEqual({ fixedIndex: 1, family: 1 });
+    const pairs = plan.translations.map(({ fixedIndex, family }) => ({ fixedIndex, family }));
+    expect(pairs).toContainEqual({ fixedIndex: 0, family: 0 });
+    expect(pairs).toContainEqual({ fixedIndex: 1, family: 1 });
+  });
+
+  it('group-level covariate → beta ↔ b translation weighted by its group value', () => {
+    // z is constant within each group (1 for odd groups, 0 for even), so
+    // beta + c with b[j] − c·z_j leaves eta unchanged.
+    const z = Float64Array.from(columns.group, g => g % 2);
+    const ast = new Parser(new Lexer(`model {
+      for (i in 1:N) {
+        y[i] ~ dnorm(mu[i], sigma)
+        mu[i] <- alpha + beta * z[i] + b[group[i]]
+      }
+      for (j in 1:J) { b[j] ~ dnorm(0, sigma.b) }
+      alpha ~ dnorm(0, 50)
+      beta ~ dnorm(0, 5)
+      sigma ~ dunif(0, 100)
+      sigma.b ~ dunif(0, 100)
+    }`).tokenize()).parse();
+    const graph = new ModelGraph(ast, { columns: { ...columns, z }, N, J });
+    graph.build();
+    const plan = compileBlockedModel(graph);
+    const t = plan.translations.find(tr => tr.fixedIndex === 1 && tr.family === 0);
+    expect(t).toBeDefined();
+    t.weights.forEach((w, j) => expect(w).toBeCloseTo((j + 1) % 2, 12));
+
+    const chain = new BlockedChainState(graph, plan, initializeChains(graph, 1)[0]);
+    const v = chain.vals;
+    const names = plan.families[0].names;
+    const etaAt = i => v.alpha + v.beta * z[i] + v[names[columns.group[i] - 1]];
+    const before = Array.from({ length: N }, (_, i) => etaAt(i));
+    chain.translate(chain.blockConfig());
+    for (let i = 0; i < N; i++) expect(etaAt(i)).toBeCloseTo(before[i], 9);
   });
 
   it('Poisson GLM with log link and Bernoulli GLM with logit link', () => {

@@ -112,9 +112,15 @@ chain sat at `alpha = 11, b ≈ −10` for thousands of iterations: the standard
 sampler's long run had R̂ ≈ 1.35, and the blocked sampler did the same before
 this move. The compiler detects (fixed column, family) pairs whose shift
 θ_k + c, b_j − c leaves eta unchanged, such as intercept ↔ random intercepts and
-slope ↔ random slopes. For such a pair the conditional of c is Gaussian in closed
-form (Liu & Sabatti 2000 generalised Gibbs), so one exact draw per sweep removes
-the ridge problem.
+slope ↔ random slopes. The shift generalises to θ_k + c, b_j − c·w_j whenever
+the fixed column is a per-group multiple w_j of the family's coefficients, which
+covers a group-level covariate beside random intercepts (e.g. a site-level
+`logged` factor with `b[site[i]]`: w_j is site j's value). For such a pair the
+conditional of c is Gaussian in closed form (Liu & Sabatti 2000 generalised
+Gibbs), so one exact draw per sweep removes the ridge problem. On
+`course/data/random-effects-full.csv` (Poisson, 49 sites, site-level `logged`)
+the weighted move raised the ESS of the `logged` coefficient from ~25 to ~2000
+per 6000 draws.
 
 ---
 
