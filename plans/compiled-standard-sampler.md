@@ -1,6 +1,8 @@
 # Plan: a fast "compiled" standard sampler
 
-Status: proposed (2026-10-28). Nothing here is implemented yet.
+Status: phase 1 implemented (2026-10-28): `src/samplers/chain-state.js`,
+`ModelGraph.getBlanket()`, `tests/markov-blanket.test.js`. Phases 2 and 3 are
+proposed.
 
 ## Goal
 
