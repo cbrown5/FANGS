@@ -158,6 +158,7 @@ export function drawFromPrior(node, paramValues, graph, options = {}) {
     }
 
     case 'dbern':
+    case 'dbin':
     case 'dbinom': {
       // Use prior mean probability for initialization; a Beta(1,1) = Uniform draw
       // is used as overdispersion (random probability).

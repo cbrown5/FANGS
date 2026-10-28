@@ -55,7 +55,8 @@ function isDataArray(v) {
  *   dnorm(mean, sd)        — NOTE: FANGS uses standard deviation, not precision
  *   dgamma(shape, rate)
  *   dbeta(a, b)
- *   dbinom(prob, size)   — note: JAGS order is dbinom(p, n) not dbinom(n, p)
+ *   dbinom(prob, size)   — note: JAGS order is dbinom(p, n) not dbinom(n, p);
+ *                          dbin is the JAGS spelling of the same distribution
  *   dbern(prob)
  *   dpois(lambda)
  *   dunif(lower, upper)
@@ -66,6 +67,7 @@ const LOG_DENSITY = {
   dgamma: (x, shape, rate)   => dgamma(x, shape, rate),
   dbeta:  (x, a, b)          => dbeta(x, a, b),
   dbinom: (x, p, n)          => dbinom(x, n, p),   // JAGS: dbinom(p, n)
+  dbin:   (x, p, n)          => dbinom(x, n, p),   // JAGS name for dbinom
   dbern:  (x, p)             => dbern(x, p),
   dpois:  (x, lambda)        => dpois(x, lambda),
   dunif:  (x, lower, upper)  => dunif(x, lower, upper),
@@ -82,6 +84,7 @@ const RANDOM_SAMPLER = {
   dgamma: (shape, rate)        => rgamma(shape, rate),
   dbeta:  (a, b)               => rbeta(a, b),
   dbinom: (p, n)               => rbinom(n, p),   // JAGS: dbinom(p, n)
+  dbin:   (p, n)               => rbinom(n, p),
   dbern:  (p)                  => rbern(p),
   dpois:  (lambda)             => rpois(lambda),
   dunif:  (lower, upper)       => runif(lower, upper),
@@ -98,6 +101,7 @@ const DIST_MEAN = {
   dgamma: (shape, rate)        => shape / rate,
   dbeta:  (a, b)               => a / (a + b),
   dbinom: (p, n)               => p * n,
+  dbin:   (p, n)               => p * n,
   dbern:  (p)                  => p,
   dpois:  (lambda)             => lambda,
   dunif:  (lower, upper)       => (lower + upper) / 2,
@@ -278,13 +282,18 @@ function baseName(nodeName) {
  * @param {object} loopVars - current loop-variable bindings (name → value)
  * @returns {string[]}
  */
-function collectDeps(expr, nodes, dataColumns, loopVars) {
+function collectDeps(expr, nodes, dataColumns, loopVars, flags = null) {
   const deps = new Set();
-  _walkDeps(expr, nodes, dataColumns, loopVars, deps);
+  _walkDeps(expr, nodes, dataColumns, loopVars, deps, flags);
   return [...deps];
 }
 
-function _walkDeps(expr, nodes, dataColumns, loopVars, deps) {
+/**
+ * @param {object} [flags] - if given, `flags.unresolvedIndex` is set to true
+ *   when an index cannot be evaluated from data at build time (for example an
+ *   index that depends on a parameter). The edges are then incomplete.
+ */
+function _walkDeps(expr, nodes, dataColumns, loopVars, deps, flags = null) {
   if (!expr) return;
   switch (expr.type) {
     case 'NumberLiteral':
@@ -315,23 +324,25 @@ function _walkDeps(expr, nodes, dataColumns, loopVars, deps) {
         if (nodes.has(key)) deps.add(key);
         // Also check the base name (scalar)
         if (nodes.has(base)) deps.add(base);
+      } else if (flags) {
+        flags.unresolvedIndex = true;
       }
       // Recurse into index sub-expressions (they may reference loop vars only)
-      for (const idx of expr.indices) _walkDeps(idx, nodes, dataColumns, loopVars, deps);
+      for (const idx of expr.indices) _walkDeps(idx, nodes, dataColumns, loopVars, deps, flags);
       break;
     }
 
     case 'BinaryOp':
-      _walkDeps(expr.left,  nodes, dataColumns, loopVars, deps);
-      _walkDeps(expr.right, nodes, dataColumns, loopVars, deps);
+      _walkDeps(expr.left,  nodes, dataColumns, loopVars, deps, flags);
+      _walkDeps(expr.right, nodes, dataColumns, loopVars, deps, flags);
       break;
 
     case 'UnaryOp':
-      _walkDeps(expr.operand, nodes, dataColumns, loopVars, deps);
+      _walkDeps(expr.operand, nodes, dataColumns, loopVars, deps, flags);
       break;
 
     case 'FunctionCall':
-      for (const arg of expr.args) _walkDeps(arg, nodes, dataColumns, loopVars, deps);
+      for (const arg of expr.args) _walkDeps(arg, nodes, dataColumns, loopVars, deps, flags);
       break;
 
     default:
@@ -522,7 +533,7 @@ function detectConjugateType(node, nodeMap) {
   }
 
   if (isBetaPrior) {
-    if (descDists.has('dbern') || descDists.has('dbinom')) return 'beta-binom';
+    if (descDists.has('dbern') || descDists.has('dbin') || descDists.has('dbinom')) return 'beta-binom';
     return null;
   }
 
@@ -564,6 +575,11 @@ export class ModelGraph {
     /** @type {string[]} - Names of unobserved stochastic nodes (parameters) */
     this.parameters = [];
 
+    /** Count of _logDensityNode calls. Test-only work counter; never read by samplers. */
+    this._densityEvalCount = 0;
+    /** Count of deterministic-node evaluations. Test-only work counter. */
+    this._detEvalCount = 0;
+
     this._built = false;
   }
 
@@ -603,8 +619,34 @@ export class ModelGraph {
     // Precompute for fast _mergeValues calls during sampling.
     this._buildBaseValues();
     this._detNodesSorted = this._topoSortDeterministic();
+    this._buildBlankets();
 
     return this;
+  }
+
+  /**
+   * Markov blanket of a parameter, precomputed at build time.
+   *
+   *   detPath       - deterministic descendants reached through deterministic-only
+   *                   paths, in topological order (what must be refreshed when the
+   *                   parameter changes)
+   *   children      - stochastic and observed nodes whose distribution depends on
+   *                   the parameter directly or through detPath
+   *   priorChildren - the unobserved subset of children (used in prior-only mode)
+   *
+   * The log full conditional of p is its own log-density plus the log-densities
+   * of `children`; this differs from logPosterior only by a constant in p.
+   *
+   * @param {string} paramName
+   * @returns {{ detPath: object[], children: object[], priorChildren: object[] }}
+   */
+  getBlanket(paramName) {
+    this._requireBuilt();
+    const blanket = this._blankets.get(paramName);
+    if (!blanket) {
+      throw new ModelGraphError(`getBlanket: '${paramName}' is not a parameter`);
+    }
+    return blanket;
   }
 
   /**
@@ -1042,14 +1084,23 @@ export class ModelGraph {
    * and wire parent → child edges bidirectionally.
    */
   _resolveEdges() {
+    // Sets during construction (a node such as alpha can have N children, so
+    // Array.includes would make this O(N²)); converted to arrays afterwards.
+    // Sets keep insertion order, so the arrays match the old ordering.
+    const parentSets = new Map();
+    const childSets  = new Map();
+    for (const node of this.nodes.values()) {
+      parentSets.set(node.name, new Set(node.parents));
+      childSets.set(node.name, new Set(node.children));
+    }
+    this._unresolvedIndex = false;
+
     for (const node of this.nodes.values()) {
       const deps = this._depsForNode(node);
+      const parents = parentSets.get(node.name);
       for (const dep of deps) {
-        if (!node.parents.includes(dep)) node.parents.push(dep);
-        const parentNode = this.nodes.get(dep);
-        if (parentNode && !parentNode.children.includes(node.name)) {
-          parentNode.children.push(node.name);
-        }
+        parents.add(dep);
+        childSets.get(dep)?.add(node.name);
       }
 
       // Also fill paramNodes for stochastic/observed nodes
@@ -1060,6 +1111,11 @@ export class ModelGraph {
         });
       }
     }
+
+    for (const node of this.nodes.values()) {
+      node.parents  = [...parentSets.get(node.name)];
+      node.children = [...childSets.get(node.name)];
+    }
   }
 
   /**
@@ -1069,19 +1125,21 @@ export class ModelGraph {
    */
   _depsForNode(node) {
     const emptyLoopVars = {}; // loop vars already substituted
+    const flags = { unresolvedIndex: false };
+    let deps = [];
     if (node.type === 'deterministic' && node.deterministicExpr) {
-      return collectDeps(node.deterministicExpr, this.nodes, this._dataColumns, emptyLoopVars);
-    }
-    if (node.distribution) {
+      deps = collectDeps(node.deterministicExpr, this.nodes, this._dataColumns, emptyLoopVars, flags);
+    } else if (node.distribution) {
       const allDeps = new Set();
       for (const expr of node.distribution.paramExprs) {
-        for (const dep of collectDeps(expr, this.nodes, this._dataColumns, emptyLoopVars)) {
+        for (const dep of collectDeps(expr, this.nodes, this._dataColumns, emptyLoopVars, flags)) {
           allDeps.add(dep);
         }
       }
-      return [...allDeps];
+      deps = [...allDeps];
     }
-    return [];
+    if (flags.unresolvedIndex) this._unresolvedIndex = true;
+    return deps;
   }
 
   /**
@@ -1224,6 +1282,7 @@ export class ModelGraph {
    */
   _logDensityNode(node, allValues) {
     if (!node.distribution) return 0;
+    this._densityEvalCount++;
 
     const distName = node.distribution.name;
     const logDensityFn = LOG_DENSITY[distName];
@@ -1325,18 +1384,31 @@ export class ModelGraph {
 
     // Single forward pass in topological order (parents evaluated before children).
     for (const node of this._detNodesSorted) {
-      try {
-        const linkScaleVal = evaluateExpr(node.deterministicExpr, allValues, this._dataColumns);
-        allValues[node.name] = node.linkFn
-          ? this._applyInverseLink(node.linkFn, linkScaleVal)
-          : linkScaleVal;
-      } catch (_) {
-        // Dependency not yet available (shouldn't happen with correct topo order,
-        // but guard defensively).
-      }
+      this._evalDetNode(node, allValues);
     }
 
     return allValues;
+  }
+
+  /**
+   * Evaluate one deterministic node in place: writes allValues[node.name]
+   * (on the natural scale, after any inverse link). Used by _mergeValues and
+   * by ChainState when it refreshes a parameter's detPath.
+   *
+   * @param {object} node - deterministic node
+   * @param {object} allValues - merged value map (mutated)
+   */
+  _evalDetNode(node, allValues) {
+    this._detEvalCount++;
+    try {
+      const linkScaleVal = evaluateExpr(node.deterministicExpr, allValues, this._dataColumns);
+      allValues[node.name] = node.linkFn
+        ? this._applyInverseLink(node.linkFn, linkScaleVal)
+        : linkScaleVal;
+    } catch (_) {
+      // Dependency not yet available (shouldn't happen with correct topo order,
+      // but guard defensively).
+    }
   }
 
   /**
@@ -1382,6 +1454,59 @@ export class ModelGraph {
       if (node.type === 'deterministic') visit(node);
     }
     return sorted;
+  }
+
+  /**
+   * Precompute every parameter's Markov blanket (see getBlanket()).
+   *
+   * If some index could not be resolved at build time (an index that depends
+   * on a parameter), the edges are incomplete, so every blanket falls back to
+   * the whole model: all deterministic nodes and all other stochastic nodes.
+   * That is slow but exactly matches logPosterior.
+   */
+  _buildBlankets() {
+    const topoIndex = new Map();
+    this._detNodesSorted.forEach((node, i) => topoIndex.set(node.name, i));
+    this._blankets = new Map();
+
+    for (const name of this.parameters) {
+      const self = this.nodes.get(name);
+      let detPath;
+      let children;
+
+      if (this._unresolvedIndex) {
+        detPath  = this._detNodesSorted.slice();
+        children = [...this.nodes.values()].filter(n =>
+          n !== self && (n.type === 'stochastic' || n.type === 'observed'));
+      } else {
+        const detSet   = new Set();
+        const childSet = new Set();
+        const stack = [self];
+        while (stack.length > 0) {
+          const node = stack.pop();
+          for (const childName of node.children) {
+            const child = this.nodes.get(childName);
+            if (!child || child === self) continue;
+            if (child.type === 'deterministic') {
+              if (!detSet.has(child)) {
+                detSet.add(child);
+                stack.push(child);
+              }
+            } else if (child.type === 'stochastic' || child.type === 'observed') {
+              childSet.add(child);
+            }
+          }
+        }
+        detPath  = [...detSet].sort((a, b) => topoIndex.get(a.name) - topoIndex.get(b.name));
+        children = [...childSet];
+      }
+
+      this._blankets.set(name, {
+        detPath,
+        children,
+        priorChildren: children.filter(n => n.type === 'stochastic' && !n.observed),
+      });
+    }
   }
 
   _requireBuilt() {

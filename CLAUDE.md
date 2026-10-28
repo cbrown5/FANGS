@@ -15,6 +15,10 @@ FANGS (Fast Accessible Numeric Gibbs Sampler) is a browser-based Bayesian infere
 - Implement a **component-wise Gibbs sampler** as the default
 - Use **conjugate samplers** where possible (normal-normal, beta-binomial, gamma-Poisson). Note: FANGS parameterises `dnorm` by standard deviation, so the normal SD has no conjugate update and is slice-sampled.
 - Fall back to **slice sampling** for non-conjugate full conditionals
+- Full conditionals use each parameter's **Markov blanket** (`ModelGraph.getBlanket()`,
+  precomputed at build) against a persistent per-chain `ChainState`, so an update touches
+  only the nodes that depend on that parameter, not the whole model
+  (`plans/compiled-standard-sampler.md`, phase 1)
 - User does not need to choose samplers — the engine auto-selects based on the model graph
 - Support multiple chains with independent initialization
 - **Optional blocked engine** (Sampler engine setting: Standard / Blocked):
@@ -79,6 +83,7 @@ FANGS/
 │   │   └── model-graph.js  # Build DAG from AST
 │   ├── samplers/
 │   │   ├── gibbs.js        # Main Gibbs sampler loop (includes conjugate updates)
+│   │   ├── chain-state.js  # Persistent per-chain values; Markov-blanket full conditionals
 │   │   ├── slice.js        # Slice sampler fallback
 │   │   ├── initialize.js   # Chain initialization strategies
 │   │   ├── sampler-worker.js  # Web Worker wrapper for background sampling (engine selection)
@@ -130,6 +135,9 @@ FANGS/
 │   ├── distributions.test.js
 │   ├── integration.test.js     # End-to-end model fitting tests
 │   ├── blocked-sampler.test.js # Blocked sampler: compiler, update math, posteriors
+│   ├── markov-blanket.test.js  # Blanket conditionals == full joint; state consistency; work counts
+│   ├── fixtures/model-zoo.js   # Shared models + data iterated by equivalence tests
+│   ├── helpers/seeded-random.js # Seeded Math.random (mulberry32) for reproducible tests
 │   ├── predictor-scaling.test.js
 │   ├── share-url.test.js
 │   ├── course-challenges.test.js

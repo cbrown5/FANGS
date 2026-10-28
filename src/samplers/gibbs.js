@@ -6,6 +6,9 @@
  * structures receive exact conjugate updates; all others fall back to the
  * univariate slice sampler.
  *
+ * Each chain keeps a persistent ChainState (chain-state.js): updating a
+ * parameter re-evaluates only its Markov blanket, not the whole model.
+ *
  * References:
  *   Gelfand & Smith (1990) "Sampling-Based Approaches to Calculating Marginal
  *     Densities", JASA 85(410).
@@ -14,6 +17,7 @@
 
 import { initializeChains } from './initialize.js';
 import { sliceSample }      from './slice.js';
+import { ChainState }       from './chain-state.js';
 import * as dist            from '../utils/distributions.js';
 
 // ---------------------------------------------------------------------------
@@ -33,7 +37,7 @@ import * as dist            from '../utils/distributions.js';
  * @param {number}   settings.burnin   - Number of burn-in iterations (discarded).
  * @param {number}   settings.thin     - Thinning interval (save every `thin`-th post-burnin draw).
  * @param {Function} [settings.onSample]   - Callback(chainIdx, sampleIdx, paramValues) invoked
- *   for every saved sample. `paramValues` is a shallow copy — safe to store.
+ *   for every saved sample. `paramValues` is a fresh copy — safe to store.
  * @param {Function} [settings.onProgress] - Callback({ iter, total, chainIdx }) for
  *   progress reporting; called roughly every 100 iterations.
  * @param {Object}   [settings.stopSignal] - If provided, sampling halts when
@@ -70,7 +74,7 @@ export async function runGibbs(graph, settings) {
   const UI_YIELD_INTERVAL = 100; // yield to event loop every N iterations
 
   for (let c = 0; c < nChains; c++) {
-    const paramValues = chains[c];
+    const state = new ChainState(graph, chains[c], { priorOnly });
     let savedCount = 0;
 
     // Pre-allocate the sweep order array once per chain (shuffled in-place each iter).
@@ -81,7 +85,7 @@ export async function runGibbs(graph, settings) {
       if (iter % UI_YIELD_INTERVAL === 0) {
         await yieldToUI();
         if (onProgress) {
-          onProgress(c, iter, totalIters, { ...paramValues });
+          onProgress(c, iter, totalIters, state.snapshot());
         }
       }
 
@@ -93,7 +97,7 @@ export async function runGibbs(graph, settings) {
       // One full Gibbs sweep in random parameter order.
       shuffleInPlace(order);
       for (const paramName of order) {
-        updateParameter(paramName, graph, paramValues, { priorOnly });
+        updateParameterState(paramName, state);
       }
 
       // Determine whether this iteration is a saved sample.
@@ -102,12 +106,13 @@ export async function runGibbs(graph, settings) {
       const isSaved = !isBurnin && (postBurninIter % thin === 0);
 
       if (isSaved) {
+        const values = state.values;
         for (const p of params) {
-          samples[p][c].push(paramValues[p]);
+          samples[p][c].push(values[p]);
         }
         if (onSample) {
-          // Pass a shallow copy so the callback can safely store it.
-          onSample(c, savedCount, { ...paramValues });
+          // Pass a fresh copy so the callback can safely store it.
+          onSample(c, savedCount, state.snapshot());
         }
         savedCount++;
       }
@@ -120,24 +125,48 @@ export async function runGibbs(graph, settings) {
 /**
  * Update a single parameter in place using the best available sampler.
  *
- * Strategy (in order of preference):
- *   1. Conjugate normal-normal update (if `node.conjugateType === 'normal-normal'`)
- *   2. Conjugate beta-binom update (if `node.conjugateType === 'beta-binom'`)
- *   3. Conjugate gamma-Poisson update (if `node.conjugateType === 'gamma-poisson'`)
- *   4. Slice sampling fallback (includes SD parameters of normals, which have
- *      no conjugate update under FANGS's SD parameterisation)
+ * Convenience wrapper around updateParameterState() for callers that hold a
+ * plain `{ paramName: value }` object. It builds a fresh ChainState (one full
+ * merge), so it is not meant for hot loops; runGibbs keeps one state per chain.
  *
  * @param {string} paramName - Name of the parameter to update.
  * @param {import('../parser/model-graph.js').ModelGraph} graph
  * @param {Object} paramValues - Current parameter values (mutated in place).
+ * @param {Object} [options]
+ * @param {boolean} [options.priorOnly=false]
  */
 export function updateParameter(paramName, graph, paramValues, options = {}) {
+  if (!graph.nodes.get(paramName)) return;
+  const state = new ChainState(graph, paramValues, { priorOnly: !!options.priorOnly });
+  updateParameterState(paramName, state);
+  paramValues[paramName] = state.values[paramName];
+}
+
+/**
+ * Update a single parameter of a ChainState using the best available sampler.
+ *
+ * Strategy (in order of preference):
+ *   1. Conjugate normal-normal update (if `node.conjugateType === 'normal-normal'`)
+ *   2. Conjugate normal-normal-offset update (random effects and slopes)
+ *   3. Conjugate beta-binom update (if `node.conjugateType === 'beta-binom'`)
+ *   4. Conjugate gamma-Poisson update (if `node.conjugateType === 'gamma-poisson'`)
+ *   5. Slice sampling fallback (includes SD parameters of normals, which have
+ *      no conjugate update under FANGS's SD parameterisation)
+ *
+ * The slice sampler's log full conditional is state.logConditional(), which
+ * sums only the parameter's Markov blanket.
+ *
+ * @param {string} paramName
+ * @param {ChainState} state - mutated: the parameter and its detPath are updated
+ */
+export function updateParameterState(paramName, state) {
+  const graph = state.graph;
   const node = graph.nodes.get(paramName);
   if (!node) return;
 
-  // Ensure the parameter is present in paramValues (use 1 as safe default).
-  if (!(paramName in paramValues)) {
-    paramValues[paramName] = 1;
+  // Ensure the parameter has a value (use 1 as safe default).
+  if (state.values[paramName] === undefined) {
+    state.set(paramName, 1);
   }
 
   // Attempt conjugate updates first.
@@ -149,21 +178,21 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
   // alone via the generic path below. Without this guard a prior check for an
   // intercept such as `alpha ~ dnorm(0, 10)` returns draws centred near the
   // data mean instead of near 0.
-  switch (options.priorOnly ? null : node.conjugateType) {
+  switch (state.priorOnly ? null : node.conjugateType) {
     case 'normal-normal':
-      paramValues[paramName] = conjugateNormalNormal(node, graph, paramValues);
+      state.set(paramName, conjugateNormalNormal(node, state));
       return;
 
     case 'normal-normal-offset':
-      paramValues[paramName] = conjugateNormalNormalOffset(node, graph, paramValues);
+      state.set(paramName, conjugateNormalNormalOffset(node, state));
       return;
 
     case 'beta-binom':
-      paramValues[paramName] = conjugateBetaBinom(node, graph, paramValues);
+      state.set(paramName, conjugateBetaBinom(node, state));
       return;
 
     case 'gamma-poisson':
-      paramValues[paramName] = conjugateGammaPoisson(node, graph, paramValues);
+      state.set(paramName, conjugateGammaPoisson(node, state));
       return;
 
     default:
@@ -171,29 +200,35 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
   }
 
   // Fall back to slice sampling.
-  // Determine support bounds for constrained parameters.
-  const { lower, upper } = getParameterBounds(node, graph, paramValues);
+  // Prior arguments are evaluated against the already-merged state values,
+  // so bounds and width cost O(1) rather than a full merge.
+  const evalGraph = mergedEvaluator(graph);
+  const values = state.values;
+  const { lower, upper } = getParameterBounds(node, evalGraph, values);
 
-  const currentValue = paramValues[paramName];
-
-  // Build the log full-conditional.
-  // Mutate paramValues[paramName] in-place rather than spreading a new object
-  // on every evaluation — _mergeValues copies paramValues internally so this
-  // is safe and avoids O(params) allocations per slice sampling step.
-  const logFn = options.priorOnly
-    ? (pv) => graph.logPriorOnly(pv)
-    : (pv) => graph.logPosterior(pv);
   const logFC = (value) => {
-    paramValues[paramName] = value;
-    return logFn(paramValues);
+    state.set(paramName, value);
+    return state.logConditional(paramName);
   };
 
-  paramValues[paramName] = sliceSample(paramName, currentValue, logFC, {
-    w: computeSliceWidth(node, paramValues, graph),
+  const next = sliceSample(paramName, values[paramName], logFC, {
+    w: computeSliceWidth(node, values, evalGraph),
     maxSteps: 20,
     lower,
     upper,
   });
+  // The last logFC call may have been a rejected proposal: always finish by
+  // setting the accepted value so the deterministic nodes are consistent.
+  state.set(paramName, next);
+}
+
+/**
+ * A graph-like object whose evaluateExpr() reads an already-merged value map,
+ * for getParameterBounds() / computeSliceWidth().
+ * @param {import('../parser/model-graph.js').ModelGraph} graph
+ */
+function mergedEvaluator(graph) {
+  return { evaluateExpr: (e, v) => graph.evaluateExprMerged(e, v) };
 }
 
 // ---------------------------------------------------------------------------
@@ -220,12 +255,12 @@ export function updateParameter(paramName, graph, paramValues, options = {}) {
  * annotation is expected to flag only the straightforward cases.
  *
  * @param {Object} node - Stochastic node for the parameter.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues - Current values.
+ * @param {ChainState} state - Current chain state.
  * @returns {number} Posterior draw.
  */
-export function conjugateNormalNormal(node, graph, paramValues) {
-  const allValues = graph._mergeValues(paramValues);
+export function conjugateNormalNormal(node, state) {
+  const graph = state.graph;
+  const allValues = state.values;
 
   const priorArgs = node.distribution.paramExprs.map((e) =>
     graph.evaluateExprMerged(e, allValues)
@@ -254,131 +289,84 @@ export function conjugateNormalNormal(node, graph, paramValues) {
  *
  * Full conditional for θ ~ dnorm(mu0, sigma0)  [sigma0 = SD; tau0 = 1/sigma0²]:
  *   c[i]    = ∂mu[i]/∂θ  (computed by numerical perturbation)
- *   sumWtResid = Σ c[i] * (y[i] - mu_without[i])
- *   sumWtSq    = Σ c[i]^2
- *   tau_n   = tau0 + tau * sumWtSq      (tau = 1/sigma_lik², the likelihood precision)
- *   mu_n    = (tau0 * mu0 + tau * sumWtResid) / tau_n
+ *   tau[i]  = 1/sigma_lik[i]², the likelihood precision of child i
+ *   sumWtResid = Σ tau[i] * c[i] * (y[i] - mu_without[i])
+ *   sumWtSq    = Σ tau[i] * c[i]^2
+ *   tau_n   = tau0 + sumWtSq
+ *   mu_n    = (tau0 * mu0 + sumWtResid) / tau_n
+ *
+ * Only the Normal observed children in θ's Markov blanket are visited.
  *
  * @param {Object} node - Stochastic node for θ.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues - Current values.
+ * @param {ChainState} state - Current chain state.
  * @returns {number} Posterior draw.
  */
-export function conjugateNormalNormalOffset(node, graph, paramValues) {
-  const theta = paramValues[node.name];
+export function conjugateNormalNormalOffset(node, state) {
+  const graph = state.graph;
+  const values = state.values;
+  const theta = values[node.name];
   const eps   = Math.max(Math.abs(theta) * 1e-5, 1e-7);
 
-  // Three merges total (not 3×N): current θ, θ+eps, θ-eps.
-  // Per-child evaluation then reads directly from the pre-merged objects,
-  // reducing cost from O(N²) to O(N).
-  const allFull  = graph._mergeValues(paramValues);
+  // Only the parameter's Markov-blanket children can depend on θ.
+  const children = graph.getBlanket(node.name).children.filter(
+    (c) => c.observed && c.distribution?.name === 'dnorm'
+  );
+  const n = children.length;
+  const muPlus  = new Float64Array(n);
+  const muMinus = new Float64Array(n);
 
-  paramValues[node.name] = theta + eps;
-  const allPlus  = graph._mergeValues(paramValues);
-  paramValues[node.name] = theta - eps;
-  const allMinus = graph._mergeValues(paramValues);
-  paramValues[node.name] = theta; // restore
+  // Perturb θ in the state (refreshing only its detPath) to read each child's
+  // mean at θ ± eps, then restore.
+  state.set(node.name, theta + eps);
+  for (let k = 0; k < n; k++) {
+    muPlus[k] = graph.evaluateExprMerged(children[k].distribution.paramExprs[0], values);
+  }
+  state.set(node.name, theta - eps);
+  for (let k = 0; k < n; k++) {
+    muMinus[k] = graph.evaluateExprMerged(children[k].distribution.paramExprs[0], values);
+  }
+  state.set(node.name, theta);
 
   const priorArgs = node.distribution.paramExprs.map((e) =>
-    graph.evaluateExprMerged(e, allFull)
+    graph.evaluateExprMerged(e, values)
   );
   const mu0    = priorArgs[0];
   const sigma0 = Math.max(priorArgs[1], 1e-10);
   const tau0   = 1 / (sigma0 * sigma0);
 
+  // Each child contributes with its own likelihood precision τ_i, so
+  // heteroscedastic children (sigma[group[i]]) are handled correctly.
   let sumWtResid = 0;
   let sumWtSq    = 0;
-  let tauLik     = tau0; // fallback — overwritten by first matching child
 
-  // Find all observed dnorm children that depend on this node.
-  for (const [, child] of graph.nodes) {
-    if (!child.observed) continue;
-    if (child.distribution?.name !== 'dnorm') continue;
-
-    const meanExpr = child.distribution.paramExprs[0];
-    if (!meanExprDependsOn(meanExpr, node.name, graph, paramValues)) continue;
-
-    const y = resolveObservedValue(child, paramValues);
+  for (let k = 0; k < n; k++) {
+    const child = children[k];
+    const y = resolveObservedValue(child, values);
     if (y === null) continue;
 
-    // Child's second dnorm arg is the SD; use pre-merged allFull.
-    const sigmaLik = Math.max(
-      graph.evaluateExprMerged(child.distribution.paramExprs[1], allFull),
-      1e-10
-    );
-    tauLik = 1 / (sigmaLik * sigmaLik);
-
-    // Coefficient c[i] = ∂mu[i]/∂θ — read from the pre-merged perturbed objects.
-    const muPlus  = graph.evaluateExprMerged(meanExpr, allPlus);
-    const muMinus = graph.evaluateExprMerged(meanExpr, allMinus);
-    const ci      = (muPlus - muMinus) / (2 * eps);
-
+    // Coefficient c[i] = ∂mu[i]/∂θ. Children whose mean does not involve θ
+    // (θ enters elsewhere, e.g. a sibling's SD) give c[i] = 0 and are skipped.
+    const ci = (muPlus[k] - muMinus[k]) / (2 * eps);
     if (!isFinite(ci) || Math.abs(ci) < 1e-14) continue;
 
-    const muFull    = graph.evaluateExprMerged(meanExpr, allFull);
+    // Child's second dnorm arg is the SD.
+    const sigmaLik = Math.max(
+      graph.evaluateExprMerged(child.distribution.paramExprs[1], values),
+      1e-10
+    );
+    const tauLik = 1 / (sigmaLik * sigmaLik);
+
+    const muFull    = graph.evaluateExprMerged(child.distribution.paramExprs[0], values);
     const muWithout = muFull - ci * theta;
 
-    sumWtResid += ci * (y - muWithout);
-    sumWtSq    += ci * ci;
+    sumWtResid += tauLik * ci * (y - muWithout);
+    sumWtSq    += tauLik * ci * ci;
   }
 
-  const tauN = tau0 + tauLik * sumWtSq;
-  const muN  = (tau0 * mu0 + tauLik * sumWtResid) / tauN;
+  const tauN = tau0 + sumWtSq;
+  const muN  = (tau0 * mu0 + sumWtResid) / tauN;
 
   return dist.rnorm(muN, 1 / Math.sqrt(tauN));
-}
-
-/**
- * Check whether a mean expression (possibly an Identifier referencing a
- * deterministic node like mu[i]) ultimately depends on a given parameter name.
- *
- * Uses the graph's pre-computed parents list for deterministic nodes, which
- * correctly handles indirect index expressions like b[group[i]].
- *
- * @param {object} meanExpr - AST expression for the mean.
- * @param {string} paramName - The parameter to check for.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {object} paramValues
- * @returns {boolean}
- */
-function meanExprDependsOn(meanExpr, paramName, graph, paramValues) {
-  // Fast path: the expression directly references paramName (scalar case).
-  if (exprReferencesVar(meanExpr, paramName)) return true;
-
-  // If meanExpr is a single node reference (Identifier or IndexExpr), check
-  // if that deterministic node's parents list includes our paramName.
-  // Using parents list (not AST traversal) correctly handles indexed expressions
-  // like b[group[i]] where the resolved parent is b[1], b[2], etc.
-  const refName = extractSingleNodeRef(meanExpr);
-  if (refName) {
-    const refNode = graph.nodes.get(refName);
-    if (refNode && refNode.type === 'deterministic') {
-      return refNode.parents.includes(paramName);
-    }
-  }
-
-  return false;
-}
-
-/**
- * If an expression is a simple node reference (Identifier or IndexExpr with
- * numeric indices), return the canonical node name string. Otherwise null.
- *
- * @param {object} expr
- * @returns {string|null}
- */
-function extractSingleNodeRef(expr) {
-  if (!expr) return null;
-  if (expr.type === 'Identifier') return expr.name;
-  if (expr.type === 'IndexExpr') {
-    // Indices should already be NumberLiterals (loop vars substituted)
-    const base = expr.object?.name ?? expr.name;
-    const indices = expr.indices.map(i => i.type === 'NumberLiteral' ? i.value : null);
-    if (indices.every(v => v !== null)) {
-      return `${base}[${indices.join(',')}]`;
-    }
-  }
-  return null;
 }
 
 /**
@@ -392,13 +380,14 @@ function extractSingleNodeRef(expr) {
  *   p | data ~ Beta(a + sum_successes, b + sum_failures)
  *
  * @param {Object} node - Stochastic node for p.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues - Current values.
+ * @param {ChainState} state - Current chain state.
  * @returns {number} Posterior draw.
  */
-export function conjugateBetaBinom(node, graph, paramValues) {
+export function conjugateBetaBinom(node, state) {
+  const graph = state.graph;
+  const paramValues = state.values;
   const priorArgs = node.distribution.paramExprs.map((e) =>
-    graph.evaluateExpr(e, paramValues)
+    graph.evaluateExprMerged(e, paramValues)
   );
   const a = Math.max(priorArgs[0], 1e-10);
   const b = Math.max(priorArgs[1], 1e-10);
@@ -424,7 +413,7 @@ export function conjugateBetaBinom(node, graph, paramValues) {
       sumFailures  += 1 - y;
     } else {
       // dbin / dbinom(prob, size) — JAGS convention: dbin(p, n)
-      const nTrials = graph.evaluateExpr(child.distribution.paramExprs[1], paramValues);
+      const nTrials = graph.evaluateExprMerged(child.distribution.paramExprs[1], paramValues);
       sumSuccesses += y;
       sumFailures  += nTrials - y;
     }
@@ -444,13 +433,14 @@ export function conjugateBetaBinom(node, graph, paramValues) {
  *   lambda | data ~ Gamma(a + sum(y_i), b + n)
  *
  * @param {Object} node - Stochastic node for lambda.
- * @param {import('../parser/model-graph.js').ModelGraph} graph
- * @param {Object} paramValues - Current values.
+ * @param {ChainState} state - Current chain state.
  * @returns {number} Posterior draw.
  */
-export function conjugateGammaPoisson(node, graph, paramValues) {
+export function conjugateGammaPoisson(node, state) {
+  const graph = state.graph;
+  const paramValues = state.values;
   const priorArgs = node.distribution.paramExprs.map((e) =>
-    graph.evaluateExpr(e, paramValues)
+    graph.evaluateExprMerged(e, paramValues)
   );
   const a = Math.max(priorArgs[0], 1e-10);
   const b = Math.max(priorArgs[1], 1e-10);
