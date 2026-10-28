@@ -130,3 +130,29 @@ so that path validates GPU **correctness** only — its timings are meaningless.
 Given the above, the GPU option does not earn its complexity for this project's
 audience. Next session: **remove the GPU engine, keep blocked CPU.** See
 `plans/remove-gpu-engine.md`.
+
+## Standard engine after phase 1 (Markov-blanket conditionals), 2026-10-28
+
+Phase 1 of `plans/compiled-standard-sampler.md`: each update now evaluates only
+the parameter's Markov blanket against a persistent per-chain state. Run in a
+Linux cloud container (node v22.22.0), slower than the macOS machine above.
+"before" is commit 4a7a5ac and "after" is phase 1. Both ran **on the same
+machine at the same time**, one process each, so compare within a row and
+not with the tables above. Same harness and settings as above. The 500/20 and
+5000/100 data are simulated (`y = 1 + 0.5x + b[group] + N(0, 0.8)`).
+
+| case                       | before (4a7a5ac) | after phase 1 | speedup |
+|----------------------------|-----------------:|--------------:|--------:|
+| linear, N=50               |         29,586 ms |     13,273 ms |   2.2×  |
+| mixed, N=50 / J=5          |        100,112 ms |     29,881 ms |   3.4×  |
+| poisson, N=50              |          6,904 ms |      3,536 ms |   2.0×  |
+| bernoulli, N=50            |          7,003 ms |      3,326 ms |   2.1×  |
+| mixed, N=500 / J=20        |        743,728 ms |     86,030 ms |   8.6×  |
+| mixed, N=5000 / J=100      |      not run (est. ~6 h) | 1,586,764 ms (26 min) | ≈14× (est.) |
+
+The before/after ratio grows with J, as expected from removing the
+O(P · N) factor. Phase 1 makes no change to mixing (ESS ≈ 250–450 for `b[j]` at
+500/20 both before and after). It also leaves the interpreter cost per
+evaluation unchanged: a CPU profile of the linear model shows ~80% of the time
+in `evaluateExpr`. That cost is what phase 2, compiling the model to
+JavaScript, is meant to remove.
