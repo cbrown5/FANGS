@@ -64,7 +64,8 @@ FANGS/
 │   ├── dnorm-sd-parameterisation.md
 │   ├── gpu-blocked-sampler.md       # historical: blocked design + removed WebGPU backend
 │   ├── sampler-engine-benchmarks.md # standard vs blocked timings and mixing
-│   └── remove-gpu-engine.md         # record of the GPU removal
+│   ├── remove-gpu-engine.md         # record of the GPU removal
+│   └── compiled-standard-sampler.md # proposed: blanket conditionals, JS codegen, eta caching
 ├── results/                # Reference JSON posteriors (binomial, poisson)
 ├── scripts/                # Build scripts
 │   ├── build-course.js
