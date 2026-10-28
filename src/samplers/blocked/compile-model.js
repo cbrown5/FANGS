@@ -329,21 +329,30 @@ export function compileBlockedModel(graph) {
   });
 
   // ── 7. Translation moves (intercept ↔ random intercepts, etc.) ───────────
-  // When a fixed column equals a family's coefficients wherever the family
-  // applies (and is zero elsewhere), adding c to θ_k and subtracting c from
-  // every member leaves eta unchanged. Sampling c from its (Gaussian)
-  // conditional mixes along the ridge that component-wise updates crawl along.
+  // When a fixed column is a per-member multiple w_j of a family's
+  // coefficients wherever the family applies (and is zero elsewhere), adding
+  // c to θ_k and subtracting c·w_j from each member leaves eta unchanged.
+  // w_j = 1 is the intercept ↔ random-intercept case; a group-level covariate
+  // (e.g. a site-level treatment beside site random intercepts) gives w_j =
+  // that group's covariate value. Sampling c from its (Gaussian) conditional
+  // mixes along the ridge that component-wise updates crawl along.
   const translations = [];
   families.forEach((f, fi) => {
     for (let k = 0; k < P; k++) {
+      const weights = new Float64Array(f.J);
+      const seen = new Uint8Array(f.J);
       let ok = f.csrObs.length > 0;
       for (let i = 0; i < N && ok; i++) {
         const xk = X[i * P + k];
-        ok = f.gidx[i] >= 0
-          ? Math.abs(xk - f.coef[i]) <= 1e-9 * (1 + Math.abs(xk))
-          : xk === 0;
+        const j = f.gidx[i];
+        if (j < 0 || f.coef[i] === 0) { ok = xk === 0; continue; }
+        const w = xk / f.coef[i];
+        if (!seen[j]) { seen[j] = 1; weights[j] = w; continue; }
+        ok = Math.abs(w - weights[j]) <= 1e-9 * (1 + Math.abs(w));
       }
-      if (ok) translations.push({ fixedIndex: k, family: fi });
+      if (ok && weights.some(w => w !== 0)) {
+        translations.push({ fixedIndex: k, family: fi, weights });
+      }
     }
   });
 

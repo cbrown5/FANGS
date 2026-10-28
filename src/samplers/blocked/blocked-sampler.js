@@ -201,12 +201,13 @@ export class BlockedChainState {
 
   /**
    * Translation move for each (fixed coefficient, family) pair in
-   * plan.translations: θ_k ← θ_k + c, b_j ← b_j − c for every member.
+   * plan.translations: θ_k ← θ_k + c, b_j ← b_j − c·w_j for every member
+   * (w_j = 1 for an intercept; a group-level covariate's value otherwise).
    *
    * The likelihood is unchanged by the shift, so the conditional of c only
    * involves the Gaussian priors of θ_k and the b_j and is itself Gaussian:
-   *   precision Q = q_θ + Σ q_j
-   *   mean      = [q_θ (m_θ − θ_k) + Σ q_j (b_j − m_j)] / Q
+   *   precision Q = q_θ + Σ q_j w_j²
+   *   mean      = [q_θ (m_θ − θ_k) + Σ q_j w_j (b_j − m_j)] / Q
    * This is a Gibbs update along a translation group (Liu & Sabatti 2000),
    * so it leaves the posterior invariant. Without it the chain can sit for
    * thousands of iterations at, e.g., α = 11 with every b_j ≈ −10 (the data
@@ -216,7 +217,7 @@ export class BlockedChainState {
    */
   translate(cfg) {
     const v = this.vals;
-    for (const { fixedIndex: k, family: fi } of this.plan.translations) {
+    for (const { fixedIndex: k, family: fi, weights: w } of this.plan.translations) {
       const name = this.plan.fixed.names[k];
       const fam = this.plan.families[fi];
       const famCfg = cfg.families[fi];
@@ -226,12 +227,12 @@ export class BlockedChainState {
       fam.names.forEach((n, j) => {
         const qj = typeof famCfg.prec === 'number' ? famCfg.prec : famCfg.prec[j];
         const mj = typeof famCfg.mean === 'number' ? famCfg.mean : famCfg.mean[j];
-        Q += qj;
-        S += qj * (v[n] - mj);
+        Q += qj * w[j] * w[j];
+        S += qj * w[j] * (v[n] - mj);
       });
       const c = S / Q + rnorm(0, 1) / Math.sqrt(Q);
       v[name] += c;
-      for (const n of fam.names) v[n] -= c;
+      fam.names.forEach((n, j) => { v[n] -= c * w[j]; });
       this._famStats[fi] = null;
     }
   }
