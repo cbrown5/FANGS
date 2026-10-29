@@ -1030,7 +1030,7 @@ $$</span></p>
 <p><code>alpha + beta * x[i]</code> is the fixed effect part of the model, that drives the mean in response to a covariate <code>x</code>.</p>
 <p><code>b[group[i]]</code> are the group means. Note how each value is drawn from a shared distribution with a SD that is estimated: <code>b[j] ~ dnorm(0, sigma.b)</code>. This is what makes it a random effect.</p>
 <p>Compare to the fixed effect parameter <code>beta</code> which is drawn directly from a prior.</p>
-<p>The SD for the <code>sigma.b</code> prior (50) is what we call a hyper-parameter, a parameter that controls other parameters. Lower values of the SD will shrink our random effects closer to the global mean.</p>
+<p>The SD for the <code>sigma.b</code> prior is what we call a hyper-parameter, a parameter that controls other parameters. Lower values of the SD will shrink our random effects closer to the global mean.</p>
 <p>Other differences to note in the model definition from earlier models:</p>
 <ul>
 <li><code>J</code> — the number of groups. Set it in the constants alongside <code>N</code>.</li>
@@ -1043,19 +1043,13 @@ $$</span></p>
 <h2 id="what-to-check">What to check</h2>
 <p>The <strong>Summary</strong> tab now includes <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and each <code>b[j]</code>. Watch R-hat for <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> especially — variance parameters are the slowest to mix.</p>
 <h2 id="your-task">Your task</h2>
-<p>Fit the random-intercepts model to <code>random-effects.csv</code> and check <span class="math inline"><em>α</em></span>, <span class="math inline"><em>β</em></span>, and the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>.</p>
-<p>A few tips: don’t forget to change the variable names for the new dataset; you will need to update the distribution for the response variable (its count data…); don’t forget to enter a value for J, the number of sites.</p>
+<p>Vary the prior for <code>sigma.b</code>. For instance, try <code>dexp(5)</code> and compare that to <code>dexp(0.1)</code>. How do the different priors affect the mean effects of each random effect? Are the MCMC chains converging well with all priors?</p>
+<p>We’ll come back to ways to improve sampling in the next module.</p>
 </body></html>`,
   'm20-improving-sampling': `<html><head></head><body><h1 id="improving-sampling-fixing-an-over-specified-model">Improving sampling: fixing an over-specified model</h1>
-<p>Sometimes the chains misbehave — sky-high R-hat, tiny ESS, trace plots that wander across enormous ranges or drift apart and never settle. The first instinct is “the sampler is broken”, but far more often the model is asking the data to estimate something it <strong>cannot</strong>. This is an <em>over-specified</em> model, and the cure is to respecify it, not to try and fix the algorithm.</p>
-<div>
-<blockquote>
-<p><strong>Tip</strong></p>
-<p>The Folk Theorem of Statistical Computing (Gelman 2008): “When you have computational problems, often there’s a problem with your model.”</p>
-</blockquote>
-</div>
+<p>Sometimes the chains misbehave. We might see high R-hat values, tiny ESS and trace plots that wander and drift apart. In this module we’ll look at some different strategies to improve the quality of MCMC sampling. Efficient sampling means you’ll get accurate estimation of the posteriors in a shorter amount of time.</p>
 <h2 id="the-data">The data</h2>
-<p>We use <code>random-effects.csv</code> — the benthic-cover survey from the same Kia Province reefs you met with the fish counts. Each row is one transect, and <code>cover</code> is the per-cent cover of branching <em>Acropora</em> coral. There are several transects per site, so <code>site</code> is a natural grouping variable for random effects.</p>
+<p>We use <code>random-effects.csv</code>. This is benthic-cover survey from the same Kia Province reefs you met with the fish counts. Each row is one transect, and <code>cover</code> is the per-cent cover of branching <em>Acropora</em> coral. There are several transects per site, so <code>site</code> is a natural grouping variable for random effects.</p>
 <h2 id="a-broken-model">A broken model</h2>
 <p>Here is a model that tries to give every site its own free mean, on top of a global intercept, with very diffuse priors:</p>
 <pre><code>model {
@@ -1068,13 +1062,34 @@ $$</span></p>
     beta[j] ~ dnorm(0, 1000)
   }
 }</code></pre>
-<p>Set <code>J</code> to the number of sites (20) alongside <code>N</code> in the constants, then fit it. The diagnostics will be dreadful: R-hat for <code>alpha</code> and the <code>beta[j]</code> will be huge, and ESS be in the single digits.</p>
+<p>Set <code>J</code> to the number of sites (20) alongside <code>N</code> in the constants, then fit it. The diagnostics will be dreadful. You will notice the trace plots drift and wander and different chains don’t converge on the same distribution (tick the ‘show array parameters’ button if you want to see traces for each <code>beta</code>). R-hat for <code>alpha</code> and the <code>beta[j]</code> will be huge, and ESS be in the single digits.</p>
+<h2 id="fix-1-a-new-type-of-sampler">Fix 1: A new type of sampler</h2>
+<p>In FANGS there are two ways to draw <em>samples</em> from a model’s posterior. See the option for the <strong>Sampler engine</strong>, in the sampler settings.</p>
+<ul>
+<li><strong>Standard</strong> updates one parameter at a time. It works for any model FANGS can parse, which is why it’s the default.</li>
+<li><strong>Blocked</strong> updates all the fixed coefficients together, and all the group effects at once, and it makes moves that shift <span class="math inline"><em>α</em></span> up while shifting every <span class="math inline"><em>β</em><sub><em>j</em></sub></span> down by the same amount — travelling <em>along</em> the ridge from the section above instead of crawling across it. It applies to GLMMs: a normal, Poisson or binomial response with <code>dnorm</code> priors on the coefficients.</li>
+</ul>
+<p>Use <strong>Blocked</strong> whenever you’re fitting a mixed-effects model, and especially with many groups or more than a few hundred rows. On the 50-row example dataset it runs about 100× faster, and the gain in <em>accuracy per second</em> is larger still — because of the <span class="math inline"><em>α</em></span> ↔︎ <span class="math inline"><em>β</em><sub><em>j</em></sub></span> ridge the standard engine needs roughly 900× more time to pin the intercept down as precisely.</p>
+<p>Two things to be clear about:</p>
+<ul>
+<li>It targets the <strong>same posterior</strong>. This is a speed and mixing improvement, not a different model, and not a different answer.</li>
+<li>It <strong>does not fix an over-specified model.</strong> A genuinely non-identifiable model still has bad R-hat and ESS on either engine, because the problem is in the model, not the algorithm. Fix the model first (Fixes 1 and 2); then pick the engine.</li>
+</ul>
+<p>If your model isn’t one the blocked engine supports, FANGS quietly falls back to Standard and tells you so in the status bar.</p>
+<p>Re-run your model using the blocked engine. You will see the chains behave better, however the posteriors on most of the parameters are very wide. Then look at the ‘Joint’ tab, notice how samples for many pairs of <code>alpha</code> and <code>beta</code> params are a perfect negative correlation. This trading-off of parameter values is indicative of a <strong>non-identifiable</strong> model.</p>
 <h2 id="non-identifiability">Non-identifiability</h2>
 <p>Non-identifiability is a common problem, but it’s not always that obvious. Here’s a really obvious example to start you off.</p>
 <p>Consider the linear predictor: <span class="math inline">log (<em>λ</em><sub><em>i</em></sub>) = <em>α</em> + <em>β</em><sub>site[<em>i</em>]</sub></span>. You can add any constant <span class="math inline"><em>c</em></span> to <span class="math inline"><em>α</em></span> and subtract the same <span class="math inline"><em>c</em></span> from <em>every</em> <span class="math inline"><em>β</em><sub><em>j</em></sub></span>, and the predictions are completely unchanged:</p>
 <p><span class="math display">(<em>α</em> + <em>c</em>) + (<em>β</em><sub><em>j</em></sub> − <em>c</em>) = <em>α</em> + <em>β</em><sub><em>j</em></sub></span></p>
 <p>So the data can nail each sum <span class="math inline"><em>α</em> + <em>β</em><sub><em>j</em></sub></span>, but never <span class="math inline"><em>α</em></span> and the <span class="math inline"><em>β</em><sub><em>j</em></sub></span> separately — there are infinitely many equally good answers along a ridge. The two diffuse <code>dnorm(0, 1000)</code> priors do nothing to break the tie, so the sampler slides up and down that ridge forever. That is what a high R-hat and tiny ESS are telling you.</p>
-<h2 id="fix-1-partial-pooling-and-sensible-priors">Fix 1: partial pooling and sensible priors</h2>
+<p>So our first intution was to try a new sampling algorithm. But often when you have problems with getting the chains to converge, it is becuase the model is asking the data to estimate something it <strong>cannot</strong>. This is an <em>over-specified</em> model. Often, the fix to look at how you are building the model and the priors. Othertimes, you might just be asking too much to fit the model you want to the data you have.</p>
+<div>
+<blockquote>
+<p><strong>Tip</strong></p>
+<p>The Folk Theorem of Statistical Computing (Gelman 2008): “When you have computational problems, often there’s a problem with your model.”</p>
+</blockquote>
+</div>
+<h2 id="fix-2-partial-pooling-and-sensible-priors">Fix 2: partial pooling and sensible priors</h2>
 <p>Back to our model of reefs. Make the site effects deviations around the global mean, drawn from a shared distribution whose width <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> the model estimates. Anchoring them at zero identifies <span class="math inline"><em>α</em></span> as the grand mean, and the shared prior pools information across sites:</p>
 <pre><code>model {
   for (i in 1:N) {
@@ -1087,36 +1102,25 @@ $$</span></p>
   alpha   ~ dnorm(0, 10)
   sigma.b ~ dunif(0, 10)
 }</code></pre>
+<p>Don’t forget to re-enter J=20 before running the model.</p>
 <p>Two changes fixed our issue:</p>
 <ol type="1">
 <li><strong>Identifiability</strong> — the <code>b[j]</code> are centred on 0 with a shared, estimated SD, so they can no longer trade off freely against <code>alpha</code>.</li>
-<li><strong>Sensible priors</strong> — <code>dnorm(0, 10)</code> on the log-scale intercept and a bounded <code>dunif(0, 10)</code> on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> are weakly informative rather than absurdly wide.</li>
+<li><strong>Sensible priors</strong> — <code>dnorm(0, 10)</code> on the log-scale intercept and a bounded <code>dunif(0, 10)</code> on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> are weakly informative rather than too wide.</li>
 </ol>
-<p>Refit and watch R-hat collapse from the tens to close to 1.0, and ESS climb from single digits into the hundreds. (It will not land exactly on 1.0 for every parameter on this dataset — see the note at the end of the module for why.)</p>
-<h2 id="fix-2-reparameterisation">Fix 2: Reparameterisation</h2>
+<p>Refit and then check the posteriors. We are getting much more precise estimates of the parameters now. Check also the Joint tab. You will still see parameters trading-off, but not as strongly as before.</p>
+<h2 id="fix-3-reparameterisation">Fix 3: Reparameterisation</h2>
 <p>In hierarchical models the group SD <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> and the group effects <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are strongly coupled, creating a funnel-shaped posterior that is hard to sample (the “centred” parameterisation). A <strong>non-centred</strong> form decouples them:</p>
 <pre><code>for (j in 1:J) {
   z[j] ~ dnorm(0, 1)
   b[j] &lt;- sigma.b * z[j]
 }</code></pre>
-<p>This is the same model, it just has a much friendlier geometry for the sampling algorithm.</p>
-<h2 id="a-sampler-that-helps-but-is-not-a-fix">A sampler that helps (but is not a fix)</h2>
-<p>The two fixes above are about the <strong>model</strong>. There’s also a setting that changes how FANGS <em>samples</em> whatever model you give it: <strong>Sampler engine</strong>, in the sampler settings.</p>
-<ul>
-<li><strong>Standard</strong> updates one parameter at a time. It works for any model FANGS can parse, which is why it’s the default.</li>
-<li><strong>Blocked</strong> updates all the fixed coefficients together, and all the group effects at once, and it makes moves that shift <span class="math inline"><em>α</em></span> up while shifting every <span class="math inline"><em>β</em><sub><em>j</em></sub></span> down by the same amount — travelling <em>along</em> the ridge from the section above instead of crawling across it. It applies to GLMMs: a normal, Poisson or binomial response with <code>dnorm</code> priors on the coefficients.</li>
-</ul>
-<p>Use <strong>Blocked</strong> whenever you’re fitting a mixed-effects model, and especially with many groups or more than a few hundred rows. On the 50-row example dataset it runs about 100× faster, and the gain in <em>accuracy per second</em> is larger still — because of the <span class="math inline"><em>α</em></span> ↔︎ <span class="math inline"><em>β</em><sub><em>j</em></sub></span> ridge the standard engine needs roughly 900× more time to pin the intercept down as precisely.</p>
-<p>Two things to be clear about:</p>
-<ul>
-<li>It targets the <strong>same posterior</strong>. This is a speed and mixing improvement, not a different model, and not a different answer.</li>
-<li>It <strong>does not rescue an over-specified model.</strong> A genuinely non-identifiable model still has bad R-hat and ESS on either engine, because the problem is in the model, not the algorithm. Fix the model first (Fixes 1 and 2); then pick the engine.</li>
-</ul>
-<p>If your model isn’t one the blocked engine supports, FANGS quietly falls back to Standard and tells you so in the status bar.</p>
-<h2 id="fix-3-a-sum-to-zero-constraint">Fix 3: A sum-to-zero constraint</h2>
-<p>Fix 1 identified <span class="math inline"><em>α</em></span> by giving the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> a shared prior centred on zero. That works because the prior pulls the group effects toward zero, which stops them drifting off together. But it is a <em>soft</em> constraint — the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are only centred on zero <strong>on average, in the prior</strong>, and nothing stops a particular draw from having them all positive, with <span class="math inline"><em>α</em></span> shifted down to compensate.</p>
-<p>With a good number of groups that is usually enough — twenty site effects average out and the ridge is effectively closed. With <strong>few</strong> groups it is often not. There is little information about <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>, so the chains can follow the prior out to large values, and the <span class="math inline"><em>α</em></span>-versus-<span class="math inline"><em>b</em><sub><em>j</em></sub></span> ridge reopens — exactly the problem from the start of this module, just narrower.</p>
-<p>You can close it completely by making the constraint <strong>hard</strong>: let all but one group effect be free, and define the last as minus the sum of the others.</p>
+<p>Making this change can, at times, improve the geometry of the joint posterior such that it is easier to sample. In this case it doesn’t help, but for other models it can be useful.</p>
+<p>You can try the above fix on the mixed effects model with normal distribution (the example model in the FANGS app), and you should notice you get better ESS values for most parameters.</p>
+<h2 id="fix-4-a-sum-to-zero-constraint">Fix 4: A sum-to-zero constraint</h2>
+<p>Fix 2 identified <span class="math inline"><em>α</em></span> by giving the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> a shared prior centred on zero. That works because the prior pulls the group effects toward zero, which stops them drifting off together. But it is a <em>soft</em> constraint, the <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are only centred on zero <strong>on average, in the prior</strong>.</p>
+<p>With a good number of groups that is usually enough. Twenty site effects average out and the ridge is effectively closed. With <strong>few</strong> groups it is often not. There is little information about <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>, so the chains can follow the prior out to large values, and the <span class="math inline"><em>α</em></span>-versus-<span class="math inline"><em>b</em><sub><em>j</em></sub></span> ridge in the posterior becomes difficult for the sampler to navigate.</p>
+<p>You can fix this problem completely by making the constraint <strong>hard</strong>: let all but one group effect be free, and define the last as minus the sum of the others.</p>
 <p>Here it is for a model with four groups:</p>
 <pre><code>b[1] ~ dnorm(0, sigma.b)
 b[2] ~ dnorm(0, sigma.b)
@@ -1126,23 +1130,22 @@ b[4] &lt;- -(b[1] + b[2] + b[3])</code></pre>
 <div>
 <blockquote>
 <p><strong>Why not always do this?</strong></p>
-<p>The sum-to-zero constraint costs you something: the last group effect is no longer a stochastic node, so it has no prior of its own and is not shrunk in the same way as the others. With a decent number of groups the soft constraint of Fix 1 is simpler, scales without writing a line per group, and pools information more even-handedly.</p>
-<p>Reach for Fix 3 when you have <strong>few groups</strong> — a handful of experimental blocks, say — and the intercept will not converge despite a sensible prior on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>. That is precisely the situation in the summative challenge (Module 21), where four blocks give R-hat above 5 for <span class="math inline"><em>α</em></span> with free effects, and 1.01 with the constraint. Same data, same priors, same posterior means — only the parameterisation differs.</p>
+<p>The sum-to-zero constraint changes the interpretation of the model: the last group effect is no longer a stochastic node, so it has no prior of its own and is not shrunk in the same way as the others. With a decent number of groups the soft constraint of Fix 1 is simpler, scales without writing a line per group, and pools information more evenly.</p>
+<p>Use Fix 4 when you have <strong>few groups</strong> and you find the intercept will not converge despite a sensible prior on <span class="math inline"><em>σ</em><sub><em>b</em></sub></span>.</p>
 </blockquote>
 </div>
 <h2 id="your-task">Your task</h2>
 <ol type="1">
 <li>Fit the <strong>broken</strong> model and read the worst R-hat and minimum ESS from the <strong>Summary</strong> tab.</li>
-<li>Fix it with the partial-pooling version above (adjust priors if you like).</li>
-<li>Refit and record the <strong>before/after</strong> worst R-hat and minimum ESS in the table below.</li>
-<li><strong>Optional:</strong> try Fix 2 (non-centred) as an extra row in the table and compare.</li>
+<li>Try the block sampler</li>
+<li>Try each other fix in turn and record the ESS and R-hat values.</li>
 </ol>
 <div>
 <blockquote>
-<p><strong>Do not expect perfect diagnostics here</strong></p>
-<p>Fix 1 is a huge improvement on this dataset — the worst R-hat drops from the <strong>thirties</strong> to roughly <strong>1.4</strong> with long enough chains (4 chains x 4000, burn-in 2000) — but it does not reach 1.0, and that is worth understanding rather than papering over. At the default sampler settings it is worse still and varies a lot between runs, which is itself a sign the chains have not settled.</p>
-<p>Five of the twenty sites have <strong>zero</strong> coral cover on every transect. Their <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are held finite by the shared prior and individually converge well (R-hat ≈ 1.03), but they sit far below the others, around <span class="math inline">−3.3</span>. To accommodate that spread the model inflates <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> to about 3, which <strong>widens the <span class="math inline"><em>α</em></span>-versus-<span class="math inline"><em>b</em><sub><em>j</em></sub></span> ridge</strong> — so <span class="math inline"><em>α</em></span> ends up the worst-mixing parameter in the model (R-hat ≈ 1.5), not the zero sites themselves.</p>
-<p>The lesson is the Folk Theorem again: the stubborn diagnostics are pointing at a modelling problem, which here is the likelihood. A response that is 43% zeros wants a zero-inflated or negative-binomial model, not a plain Poisson. Fixing the parameterisation can only take you so far when the distribution is wrong.</p>
+<p><strong>Don’t expect perfect diagnostics for this data</strong></p>
+<p>Even with the above fixes, at the default sampler settings the ESS are still low for some parameters and there is some variation among runs. This is a sign the chains have not settled.</p>
+<p>Five of the twenty sites in this data have <strong>zero</strong> coral cover on every transect. Their <span class="math inline"><em>b</em><sub><em>j</em></sub></span> are held finite by the shared prior and individually converge well , but they sit far below the others, around <span class="math inline">−3.3</span>. To accommodate that spread the model inflates <span class="math inline"><em>σ</em><sub><em>b</em></sub></span> to about 3, which <strong>widens the <span class="math inline"><em>α</em></span>-versus-<span class="math inline"><em>b</em><sub><em>j</em></sub></span> ridge</strong> — so <span class="math inline"><em>α</em></span> ends up the worst-mixing parameter in the model.</p>
+<p>The lesson is the Folk Theorem: the stubborn diagnostics are pointing at a modelling problem, which here is the use of this likelihood with this dataset. A response that is 43% zeros would be better modelled with a zero-inflated or negative-binomial model, not a basic Poisson.</p>
 </blockquote>
 </div>
 </body></html>`,

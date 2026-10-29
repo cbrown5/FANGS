@@ -70,7 +70,6 @@ App is fully functional and good to use.
 - Add report/ report bug button
 
 ### User course todo
--m20 need to be updated. Write up the block sampler first, then come to the other repreameterization tricks second.  Edit new section about blocked sampler
 - m21 needs revision. Test it, use a fully categorical predictor
 - GPU test is on branch jolly-lovelace, test that
 - Chat in claude has an idea for improving speed of CPU based computation as well. 
