@@ -57,6 +57,7 @@ App is fully functional and good to use.
 
 ### USER todo
 - test poisson gamma 
+- Test a MV latent variable model
 - read the paper draft and suggest updates
 - Confirm the samplers work as explained in the paper. I think there are still some mentions of conjugates
 - Confirm number of tests is what is said in the paper
@@ -68,12 +69,11 @@ App is fully functional and good to use.
 - Review paper draft, read whole thing. 
 - Check all references in paper
 - Add report/ report bug button
+- Add a prior choice calculator. 
+- Could widen scope of blocked algorithm, e.g. to include neg bin, random slopes or nested hierarchies (multiple nestings). 
 
 ### User course todo
 - m21 needs revision. Test it, use a fully categorical predictor
-- GPU test is on branch jolly-lovelace, test that
-- Chat in claude has an idea for improving speed of CPU based computation as well. 
-- 
 - Edit text in opening sections
 - Add references to course modules.
 - Pin reference posteriors for M14–M19, M21 (currently self-report mode).
